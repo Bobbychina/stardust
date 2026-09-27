@@ -23,7 +23,7 @@ public class InputTracker {
 
     public static boolean isKeyDown(int key) {
         if (mc == null || mc.getWindow() == null) return false;
-        long handle = mc.getWindow().getWindow();
+        long handle = mc.getWindow().handle();
         return glfwGetKey(handle, key) == GLFW_PRESS;
     }
 }

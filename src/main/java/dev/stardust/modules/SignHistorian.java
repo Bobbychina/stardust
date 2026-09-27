@@ -162,7 +162,7 @@ public class SignHistorian extends Module {
                         initOrLoadFromSignFile();
                     } else {
                         for (Tuple<SignBlockEntity, BlockState> entry : this.serverSigns.values()) {
-                            this.saveSignToFile(entry.getLeft(), entry.getRight());
+                            this.saveSignToFile(entry.getA(), entry.getB());
                         }
                         initOrLoadFromSignFile();
                     }
@@ -315,7 +315,7 @@ public class SignHistorian extends Module {
 
             String address = server.ip.replace(":", "_");
             String dimKey;
-            if (currentDim != null) dimKey = currentDim.location().toString().replace("minecraft:", "");
+            if (currentDim != null) dimKey = currentDim.identifier().toString().replace("minecraft:", "");
             else dimKey = mc.level.dimension().identifier().toString().replace("minecraft:", "");
             Path signsFile = historianFolder.resolve( dimKey+"."+address+".signs");
             if (signsFile.toFile().exists()) {
@@ -336,15 +336,17 @@ public class SignHistorian extends Module {
                 try {
                     String[] parts = sign.split(" -\\|- ");
                     if (parts.length != 2) continue;
-                    CompoundTag reconstructed = TagParser.parseTag(parts[0].trim());
-                    CompoundTag stateReconstructed = TagParser.parseTag(parts[1].trim());
-                    BlockPos bPos = BlockEntity.getPosFromTag(reconstructed);
+                    CompoundTag reconstructed = TagParser.parseCompoundFully(parts[0].trim());
+                    CompoundTag stateReconstructed = TagParser.parseCompoundFully(parts[1].trim());
+                    // TODO(26.1): BlockEntity.getPosFromTag 现在需要 ChunkPos（tag 内 x/z 为区块内相对坐标）；
+                    // 这里直接按 tag 里的坐标重建，跨区块存档若异常需按 26.1 真实存档格式再校正
+                    BlockPos bPos = new BlockPos(reconstructed.getIntOr("x", 0), reconstructed.getIntOr("y", 0), reconstructed.getIntOr("z", 0));
 
                     DataResult<BlockState> result = BlockState.CODEC.parse(NbtOps.INSTANCE, stateReconstructed);
                     BlockState state = result.result().orElse(null);
 
                     if (state == null) continue;
-                    BlockEntity be = BlockEntity.createFromNbt(bPos, state, reconstructed, mc.level.registryAccess());
+                    BlockEntity be = BlockEntity.loadStatic(bPos, state, reconstructed, mc.level.registryAccess());
 
                     if (be instanceof SignBlockEntity sbeReconstructed) {
                         if (!serverSigns.containsKey(bPos)) {
@@ -376,7 +378,7 @@ public class SignHistorian extends Module {
         Path historianFolder = FabricLoader.getInstance().getGameDir().resolve("meteor-client/sign-historian");
 
         try {
-            CompoundTag stateNbt = NbtUtils.fromBlockState(state);
+            CompoundTag stateNbt = NbtUtils.writeBlockState(state);
             CompoundTag metadata = sign.saveWithFullMetadata(mc.level.registryAccess());
 
             //noinspection ResultOfMethodCallIgnored
@@ -386,7 +388,7 @@ public class SignHistorian extends Module {
 
             String address = server.ip.replace(":", "_");
             String dimKey;
-            if (currentDim != null) dimKey = currentDim.location().toString().replace("minecraft:", "");
+            if (currentDim != null) dimKey = currentDim.identifier().toString().replace("minecraft:", "");
             else dimKey = mc.level.dimension().identifier().toString().replace("minecraft:", "");
             Path signsFile = historianFolder.resolve(dimKey+"."+address+".signs");
             if (signsFile.toFile().exists()) {
@@ -496,13 +498,13 @@ public class SignHistorian extends Module {
         if (!serverSigns.containsKey(sign.getBlockPos())) return null;
         Tuple<SignBlockEntity, BlockState> data = serverSigns.get(sign.getBlockPos());
 
-        if (!destroyedSigns.contains(data.getLeft())) return null;
-        if (contentBlacklist.get() && containsBlacklistedText(data.getLeft())) return null;
+        if (!destroyedSigns.contains(data.getA())) return null;
+        if (contentBlacklist.get() && containsBlacklistedText(data.getA())) return null;
         if (ignoreBrokenSetting.get() && signsBrokenByPlayer.contains(sign.getBlockPos())) return null;
 
-        SignBlockEntity sbe = data.getLeft();
+        SignBlockEntity sbe = data.getA();
         Component[] restoration = new Component[4];
-        for (int n = 0; n < data.getLeft().getFrontText().getMessages(false).length; n++) {
+        for (int n = 0; n < data.getA().getFrontText().getMessages(false).length; n++) {
             // Signs placed in 1.8 - 1.12 (the majority of them) are "technically" irreplaceable due to metadata differences.
             // You might say that they're the *new* old signs. Either way you can tell that they've been (re)placed after 1.19.
             // To compensate for this, I'll hide a SignHistorian watermark in the NBT data which should clear up any confusion :]
@@ -555,7 +557,7 @@ public class SignHistorian extends Module {
             if (sbe1.getFrontText().hasGlowingText() != sbe2.getFrontText().hasGlowingText()) return false;
         }
 
-        return ((SignBlock) SignBlock.getWoodType(sbe1.getBlockState().getBlock())) == ((SignBlock) SignBlock.getWoodType(sbe2.getBlockState().getBlock()));
+        return (SignBlock.getWoodType(sbe1.getBlockState().getBlock())) == (SignBlock.getWoodType(sbe2.getBlockState().getBlock()));
     }
 
     private boolean containsBlacklistedText(SignBlockEntity sbe) {
@@ -645,12 +647,12 @@ public class SignHistorian extends Module {
 
         BlockPos pos = sbe.getBlockPos();
         if (serverSigns.containsKey(pos)) {
-            if (isSameSign(sbe, serverSigns.get(pos).getLeft())) {
-                modifiedSigns.remove(serverSigns.get(pos).getLeft());
+            if (isSameSign(sbe, serverSigns.get(pos).getA())) {
+                modifiedSigns.remove(serverSigns.get(pos).getA());
             } else {
-                modifiedSigns.add(serverSigns.get(pos).getLeft());
+                modifiedSigns.add(serverSigns.get(pos).getA());
             }
-            destroyedSigns.remove(serverSigns.get(pos).getLeft());
+            destroyedSigns.remove(serverSigns.get(pos).getA());
         } else {
             if (sbe.getBlockState().getBlock() instanceof SignBlock signBlock) {
                 woodTypeMap.put(sbe, SignBlock.getWoodType(signBlock));
@@ -743,7 +745,7 @@ public class SignHistorian extends Module {
             if (event.result.getBlockPos().closerThan(sbe.getBlockPos(), 1)) {
                 MsgUtil.sendModuleMsg("§e§lOriginal§7§l: §7§o" + Arrays.stream(sbe.getFrontText().getMessages(false)).map(Component::getString).collect(Collectors.joining(" ")), this.name);
                 MsgUtil.sendModuleMsg(
-                    "§6§lWoodType§7§l: " + ((SignBlock) SignBlock.getWoodType(sbe.getBlockState().getBlock())).name()
+                    "§6§lWoodType§7§l: " + (SignBlock.getWoodType(sbe.getBlockState().getBlock())).name()
                     + " | §3§lColor§7§l: " + sbe.getText(true).getColor().name()
                     + " | §f§lGlow Ink§7§l: " + sbe.getText(true).hasGlowingText(), this.name
                 );
@@ -762,7 +764,7 @@ public class SignHistorian extends Module {
             if (packet.getPos().closerThan(ghost.getBlockPos(), 1.5)) {
                 MsgUtil.sendModuleMsg("§e§lOriginal§7§l: §7§o" + Arrays.stream(ghost.getFrontText().getMessages(false)).map(Component::getString).collect(Collectors.joining(" ")), this.name);
                 MsgUtil.sendModuleMsg(
-                    "§6§lWoodType§7§l: " + ((SignBlock) SignBlock.getWoodType(ghost.getBlockState().getBlock())).name()
+                    "§6§lWoodType§7§l: " + (SignBlock.getWoodType(ghost.getBlockState().getBlock())).name()
                         + " | §3§lColor§7§l: " + ghost.getText(true).getColor().name()
                         + " | §f§lGlow Ink§7§l: " + ghost.getText(true).hasGlowingText(), this.name
                 );
@@ -864,8 +866,8 @@ public class SignHistorian extends Module {
 
             for (BlockPos pos : inRange) {
                 if (!(mc.level.getBlockEntity(pos) instanceof SignBlockEntity sbe)) {
-                    destroyedSigns.add(serverSigns.get(pos).getLeft());
-                    modifiedSigns.remove(serverSigns.get(pos).getLeft());
+                    destroyedSigns.add(serverSigns.get(pos).getA());
+                    modifiedSigns.remove(serverSigns.get(pos).getA());
                 } else processSign(sbe);
             }
 
@@ -933,7 +935,7 @@ public class SignHistorian extends Module {
 
             if (!toColor.isEmpty()) {
                 SignBlockEntity sbe = toColor.get(0);
-                interactSign(sbe, DyeItem.byColor(signsToColor.get(sbe)));
+                interactSign(sbe, dev.stardust.util.StardustUtil.dyeItem(signsToColor.get(sbe)));
                 return;
             }
 

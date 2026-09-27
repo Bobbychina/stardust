@@ -143,8 +143,9 @@ public class AdBlocker extends Module {
     private void extractNamesFromDeathMessage(Component msg, List<String> names) {
         if (msg.getStyle().getHoverEvent() != null) {
             HoverEvent event = msg.getStyle().getHoverEvent();
-            if (event.getAction().equals(HoverEvent.Action.SHOW_TEXT)) {
-                Component value = (Component) event.getValue(event.getAction());
+            // 26.1: HoverEvent 是接口 + ShowText record，值走 value()
+            if (event instanceof HoverEvent.ShowText showText) {
+                Component value = showText.value();
                 if (value != null && value.getString().startsWith("Message ")) {
                     names.add(value.getString().substring(8).trim());
                 }

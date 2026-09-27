@@ -34,7 +34,8 @@ public class PacketCancellerMixin extends Module {
     private void silenceBoatPaddles(PacketEvent.Send event, CallbackInfo ci) {
         if (c2sPackets.get().contains(ServerboundPaddleBoatPacket.class) && event.packet instanceof ServerboundPaddleBoatPacket) {
             if (mc.player != null && mc.player.getControlledVehicle() instanceof AbstractBoat boat) {
-                boat.setPaddlesMoving(false, false);
+                // 26.1: AbstractBoat#setPaddlesMoving -> setPaddleState
+                boat.setPaddleState(false, false);
                 if (mc.getConnection() != null) ((ClientConnectionAccessor) mc.getConnection().getConnection()).invokeSendImmediately(
                     new ServerboundPaddleBoatPacket(false, false), null, true
                 );

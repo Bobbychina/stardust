@@ -22,9 +22,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  **/
 @Mixin(WeighedSoundEvents.class)
 public abstract class WeightedSoundSetMixin implements Weighted<Sound> {
+    // 26.1: WeighedSoundEvents 字段 sounds → list
     @Shadow
     @Final
-    private List<Weighted<Sound>> sounds;
+    private List<Weighted<Sound>> list;
 
     // See MusicTweaks.java
     @Inject(method = "getSound(Lnet/minecraft/util/RandomSource;)Lnet/minecraft/client/resources/sounds/Sound;", at = @At("HEAD"), cancellable = true)
@@ -35,7 +36,7 @@ public abstract class WeightedSoundSetMixin implements Weighted<Sound> {
         if (tweaks == null || !tweaks.isActive()) return;
 
         boolean overwrite = false;
-        for (Weighted<Sound> sound : this.sounds) {
+        for (Weighted<Sound> sound : this.list) {
             String id = sound.getSound(random).toString();
 
             if (id.contains("minecraft:music/")) {

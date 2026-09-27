@@ -329,7 +329,10 @@ public class WMinesweeper extends WWidget {
     }
 
     @Override
-    public boolean onMouseClicked(double mouseX, double mouseY, int button, boolean used) {
+    // 26.1: Meteor WWidget 回调改为 MouseButtonEvent
+    public boolean onMouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean used) {
+        double mouseX = event.x();
+        double mouseY = event.y();
         double localX = mouseX - x;
         double localY = mouseY - y;
 
@@ -421,7 +424,10 @@ public class WMinesweeper extends WWidget {
     }
 
     @Override
-    public boolean onMouseReleased(double mouseX, double mouseY, int button) {
+    public boolean onMouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         dragging = false;
         highlightedCells.clear();
         double localX = mouseX - x;

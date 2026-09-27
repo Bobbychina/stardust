@@ -7,9 +7,11 @@ import net.minecraft.world.inventory.GrindstoneMenu;
 
 @Mixin(GrindstoneMenu.class)
 public interface GrindstoneScreenHandlerAccessor {
-    @Invoker("grind")
+    // 26.1: GrindstoneMenu.grind(ItemStack) → removeNonCursesFrom(ItemStack)
+    @Invoker("removeNonCursesFrom")
     ItemStack invokeGrind(ItemStack item);
 
-    @Invoker("transferEnchantments")
+    // 26.1: GrindstoneMenu.transferEnchantments(ItemStack,ItemStack) → mergeEnchantsFrom(...)
+    @Invoker("mergeEnchantsFrom")
     void invokeTransferEnchantments(ItemStack target, ItemStack source);
 }

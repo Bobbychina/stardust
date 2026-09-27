@@ -11,6 +11,7 @@ public class Card {
     }
 
     @Override public String toString() {
-        return rank.asString() + suit.asString();
+        // 26.1: Yarn StringIdentifiable#asString -> 官方 StringRepresentable#getSerializedName
+        return rank.getSerializedName() + suit.getSerializedName();
     }
 }

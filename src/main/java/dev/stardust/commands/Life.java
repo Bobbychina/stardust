@@ -15,6 +15,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.events.game.GameLeftEvent;
 import meteordevelopment.meteorclient.events.game.GameJoinedEvent;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
@@ -209,7 +210,7 @@ public class Life extends Command {
         if (rules.equals(ConwayHud.Ruleset.Custom)) {
             name = "Custom(" + hud.customRules.get().toUpperCase() + ")";
         } else {
-            name = rules.asString();
+            name = rules.getSerializedName();
         }
         StringBuilder sb = new StringBuilder();
 

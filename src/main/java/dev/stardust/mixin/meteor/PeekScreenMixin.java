@@ -52,7 +52,8 @@ public abstract class PeekScreenMixin extends ShulkerBoxScreen {
         var setting = btt.settings.get("peek-ghost-items");
         if (setting == null) return;
         try {
-            if ((boolean) setting.get() && button == GLFW.GLFW_MOUSE_BUTTON_LEFT && focusedSlot != null && !focusedSlot.getStack().isEmpty()) {
+            // 26.1: AbstractContainerScreen 的 Yarn focusedSlot -> 官方 hoveredSlot
+            if ((boolean) setting.get() && button == GLFW.GLFW_MOUSE_BUTTON_LEFT && hoveredSlot != null && !hoveredSlot.getItem().isEmpty()) {
                 FindItemResult empty;
                 if (InvUtils.testInMainHand(ItemStack::isEmpty)) {
                     empty = new FindItemResult(mc.player.getInventory().getSelectedSlot(), mc.player.getMainHandItem().getCount());
@@ -61,15 +62,16 @@ public abstract class PeekScreenMixin extends ShulkerBoxScreen {
                 }
 
                 if (empty.found()) {
-                    ItemStack stack = focusedSlot.getStack();
+                    ItemStack stack = hoveredSlot.getItem();
 
                     // Skull-block items aren't swappable by default,
                     // causing the ghost item to disappear without this.
                     // I don't distinguish the item type here, allowing you to put any ghost-item on your head.
+                    // 26.1: Equippable.Builder 方法全部加了 set 前缀 (swappable -> setSwappable 等)
                     Equippable equippableComponent = Equippable.builder(EquipmentSlot.HEAD)
-                        .swappable(true)
-                        .allowedEntities(EntityType.PLAYER)
-                        .dispensable(true)
+                        .setSwappable(true)
+                        .setAllowedEntities(EntityType.PLAYER)
+                        .setDispensable(true)
                         .build();
                     if (shouldSetComponent(stack))
                         stack.set(DataComponents.EQUIPPABLE, equippableComponent);

@@ -96,7 +96,7 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
         if (loadLoadoutButton != null) loadLoadoutButton.visible = loadouts.isActive();
     }
 
-    @Inject(method = "render", at = @At("TAIL"))
+    @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void mixinRender(CallbackInfo ci) {
         if (loadouts == null) {
             Modules modules = Modules.get();
@@ -115,7 +115,7 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
         }
     }
 
-    @Inject(method = "handledScreenTick", at = @At("HEAD"))
+    @Inject(method = "containerTick", at = @At("HEAD"))
     private void animateButtons(CallbackInfo ci) {
         if (loadouts == null) {
             Modules modules = Modules.get();

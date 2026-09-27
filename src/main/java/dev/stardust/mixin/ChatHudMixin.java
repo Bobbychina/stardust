@@ -17,9 +17,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ChatComponent.class)
 public class ChatHudMixin {
 
-    // See AntiToS.java
+    // 26.1: addMessage 多了 GuiMessageSource 参数，GuiMessageTag 也搬到 ...multiplayer.chat 包
     @ModifyVariable(
-        method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/GuiMessageTag;)V",
+        method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
         at = @At("HEAD"),
         argsOnly = true
     )
@@ -36,8 +36,11 @@ public class ChatHudMixin {
         return message;
     }
 
-    @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;)V", at = @At("HEAD"), cancellable = true)
-    private void maybeCancelAddMessage(Component message, CallbackInfo ci) {
+    // 26.1: 单参 addMessage(Component) 已不存在，改为挂 4 参版本
+    @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V", at = @At("HEAD"), cancellable = true)
+    private void maybeCancelAddMessage(Component message, net.minecraft.network.chat.MessageSignature signature,
+                                       net.minecraft.client.multiplayer.chat.GuiMessageSource source,
+                                       net.minecraft.client.multiplayer.chat.GuiMessageTag tag, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;
         AntiToS antiToS = modules.get(AntiToS.class);

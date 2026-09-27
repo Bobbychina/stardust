@@ -22,8 +22,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  **/
 @Mixin(AnvilScreen.class)
 public abstract class AnvilScreenMixin extends ItemCombinerScreen<AnvilMenu> {
+    // 26.1: AnvilScreen 字段 nameField → name
     @Shadow
-    private EditBox nameField;
+    private EditBox name;
 
     public AnvilScreenMixin(AnvilMenu handler, Inventory playerInventory, Component title, Identifier texture) {
         super(handler, playerInventory, title, texture);
@@ -33,7 +34,7 @@ public abstract class AnvilScreenMixin extends ItemCombinerScreen<AnvilMenu> {
      * See StashBrander.java
      * Helps to minimize packet spam by drastically reducing the amount of RenameItemC2SPackets that are sent.
      * */
-    @Inject(method = "onSlotUpdate", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "slotChanged", at = @At("HEAD"), cancellable = true)
     private void maybeCancelNameFieldUpdate(AbstractContainerMenu handler, int slotId, ItemStack stack, CallbackInfo ci) {
         Modules mods = Modules.get();
         if (mods == null) return;
@@ -41,8 +42,8 @@ public abstract class AnvilScreenMixin extends ItemCombinerScreen<AnvilMenu> {
 
         if (slotId == 0 && sb.isActive()) {
             ci.cancel();
-            this.nameField.setEditable(true);
-            this.setFocused(this.nameField);
+            this.name.setEditable(true);
+            this.setFocused(this.name);
         }
     }
 }

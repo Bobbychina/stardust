@@ -16,7 +16,7 @@ import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
-import net.minecraft.client.input.KeyEvent;
+import meteordevelopment.meteorclient.events.meteor.KeyInputEvent;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
@@ -164,9 +164,9 @@ public class Updraft extends Module {
     }
 
     @EventHandler
-    private void onKey(KeyEvent event) {
+    private void onKey(KeyInputEvent event) {
         if (mc.level == null || mc.player == null) return;
-        if (mc.options.keyJump.matches(event.key, 0)) {
+        if (mc.options.keyJump.matches(event.input)) {
             if (currentState == State.Idle) {
                 if (swapSetting.get()) currentState = State.SwappingTo;
                 else currentState = State.Using;

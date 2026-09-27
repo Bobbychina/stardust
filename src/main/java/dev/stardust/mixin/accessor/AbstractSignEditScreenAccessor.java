@@ -20,6 +20,6 @@ public interface AbstractSignEditScreenAccessor {
     @Accessor("text")
     void setText(SignText text);
 
-    @Accessor("blockEntity")
+    @Accessor("sign")
     SignBlockEntity getBlockEntity();
 }

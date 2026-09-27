@@ -35,7 +35,7 @@ public class CardRenderer {
             CARD_CORNER_RESOLUTION, colors.cardFaceColor
         );
 
-        String rankText = c.rank.asString();
+        String rankText = c.rank.getSerializedName();
         Color suitColor = c.suit.isRed() ? colors.suitRed : colors.suitBlack;
 
         // rank + suit top-left

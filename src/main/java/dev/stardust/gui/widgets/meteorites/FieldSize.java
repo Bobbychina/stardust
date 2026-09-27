@@ -29,7 +29,7 @@ public enum FieldSize implements StringRepresentable {
     }
 
     @Override
-    public String asString() {
+    public String getSerializedName() {
         return switch (this) {
             case Small -> "Small";
             case Medium -> "Medium";

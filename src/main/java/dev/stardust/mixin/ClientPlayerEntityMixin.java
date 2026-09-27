@@ -18,8 +18,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class ClientPlayerEntityMixin {
 
     // See RocketMan.java
-    @Inject(method = "playSoundToPlayer", at = @At("HEAD"), cancellable = true)
-    private void mixinPlaySound(SoundEvent sound, SoundSource category, float volume, float pitch, CallbackInfo ci) {
+    @Inject(method = "playSound", at = @At("HEAD"), cancellable = true)
+    private void mixinPlaySound(SoundEvent sound, float volume, float pitch, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;
         RocketMan rocketMan = modules.get(RocketMan.class);

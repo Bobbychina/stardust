@@ -22,7 +22,7 @@ public abstract class ItemEntityMixin implements IItemEntityMixin {
     @Unique private boolean seeded;
     @Unique private boolean landed;
     @Unique private boolean tumbling;
-    @Unique private final RandomSource rng = RandomSource.createNewThreadLocalInstance();
+    @Unique private final RandomSource rng = RandomSource.createThreadLocalInstance();
 
     @Unique private int ticksAirborne;
     @Unique private float tumbleAngle;
@@ -44,7 +44,7 @@ public abstract class ItemEntityMixin implements IItemEntityMixin {
 
         if (!seeded) {
             seeded = true;
-            long seed = self.getUuid().getLeastSignificantBits() ^ ((long) self.getId() << 32);
+            long seed = self.getUUID().getLeastSignificantBits() ^ ((long) self.getId() << 32);
 
             rng.setSeed(seed);
             restingRotation = rng.nextFloat() * 360f;

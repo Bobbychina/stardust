@@ -33,8 +33,6 @@
     "accessor.MusicTrackerAccessor",
     "BannerBlockEntityRendererMixin",
     "accessor.SourceManagerAccessor",
-    "accessor.BookEditScreenAccessor",
-    "accessor.BookScreenContentsAccessor",
     "ClientPlayerInteractionManagerMixin",
     "AbstractSignBlockEntityRendererMixin",
     "accessor.AbstractSignEditScreenAccessor"

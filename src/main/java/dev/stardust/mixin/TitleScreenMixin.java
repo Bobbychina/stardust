@@ -25,8 +25,9 @@ public abstract class TitleScreenMixin extends Screen {
     @Unique
     private static final ServerData OLD_SERVER = new ServerData("2b2t", "2b2t.org", ServerData.Type.OTHER);
 
+    // 26.1: TitleScreen 的 splash 字段（Yarn splashTextRenderer/splashText -> 官方 splash）
     @Shadow
-    private SplashRenderer splashText;
+    private SplashRenderer splash;
 
     protected TitleScreenMixin(Component title) {
         super(title);
@@ -40,7 +41,8 @@ public abstract class TitleScreenMixin extends Screen {
     @Unique
     private void onClick2b2tButton(Button btn) {
         if (mc == null) mc = Minecraft.getInstance();
-        ConnectScreen.connect(mc.screen, mc,
+        // 26.1: Yarn ConnectScreen.connect -> 官方 ConnectScreen.startConnecting(Screen, Minecraft, ServerAddress, ServerData, boolean, TransferState)
+        ConnectScreen.startConnecting(mc.screen, mc,
             ServerAddress.parseString(OLD_SERVER.ip), OLD_SERVER, true, null
         );
     }
@@ -66,7 +68,7 @@ public abstract class TitleScreenMixin extends Screen {
         ++timer;
         if (timer >= 420 && StardustConfig.rotateSplashTextSetting.get()) {
             timer = 0;
-            splashText = mc.getSplashManager().getSplash();
+            splash = mc.getSplashManager().getSplash();
         }
     }
 }

@@ -26,7 +26,7 @@ import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.gui.widgets.WWidget;
 import meteordevelopment.meteorclient.pathing.PathManagers;
 import meteordevelopment.meteorclient.pathing.BaritoneUtils;
-import net.minecraft.client.input.KeyEvent;
+import meteordevelopment.meteorclient.events.meteor.KeyInputEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.RenderUtils;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
@@ -296,10 +296,10 @@ public class VaultESP extends Module {
     }
 
     @EventHandler
-    private void onKeyPress(KeyEvent event) {
+    private void onKeyPress(KeyInputEvent event) {
         if (goal != null) return;
         if (mc.player == null || mc.level == null) return;
-        if (!auto.get() || event.key != autoKey.get().getValue()) return;
+        if (!auto.get() || event.key() != autoKey.get().getValue()) return;
 
         List<BlockPos> inRange = notified
             .stream()

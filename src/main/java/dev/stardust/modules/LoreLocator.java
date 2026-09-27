@@ -211,7 +211,7 @@ public class LoreLocator extends Module {
         if (illegalFish.get() && stack.is(Items.TROPICAL_FISH_BUCKET)) {
             CustomData nbtComponent = stack.getOrDefault(DataComponents.BUCKET_ENTITY_DATA, CustomData.EMPTY);
             if (!nbtComponent.isEmpty()) {
-                Optional<TropicalFish.Variant> optional = nbtComponent.read(TropicalFish.Variant.CODEC.fieldOf("BucketVariantTag")).result();
+                Optional<TropicalFish.Variant> optional = TropicalFish.Variant.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, nbtComponent.copyTag().getCompoundOrEmpty("BucketVariantTag")).result();
                 if (optional.isPresent()) {
                     TropicalFish.Variant variant = optional.get();
                     String string = "color.minecraft." + variant.baseColor();

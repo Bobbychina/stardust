@@ -7,9 +7,10 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(MusicManager.class)
 public interface MusicTrackerAccessor {
-    @Accessor("timeUntilNextSong")
+    // 26.1: MusicManager 的字段改名为 nextSongDelay / currentMusic
+    @Accessor("nextSongDelay")
     void setTimeUntilNextSong(int time);
 
-    @Accessor("current")
+    @Accessor("currentMusic")
     SoundInstance getCurrent();
 }

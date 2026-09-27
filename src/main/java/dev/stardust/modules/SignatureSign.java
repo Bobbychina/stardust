@@ -645,7 +645,7 @@ public class SignatureSign extends Module {
                 if (file.createNewFile()) {
                     if (mc.player != null) {
                         MsgUtil.sendModuleMsg("Created autosign.txt in your meteor-client folder§a..!", this.name);
-                        Style style = Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, meteorFolder.toFile().getAbsolutePath()));
+                        Style style = Style.EMPTY.withClickEvent(new ClickEvent.OpenFile(meteorFolder.toFile().getAbsolutePath()));
 
                         MsgUtil.sendModuleMsg("Click §2§lhere §r§7to open the folder.", style, this.name);
                     }
@@ -679,7 +679,7 @@ public class SignatureSign extends Module {
                 if (file.createNewFile()) {
                     if (mc.player != null) {
                         MsgUtil.sendModuleMsg("Created storysign.txt in your meteor-client folder§a..!", this.name);
-                        Style style = Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, meteorFolder.toFile().getAbsolutePath()));
+                        Style style = Style.EMPTY.withClickEvent(new ClickEvent.OpenFile(meteorFolder.toFile().getAbsolutePath()));
 
                         MsgUtil.sendModuleMsg("Click §2§lhere §r§7to open the folder.", style, this.name);
                     }
@@ -723,7 +723,7 @@ public class SignatureSign extends Module {
 
                 if (textRenderer.width(storyText.get(i).trim()) > 87) {
                     if (!line.isEmpty()) break;
-                    line.append(textRenderer.trimToWidth(storyText.get(i).trim(), 85));
+                    line.append(textRenderer.plainSubstrByWidth(storyText.get(i).trim(), 85));
 
                     ++storyIndex;
                     ++lastIndexAmount;
@@ -1014,7 +1014,7 @@ public class SignatureSign extends Module {
 
                 if (!signs.isEmpty()) {
                     SignBlockEntity sbe = signs.get(0);
-                    interactSign(sbe, DyeItem.byColor(signColor.get()));
+                    interactSign(sbe, dev.stardust.util.StardustUtil.dyeItem(signColor.get()));
                     return;
                 }
             }

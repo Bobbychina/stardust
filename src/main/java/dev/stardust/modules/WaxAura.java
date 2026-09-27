@@ -325,7 +325,7 @@ public class WaxAura extends Module {
         ESPBlockData esp = espSettings.get();
         for (BlockPos pos : valid) {
             BlockState state = mc.level.getBlockState(pos);
-            VoxelShape shape = state.getOutlineShape(mc.level, pos);
+            VoxelShape shape = state.getShape(mc.level, pos);
 
             double x1 = pos.getX() + shape.min(Direction.Axis.X);
             double y1 = pos.getY() + shape.min(Direction.Axis.Y);

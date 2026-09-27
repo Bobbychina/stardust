@@ -29,7 +29,7 @@ import meteordevelopment.meteorclient.systems.modules.Category;
 public class Stardust extends MeteorAddon {
     public static final Logger LOG = LogUtils.getLogger();
     public static final HudGroup HUD_GROUP = new HudGroup("Stardust");
-    public static final Category CATEGORY = new Category("Stardust", StardustUtil.chooseMenuIcon());
+    public static final Category CATEGORY = new Category("Stardust", StardustUtil::chooseMenuIcon);
 
     private PacketManager packetManager;
     public static TimeUtil TIME;

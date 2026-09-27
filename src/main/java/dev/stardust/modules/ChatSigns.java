@@ -61,6 +61,7 @@ import meteordevelopment.meteorclient.systems.modules.render.blockesp.ESPBlockDa
 
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.WoodType;
+import net.minecraft.network.DisconnectionDetails;
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
@@ -638,15 +639,13 @@ public class ChatSigns extends Module {
             ++fullClusterAmount;
             lastFullClusterPos = sign.getBlockPos();
             Style clickESP = Style.EMPTY.withClickEvent(
-                new ClickEvent(
-                    ClickEvent.Action.RUN_COMMAND,
+                new ClickEvent.RunCommand(
                     "clickESP~chatSigns~"
                         +sign.getBlockPos().asLong()
                 )
             ).withHoverEvent(
-                new HoverEvent(
-                    HoverEvent.Action.SHOW_TEXT,
-                    Component.literal(signsToHighlight.containsKey(sign.getPos()) ? "§4§oDisable §7§oESP for this sign." : "§2§oEnable §7§oESP for this sign.")
+                new HoverEvent.ShowText(
+                    Component.literal(signsToHighlight.containsKey(sign.getBlockPos()) ? "§4§oDisable §7§oESP for this sign." : "§2§oEnable §7§oESP for this sign.")
                 )
             );
             if (signMessages.containsKey(textOnSign) && !sign.getBlockPos().equals(lastFocusedSign)) {
@@ -755,7 +754,7 @@ public class ChatSigns extends Module {
 
             for (int x = startChunkX; x < endChunkX; x++) {
                 for (int z = startChunkZ; z < endChunkZ; z++) {
-                    if (mc.level.isChunkLoaded(x, z)) {
+                    if (mc.level.getChunkSource().hasChunk(x, z)) {
                         LevelChunk chunk = mc.level.getChunk(x, z);
                         List<SignBlockEntity> signs = getNearbySigns(chunk);
 
@@ -931,7 +930,7 @@ public class ChatSigns extends Module {
                 if (state == null || sbe == null) continue;
                 if (!(sbe instanceof SignBlockEntity)) continue;
 
-                VoxelShape shape = state.getOutlineShape(mc.level, p);
+                VoxelShape shape = state.getShape(mc.level, p);
                 double x1 = p.getX() + shape.min(Direction.Axis.X);
                 double y1 = p.getY() + shape.min(Direction.Axis.Y);
                 double z1 = p.getZ() + shape.min(Direction.Axis.Z);
@@ -959,7 +958,7 @@ public class ChatSigns extends Module {
         for (BlockPos pos : inRange) {
             BlockState state = mc.level.getBlockState(pos);
             if (!(state.getBlock() instanceof SignBlock) && !(state.getBlock() instanceof WallSignBlock)) continue;
-            VoxelShape shape = state.getOutlineShape(mc.level, pos);
+            VoxelShape shape = state.getShape(mc.level, pos);
 
             double x1 = pos.getX() + shape.min(Direction.Axis.X);
             double y1 = pos.getY() + shape.min(Direction.Axis.Y);

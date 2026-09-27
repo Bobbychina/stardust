@@ -234,13 +234,13 @@ public class AutoMason extends Module {
                     }
                 } else if (output.isEmpty()) {
                     SelectableRecipe.SingleInputSet<StonecutterRecipe> available = mc.level
-                        .recipeAccess().stonecutterRecipes().filter(input);
+                        .recipeAccess().stonecutterRecipes().selectByInput(input);
                     ContextMap contextParameterMap = SlotDisplayContext.fromLevel(mc.level);
 
                     boolean found = false;
                     for (int n = 0; n < available.entries().size(); n++) {
-                        SelectableRecipe.EntryGroup<StonecutterRecipe> entry = available.entries().get(n);
-                        ItemStack recipeStack = entry.recipe().optionDisplay().getFirst(contextParameterMap);
+                        SelectableRecipe.SingleInputEntry<StonecutterRecipe> entry = available.entries().get(n);
+                        ItemStack recipeStack = entry.recipe().optionDisplay().resolveForFirstStack(contextParameterMap);
 
                         if (recipeStack.isEmpty()) continue;
                         if (itemList.get().contains(recipeStack.getItem())) {
@@ -281,6 +281,18 @@ public class AutoMason extends Module {
         if (disableOnDone.get()) toggle();
     }
 
+    /** 26.1: ServerboundContainerClickPacket 改为 (int,int,short,byte,ContainerInput,Int2ObjectMap<HashedStack>,HashedStack)，
+     *  changedSlots / carried 都要 HashedStack；哈希生成器取自 ClientPacketListener.decoratedHashOpsGenenerator()。 */
+    private ServerboundContainerClickPacket buildClickPacket(int containerId, int stateId, int slot, Int2ObjectMap<ItemStack> changedSlots) {
+        net.minecraft.network.HashedPatchMap.HashGenerator hasher = mc.getConnection().decoratedHashOpsGenenerator();
+        Int2ObjectMap<net.minecraft.network.HashedStack> hashed = new Int2ObjectOpenHashMap<>();
+        changedSlots.forEach((k, v) -> hashed.put(k, net.minecraft.network.HashedStack.create(v, hasher)));
+        return new ServerboundContainerClickPacket(
+            containerId, stateId, (short) slot, (byte) 0,
+            ContainerInput.QUICK_MOVE, hashed, net.minecraft.network.HashedStack.create(ItemStack.EMPTY, hasher)
+        );
+    }
+
     private Packet<?> generatePacket(StonecutterMenu handler) {
         if (mc.player == null || mc.level == null) return null;
         Int2ObjectMap<ItemStack> changedSlots = new Int2ObjectOpenHashMap<>();
@@ -299,19 +311,16 @@ public class AutoMason extends Module {
 
             targetStack = null;
             outputStack = null;
-            return new ServerboundContainerClickPacket(
-                handler.containerId, handler.getStateId(), 1, 0,
-                ContainerInput.QUICK_MOVE, ItemStack.EMPTY, changedSlots
-            );
+            return buildClickPacket(handler.containerId, handler.getStateId(), 1, changedSlots);
         } else if (targetStack != null) {
             // pick recipe
             SelectableRecipe.SingleInputSet<StonecutterRecipe> available = mc.level
-                .recipeAccess().stonecutterRecipes().filter(targetStack);
+                .recipeAccess().stonecutterRecipes().selectByInput(targetStack);
             ContextMap contextParameterMap = SlotDisplayContext.fromLevel(mc.level);
 
             for (int n = 0; n < available.entries().size(); n++) {
                 var entry = available.entries().get(n);
-                ItemStack recipeStack = entry.recipe().optionDisplay().getFirst(contextParameterMap);
+                ItemStack recipeStack = entry.recipe().optionDisplay().resolveForFirstStack(contextParameterMap);
 
                 if (recipeStack.isEmpty()) continue;
                 if (itemList.get().contains(recipeStack.getItem())) {
@@ -333,10 +342,7 @@ public class AutoMason extends Module {
                 changedSlots.put(0, stack);
                 changedSlots.put(n, ItemStack.EMPTY);
 
-                return new ServerboundContainerClickPacket(
-                    handler.containerId, handler.getStateId(), n, 0,
-                    ContainerInput.QUICK_MOVE, ItemStack.EMPTY, changedSlots
-                );
+                return buildClickPacket(handler.containerId, handler.getStateId(), n, changedSlots);
             }
         }
 

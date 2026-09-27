@@ -25,24 +25,26 @@ import net.minecraft.client.gui.screens.inventory.AbstractSignEditScreen;
 @Mixin(AbstractSignEditScreen.class)
 public abstract class AbstractSignEditScreenMixin extends Screen {
 
+    // 26.1 官方名核对：currentRow -> line, blockEntity -> sign, selectionManager -> signField,
+    //                 setCurrentRowMessage(String) -> private setMessage(String), close() -> onClose()
     @Shadow
-    private int currentRow;
+    private int line;
     @Shadow
-    public abstract void close();
+    public abstract void onClose();
     @Shadow
     @Final
-    protected SignBlockEntity blockEntity;
+    protected SignBlockEntity sign;
     @Shadow
-    private TextFieldHelper selectionManager;
+    private TextFieldHelper signField;
     @Shadow
-    protected abstract void setCurrentRowMessage(String message);
+    private void setMessage(String message) { throw new AssertionError(); }
 
     protected AbstractSignEditScreenMixin(Component title) { super(title); }
 
     // See SignatureSign.java && SignHistorian.java
     @Inject(method = "init", at = @At("TAIL"))
     public void stardustMixinInit(CallbackInfo ci) {
-        if (this.client == null) return;
+        if (this.minecraft == null) return;
         Modules modules = Modules.get();
 
         if (modules == null) return;
@@ -51,9 +53,9 @@ public abstract class AbstractSignEditScreenMixin extends Screen {
         if (!signatureSign.isActive() && !signHistorian.isActive()) return;
 
         if (signatureSign.getAutoConfirm()) return;
-        SignText restoration = signHistorian.getRestoration(this.blockEntity);
+        SignText restoration = signHistorian.getRestoration(this.sign);
         if ((!signHistorian.isActive() || restoration == null) && signatureSign.isActive()) {
-            SignText signature = signatureSign.getSignature(this.blockEntity);
+            SignText signature = signatureSign.getSignature(this.sign);
             List<String> msgs = Arrays.stream(signature.getMessages(false)).map(Component::getString).toList();
             String[] messages = new String[msgs.size()];
             messages = msgs.toArray(messages);
@@ -63,9 +65,10 @@ public abstract class AbstractSignEditScreenMixin extends Screen {
             if ((signatureSign.isActive() && signatureSign.signFreedom.get())) {
                 // bypass client-side length limits for sign text by using a truthy predicate in the TextFieldHelper
                 AbstractSignEditScreenAccessor accessor = ((AbstractSignEditScreenAccessor) this);
-                this.selectionManager = new TextFieldHelper(
-                    () -> accessor.getMessages()[this.currentRow], this::setCurrentRowMessage,
-                    TextFieldHelper.makeClipboardGetter(this.client), TextFieldHelper.makeClipboardSetter(this.client),
+                this.signField = new TextFieldHelper(
+                    () -> accessor.getMessages()[this.line], this::setMessage,
+                    // 26.1: TextFieldHelper.makeClipboardGetter/Setter -> createClipboardGetter/Setter
+                    TextFieldHelper.createClipboardGetter(this.minecraft), TextFieldHelper.createClipboardSetter(this.minecraft),
                     string -> true
                 );
             }

@@ -23,7 +23,6 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.utils.Utils;
-import dev.stardust.mixin.accessor.GameProfileAccessor;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import dev.stardust.mixin.accessor.PlayerListS2CPacketAccessor;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
@@ -205,21 +204,23 @@ public class AntiToS extends Module {
                 if (entry.id() == 2) { // Optional text component used for the entity's custom name
                     @SuppressWarnings("unchecked")
                     SynchedEntityData.DataItem<Optional<Component>> e = new SynchedEntityData.DataItem<>(
-                        (EntityDataAccessor<Optional<Component>>) entry.handler().create(entry.id()),
+                        // 26.1: DataValue.handler() → serializer()，EntityDataSerializer.createAccessor(int) 取代 handler().create(int)
+                        (EntityDataAccessor<Optional<Component>>) entry.serializer().createAccessor(entry.id()),
                         (Optional<Component>) entry.value()
                     );
 
-                    if (e.get().isPresent()) {
-                        Component data = e.get().get();
+                    if (e.getValue().isPresent()) {
+                        Component data = e.getValue().get();
                         if (containsBlacklistedText(data.getString())) {
-                            e.set(
+                            e.setValue(
                                 Optional.of(
                                     Component.literal(censorText(data.getString())).setStyle(data.getStyle())
                                 )
                             );
 
                             modified = true;
-                            entries.add(e.toSerialized());
+                            // 26.1: DataItem.toSerialized() → value()（返回 DataValue<T>）
+                            entries.add(e.value());
                         } else entries.add(entry);
                     } else entries.add(entry);
                 } else {
@@ -234,8 +235,10 @@ public class AntiToS extends Module {
                 if (entry.profile() == null) continue;
 
                 GameProfile profile = entry.profile();
-                if (containsBlacklistedText(profile.getName())) {
-                    ((GameProfileAccessor) profile).setName(censorText(profile.getName()));
+                if (containsBlacklistedText(profile.name())) {
+                    // 26.1: GameProfile 变成 record（final 类），不能再强转 GameProfileAccessor 改字段，改为构造新 record 替换
+                    // TODO(26.1): 替换依赖 PlayerListS2CPacketAccessor#setProfile 对 record 字段的 @Mutable 注入是否生效，需运行期实测
+                    profile = new GameProfile(profile.id(), censorText(profile.name()), profile.properties());
                     ((PlayerListS2CPacketAccessor)(Object) entry).setProfile(profile);
                 }
             }

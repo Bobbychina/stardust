@@ -142,7 +142,7 @@ public class TreasureESP extends Module {
 
         for (int x = startChunkX; x < endChunkX; x++) {
             for (int z = startChunkZ; z < endChunkZ; z++) {
-                if (mc.level.isChunkLoaded(x,z)) {
+                if (mc.level.getChunkSource().hasChunk(x,z)) {
                     LevelChunk chunk = mc.level.getChunk(x, z);
                     Map<BlockPos, BlockEntity> blockEntities = chunk.getBlockEntities();
 

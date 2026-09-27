@@ -58,7 +58,7 @@ public class ConwayHud extends HudElement {
         }
 
         @Override
-        public String asString() {
+        public String getSerializedName() {
             return switch (this) {
                 case Custom -> "Custom";
                 case Cyclic -> "Cyclic";
@@ -80,7 +80,7 @@ public class ConwayHud extends HudElement {
         new EnumSetting.Builder<Ruleset>()
             .name("simulation-rules")
             .defaultValue(Ruleset.Standard)
-            .description(Ruleset.Standard.asString())
+            .description(Ruleset.Standard.getSerializedName())
             .onChanged(it -> {
                 switch (it) {
                     case Cyclic -> this.seedDensity.set(0.69);
@@ -692,7 +692,7 @@ public class ConwayHud extends HudElement {
     }
 
     private void alterOwnDescription(Ruleset set) {
-        ((SettingAccessor) rules).setDescription(set.asString());
+        ((SettingAccessor) rules).setDescription(set.getSerializedName());
     }
 
     public record Rules(Ruleset rules, Set<Integer> birthSet, Set<Integer> survivalSet, boolean randomize, boolean cyclic) {

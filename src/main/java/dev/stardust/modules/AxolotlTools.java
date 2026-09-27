@@ -321,7 +321,8 @@ public class AxolotlTools extends Module {
             Rotations.rotate(
                 Rotations.getYaw(entity),
                 Rotations.getPitch(entity, Target.Body), rotPriority,
-                () -> result.set(mc.gameMode.interact(mc.player, entity, InteractionHand.MAIN_HAND))
+                // 26.1: MultiPlayerGameMode.interact 多了 EntityHitResult 参数
+                () -> result.set(mc.gameMode.interact(mc.player, entity, new EntityHitResult(entity), InteractionHand.MAIN_HAND))
             );
             ++rotPriority;
             return result.get() == InteractionResult.SUCCESS || result.get() == InteractionResult.CONSUME;
@@ -358,7 +359,8 @@ public class AxolotlTools extends Module {
                 return false;
             }
         }
-        InteractionResult result = mc.gameMode.interact(mc.player, entity, InteractionHand.MAIN_HAND);
+        // 26.1: MultiPlayerGameMode.interact 多了 EntityHitResult 参数
+        InteractionResult result = mc.gameMode.interact(mc.player, entity, new EntityHitResult(entity), InteractionHand.MAIN_HAND);
 
         return result == InteractionResult.SUCCESS || result == InteractionResult.CONSUME;
     }

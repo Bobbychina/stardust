@@ -1,10 +1,13 @@
 accessWidener v2 official
 
-accessible class net/minecraft/client/gui/widget/EntryListWidget$Entry
-accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList JOIN_SPRITE Lnet/minecraft/resources/ResourceLocation;
-accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList MOVE_UP_SPRITE Lnet/minecraft/resources/ResourceLocation;
-accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList MOVE_DOWN_SPRITE Lnet/minecraft/resources/ResourceLocation;
-accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList JOIN_HIGHLIGHTED_SPRITE Lnet/minecraft/resources/ResourceLocation;
-accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList MOVE_UP_HIGHLIGHTED_SPRITE Lnet/minecraft/resources/ResourceLocation;
-accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList MOVE_DOWN_HIGHLIGHTED_SPRITE Lnet/minecraft/resources/ResourceLocation;
+# 26.1：EntryListWidget → AbstractSelectionList（Yarn 名 → 官方名）
+accessible class net/minecraft/client/gui/components/AbstractSelectionList$Entry
+# 26.1：ResourceLocation → Identifier（描述符必须跟着改，否则 validateAccessWidener 失败）
+accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList JOIN_SPRITE Lnet/minecraft/resources/Identifier;
+accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList MOVE_UP_SPRITE Lnet/minecraft/resources/Identifier;
+accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList MOVE_DOWN_SPRITE Lnet/minecraft/resources/Identifier;
+accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList JOIN_HIGHLIGHTED_SPRITE Lnet/minecraft/resources/Identifier;
+accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList MOVE_UP_HIGHLIGHTED_SPRITE Lnet/minecraft/resources/Identifier;
+accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList MOVE_DOWN_HIGHLIGHTED_SPRITE Lnet/minecraft/resources/Identifier;
 accessible field net/minecraft/client/gui/screens/multiplayer/JoinMultiplayerScreen serverSelectionList Lnet/minecraft/client/gui/screens/multiplayer/ServerSelectionList;
+

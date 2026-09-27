@@ -27,11 +27,12 @@ public abstract class ItemPhysicsMixin {
         method = "onRenderItemEntity",
         at = @At(
             value = "INVOKE",
-            target = "Lcom/mojang/blaze3d/vertex/PoseStack;multiply(Lorg/joml/Quaternionf;)V",
+            // 26.1: PoseStack#multiply(Quaternionf) -> mulPose(Quaternionfc)
+            target = "Lcom/mojang/blaze3d/vertex/PoseStack;mulPose(Lorg/joml/Quaternionfc;)V",
             ordinal = 1,
             shift = At.Shift.AFTER
         ),
-        // remap must be true to properly target an invocation of a remapped class/method like PoseStack#multiply (I think)
+        // remap must be true to properly target an invocation of a remapped class/method like PoseStack#mulPose (I think)
         remap = true
     )
     private void addItemTumble(RenderItemEntityEvent event, CallbackInfo ci) {
@@ -41,6 +42,6 @@ public abstract class ItemPhysicsMixin {
         if (!(entity instanceof IItemEntityMixin itemTumble)) return;
 
         float tickDelta = event.tickDelta;
-        event.matrixStack.multiply(itemTumble.stardust$getRenderQuaternion(tickDelta));
+        event.matrixStack.mulPose(itemTumble.stardust$getRenderQuaternion(tickDelta));
     }
 }

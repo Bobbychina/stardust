@@ -54,9 +54,9 @@ public class PacketManager {
         if (mc.player == null) return;
         if (!StardustConfig.antiInventoryPacketKick.get()) return;
         if (!(event.packet instanceof ServerboundContainerClickPacket packet)) return;
-        if (!packet.getClickType().equals(ContainerInput.QUICK_MOVE)) return;
+        if (!packet.containerInput().equals(ContainerInput.QUICK_MOVE)) return;
 
-        int origin = packet.getSlotNum();
+        int origin = packet.slotNum();
         AbstractContainerMenu handler = mc.player.containerMenu;
         if (origin < 0 || origin >= handler.slots.size()) return;
         ItemStack toMove = handler.getSlot(origin).getItem();

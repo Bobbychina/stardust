@@ -1,6 +1,5 @@
 package dev.stardust.mixin.xaero;
 
-import xaero.common.HudMod;
 import xaero.common.misc.Misc;
 import dev.stardust.util.LogUtil;
 import xaero.common.effect.Effects;
@@ -11,6 +10,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xaero.hud.minimap.module.MinimapSession;
+import xaero.hud.minimap.render.MinimapPipRenderState;
 import dev.stardust.gui.screens.SolitaireScreen;
 import org.spongepowered.asm.mixin.injection.At;
 import xaero.hud.minimap.module.MinimapRenderer;
@@ -73,10 +73,19 @@ public class MinimapRendererMixin {
         if (force) {
             ci.cancel();
             MinimapRendererHelper.restoreDefaultShaderBlendState();
-            session.getProcessor().onRender(
-                guiGraphics, c.x, c.y,c.screenWidth, c.screenHeight, c.screenScale,
-                session.getConfiguredWidth(), c.w, partialTicks,
-                HudMod.INSTANCE.getHudRenderer().getCustomVertexConsumers()
+            // 26.1: 旧 MinimapProcessor#onRender 新签名末位要求 xaerolib 的 XaeroBufferProvider
+            //       （xaero.lib.* 不在编译类路径，无法具名传参），改用 Xaero 自己在
+            //       MinimapRenderer#render 尾部调用的直绘路径 renderOutsidePip(...)，参数语义一致。
+            // TODO(26.1): 若直绘路径漏画 pip 贴图/雷达层，需把 onRender 用反射或补 xaerolib 编译依赖重接。
+            MinimapPipRenderState renderState = session.getProcessor().getRenderState();
+            // renderState 在 Xaero 自己的 render() 里由 MinimapPipRenderState#update 填充（本帧尚未执行），
+            // 取上一帧的值即可；未初始化时字段为 0，退化成 1.0 的等比缩放以免画出 0 尺寸地图。
+            float minimapScale = renderState != null && renderState.getMinimapScale() > 0f
+                ? renderState.getMinimapScale() : 1.0f;
+            session.getProcessor().getRenderer().renderOutsidePip(
+                session, c.x, c.y, c.screenWidth, c.screenHeight, c.screenScale,
+                minimapScale, session.getConfiguredWidth(), partialTicks,
+                guiGraphics
             );
             MinimapRendererHelper.restoreDefaultShaderBlendState();
         }

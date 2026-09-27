@@ -2,6 +2,8 @@ package dev.stardust.mixin;
 
 import java.util.Map;
 import net.minecraft.network.chat.Component;
+import net.minecraft.client.sounds.ChannelAccess;
+import net.minecraft.client.sounds.SoundEngine;
 import net.minecraft.client.resources.sounds.*;
 import org.spongepowered.asm.mixin.*;
 import dev.stardust.modules.MusicTweaks;
@@ -17,9 +19,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  **/
 @Mixin(SoundEngine.class)
 public class SoundSystemMixin {
+    // 26.1: Yarn 的 SoundSystem.sources 改名 instanceToChannel，元素类型是 ChannelAccess.ChannelHandle
     @Shadow
     @Final
-    private Map<SoundInstance, Channel.SourceManager> sources;
+    private Map<SoundInstance, ChannelAccess.ChannelHandle> instanceToChannel;
 
     @Unique
     @Mutable
@@ -31,7 +34,7 @@ public class SoundSystemMixin {
 
 
     // See MusicTweaks.java
-    @Inject(method = "tick()V", at = @At("TAIL"))
+    @Inject(method = "tick(Z)V", at = @At("TAIL"))
     private void mixinTick(CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null ) return;
@@ -39,29 +42,29 @@ public class SoundSystemMixin {
 
         boolean playing = false;
         String songID = null;
-        for (SoundInstance instance : sources.keySet()) {
+        for (SoundInstance instance : instanceToChannel.keySet()) {
             Sound sound = instance.getSound();
             if (sound == null) continue;
 
-            String location = sound.getIdentifier().toString();
+            String location = sound.getLocation().toString();
             if (!location.startsWith("minecraft:sounds/music/") && !sound.toString().contains("minecraft:records/")) continue;
-            Channel.SourceManager sourceManager = this.sources.get(instance);
+            ChannelAccess.ChannelHandle sourceManager = this.instanceToChannel.get(instance);
             songID = location.substring(location.lastIndexOf('/') + 1);
 
             if (sourceManager == null) continue;
-            Channel source = ((SourceManagerAccessor) sourceManager).getSource();
+            com.mojang.blaze3d.audio.Channel source = ((SourceManagerAccessor) sourceManager).getSource();
             if (source == null) continue;
 
             playing = true;
             tweaks.setCurrentSong(sound.toString());
             if (tweaks.isActive() && !tweaks.randomPitch()) {
                 this.dirtyPitch = true;
-                source.setXRot(1.0f + tweaks.getPitchAdjustment());
+                source.setPitch(1.0f + tweaks.getPitchAdjustment());
             } else if (tweaks.isActive() && tweaks.randomPitch() && tweaks.trippyPitch()) {
                 this.dirtyPitch = true;
-                source.setXRot(tweaks.getNextPitchStep(instance.getXRot())); // !!
+                source.setPitch(tweaks.getNextPitchStep(instance.getPitch())); // !!
             } else if (!tweaks.isActive() && this.dirtyPitch) {
-                source.setXRot(1f);
+                source.setPitch(1f);
                 this.dirtyPitch = false;
             }
             if (tweaks.isActive()) {

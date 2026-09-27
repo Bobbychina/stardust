@@ -23,8 +23,10 @@ public class TextUtil {
     }
 
     private static void collectStyledChars(Component original, Style inherited, List<StyledChar> out) {
-        Style style = original.getStyle().withParent(inherited);
-        String content = original.getContent().visit(Optional::of).orElse("");
+        // 26.1: Style.withParent() 已删除，改用 applyTo()——语义相同（自身属性优先，参数只补空缺，已用 javap -c 核对字节码）
+        Style style = original.getStyle().applyTo(inherited);
+        // 26.1: Component.getContent() → getContents()，visit(ContentConsumer) 签名不变
+        String content = original.getContents().visit(Optional::of).orElse("");
 
         for (char c : content.toCharArray()) {
             out.add(new StyledChar(c, style));

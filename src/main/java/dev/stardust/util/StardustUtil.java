@@ -28,7 +28,7 @@ import net.minecraft.util.Crypt;
 import net.minecraft.server.level.ClientInformation;
 import net.minecraft.network.protocol.common.ServerboundClientInformationPacket;
 import meteordevelopment.meteorclient.systems.modules.misc.AutoReconnect;
-import meteordevelopment.meteorclient.mixin.ClientPlayNetworkHandlerAccessor;
+import meteordevelopment.meteorclient.mixin.ClientPacketListenerAccessor;
 
 /**
  * @author Tas [@0xTas] <root@0xTas.dev>
@@ -63,6 +63,12 @@ public class StardustUtil {
                 case Purples -> Reds;
             };
         }
+    }
+
+    /** 26.1 删除了 DyeItem.byColor(DyeColor)：改为按 <color>_dye 注册名查物品表。 */
+    public static net.minecraft.world.item.Item dyeItem(net.minecraft.world.item.DyeColor color) {
+        return net.minecraft.core.registries.BuiltInRegistries.ITEM.getValue(
+            net.minecraft.resources.Identifier.withDefaultNamespace(color.getName() + "_dye"));
     }
 
     public enum TextColor {
@@ -201,7 +207,7 @@ public class StardustUtil {
         final String cytoToxicTCellHeadTexture = "eyJ0aW1lc3RhbXAiOjE0MDY0MTc0NTE1MDgsInByb2ZpbGVJZCI6ImE0YTVlYmM0OWY0ZTQ3OTVhMjUzN2I4YjA1M2ZiMTdmIiwicHJvZmlsZU5hbWUiOiJDeXRvdG94aWNUY2VsbCIsImlzUHVibGljIjp0cnVlLCJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNTlkMWU2YzRmNjFkZmNmZGE2NDE3MjJmNjU3NzJiMTI3YmI0NDFkMGViMjU4YTM2Y2MxOTEzYmU3NTkyNGIxIn19fQ==";
 
         // Get textures for the current player's head item
-        Optional<Property> currentPlayerProfileProperties = mc.getGameProfile().getProperties().get("textures").stream().findFirst();
+        Optional<Property> currentPlayerProfileProperties = mc.getGameProfile().properties().get("textures").stream().findFirst();
 
         String currentPlayerHeadTexture;
         if (currentPlayerProfileProperties.isPresent()) {
@@ -217,16 +223,17 @@ public class StardustUtil {
 
         ItemStack playerHead = new ItemStack(Items.PLAYER_HEAD);
         GameProfile profile = new GameProfile(UUID.randomUUID(), "Stardust");
-        ResolvableProfile profileComponent = new ResolvableProfile(profile);
 
         // Apply a player head texture to the ItemStack
-        profileComponent.properties().put(
+        // 26.1: ResolvableProfile 变为抽象类（不能直接 new、也没有 properties()），纹理先写进 GameProfile 的 PropertyMap 再包装
+        profile.properties().put(
             "textures",
             new Property(
                 "textures", // Select a random player head texture from the playerHeadTextures array.
                 playerHeadTextures[ThreadLocalRandom.current().nextInt(playerHeadTextures.length)],""
             )
         );
+        ResolvableProfile profileComponent = ResolvableProfile.createResolved(profile);
         playerHead.set(DataComponents.PROFILE, profileComponent);
 
         ItemStack enchantedPick = new ItemStack(
@@ -279,7 +286,7 @@ public class StardustUtil {
                 if (file.createNewFile()) {
                     if (mc.player != null) {
                         MsgUtil.sendMsg("Created " + file.getName() + " in your meteor-client folder.");
-                        Style style = Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, file.getAbsolutePath()));
+                        Style style = Style.EMPTY.withClickEvent(new ClickEvent.OpenFile(file.getAbsolutePath()));
 
                         MsgUtil.sendMsg("Click §2§lhere §r§7to open the file.", style);
                     }
@@ -331,12 +338,12 @@ public class StardustUtil {
             case Chat -> illegalPacket = new ServerboundChatPacket(
                 "§",
                 Instant.now(),
-                Crypt.SaltSupplier.nextLong(),
+                ThreadLocalRandom.current().nextLong(),
                 null,
-                ((ClientPlayNetworkHandlerAccessor) mc.getConnection()).getLastSeenMessagesCollector().collect().update()
+                new net.minecraft.network.chat.LastSeenMessages.Update(0, new java.util.BitSet(), (byte) 0)
             );
-            case Interact -> illegalPacket = PlayerInteractEntityC2SPacket.interact(mc.player, false, InteractionHand.MAIN_HAND);
-            case Movement -> illegalPacket = new PlayerMoveC2SPacket.PositionAndOnGround(Double.NaN, 69, Double.NaN, false, false);
+            case Interact -> illegalPacket = new ServerboundInteractPacket(mc.player.getId(), InteractionHand.MAIN_HAND, net.minecraft.world.phys.Vec3.ZERO, false);
+            case Movement -> illegalPacket = new ServerboundMovePlayerPacket.Pos(Double.NaN, 69, Double.NaN, false, false);
             case SequenceBreak -> illegalPacket = new ServerboundUseItemPacket(InteractionHand.MAIN_HAND, -420, 13.37F, 69.69F);
             case InvalidSettings -> illegalPacket = new ServerboundClientInformationPacket(new ClientInformation(
                 mc.options.languageCode, -69,

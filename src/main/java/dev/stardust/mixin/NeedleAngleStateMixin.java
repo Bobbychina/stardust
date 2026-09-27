@@ -26,16 +26,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class NeedleAngleStateMixin {
 
     @Shadow
-    protected abstract float getAngle(ItemStack stack, ClientLevel world, int seed, Entity user);
+    protected abstract float calculate(ItemStack stack, ClientLevel world, int seed, net.minecraft.world.entity.ItemOwner user);
 
-    @Inject(method = "getValue", at = @At("HEAD"), cancellable = true)
-    private void getCustomClockAngle(ItemStack stack, ClientLevel world, LivingEntity user, int seed, CallbackInfoReturnable<Float> cir) {
+    @Inject(method = "get", at = @At("HEAD"), cancellable = true)
+    private void getCustomClockAngle(ItemStack stack, ClientLevel world, net.minecraft.world.entity.ItemOwner user, int seed, CallbackInfoReturnable<Float> cir) {
         if (Stardust.TIME == null) return;
         if (!stack.is(Items.CLOCK)) return;
         if (!StardustConfig.serverListWorldTimeClockSetting.get()) return;
 
         cir.cancel();
-        Entity entity = (user != null ? user : stack.getEntityRepresentation());
+        // 26.1: get(...) 的第 3 参是 ItemOwner（旧 Yarn 是 LivingEntity）；ItemStack#getEntityRepresentation() 已删除，
+        // 时钟物品本就没有实体表现，所以只判断 user 本身是不是实体
+        Entity entity = (user instanceof Entity owner) ? owner : null;
 
         if (!(entity instanceof LivingEntity)) {
             TimeUtil.TimeData timeData = Stardust.TIME.getTime();
@@ -55,7 +57,7 @@ public abstract class NeedleAngleStateMixin {
                     cir.setReturnValue(0f);
                 } else cir.setReturnValue(getCustomClockAngle(timeData.lastUpdated(), timeData.worldTime()));
             } else {
-                cir.setReturnValue(this.getAngle(stack, world, seed, entity));
+                cir.setReturnValue(this.calculate(stack, world, seed, user));
             }
         }
     }

@@ -32,6 +32,7 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.RenderUtils;
 import net.minecraft.world.item.component.WrittenBookContent;
 import net.minecraft.world.item.component.WritableBookContent;
+import net.minecraft.server.network.Filterable;
 import net.minecraft.network.protocol.game.ServerboundEditBookPacket;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
@@ -227,7 +228,8 @@ public class PagePirate extends Module {
         FindItemResult result = InvUtils.find(stack -> {
             if (stack.getItem() instanceof WritableBookItem) {
                 WritableBookContent data = stack.get(DataComponents.WRITABLE_BOOK_CONTENT);
-                List<String> pageList = data.pages().stream().map(RawFilteredPair::raw).toList();
+                // 26.1: RawFilteredPair 改名为 net.minecraft.server.network.Filterable（raw() 不变）
+                List<String> pageList = data.pages().stream().map(Filterable::raw).toList();
                 return overwrite.get()
                     || pageList.stream()
                         .map(this::formatPageText)
@@ -246,7 +248,8 @@ public class PagePirate extends Module {
                     InvUtils.move().from(result.slot()).to(emptySlot.slot());
                     InvUtils.swap(emptySlot.slot(), true);
                 } else {
-                    FindItemResult nonCriticalSlot = InvUtils.find(stack -> !(stack.getItem() instanceof DiggerItem) && !(stack.is(ItemTags.WEAPON_ENCHANTABLE)) && !stack.has(DataComponents.FOOD));
+                    // 26.1: DiggerItem 类已从物品体系删除，工具/挖掘类物品改由 TOOL 数据组件标识
+                    FindItemResult nonCriticalSlot = InvUtils.find(stack -> !stack.has(DataComponents.TOOL) && !(stack.is(ItemTags.WEAPON_ENCHANTABLE)) && !stack.has(DataComponents.FOOD));
                     if (nonCriticalSlot.found() && nonCriticalSlot.slot() < 9) {
                         InvUtils.move().from(result.slot()).to(nonCriticalSlot.slot());
                         InvUtils.swap(nonCriticalSlot.slot(), true);
@@ -271,7 +274,8 @@ public class PagePirate extends Module {
 
             String author = metadata.author();
             String title = metadata.title().raw();
-            List<String> pages = metadata.getPages(false).stream().map(Text::getString).toList();
+            // 26.1: Text（Yarn 名）即 net.minecraft.network.chat.Component
+            List<String> pages = metadata.getPages(false).stream().map(Component::getString).toList();
 
             String pageText = pages.stream()
                 .map(this::formatPageText)

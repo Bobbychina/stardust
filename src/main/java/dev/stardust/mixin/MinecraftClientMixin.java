@@ -8,7 +8,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import net.minecraft.util.Mth;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.sounds.MusicInfo;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import net.minecraft.client.player.LocalPlayer;
@@ -34,7 +33,7 @@ public class MinecraftClientMixin {
     }
 
     // See RocketMan.java
-    @Inject(method = "render", at = @At("HEAD"))
+    @Inject(method = "runTick", at = @At("HEAD"))
     private void mixinRender(CallbackInfo ci) {
         long currentTime = System.nanoTime();
         float deltaTime = (currentTime - lastFrameTime) / 10000000f;
@@ -113,8 +112,9 @@ public class MinecraftClientMixin {
     }
 
     // See MusicTweaks.java
-    @Inject(method = "getMusicInstance", at = @At("HEAD"), cancellable = true)
-    public void mixinGetMusicType(CallbackInfoReturnable<MusicInfo> cir) {
+    // 26.1: MusicInfo 已删除，Minecraft.getMusicInstance() 变成 getSituationalMusic() 并直接返回 Music
+    @Inject(method = "getSituationalMusic", at = @At("HEAD"), cancellable = true)
+    public void mixinGetMusicType(CallbackInfoReturnable<Music> cir) {
         Modules modules = Modules.get();
         if (modules == null ) return;
         MusicTweaks tweaks = modules.get(MusicTweaks.class);
@@ -123,7 +123,7 @@ public class MinecraftClientMixin {
         Music type = tweaks.getType();
 
         if (type != null) {
-            cir.setReturnValue(new MusicInfo(type));
+            cir.setReturnValue(type);
         }
     }
 }

@@ -21,15 +21,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Gui.class)
 public class InGameHudMixin {
     @Shadow
-    private ItemStack currentStack;
+    private ItemStack lastToolHighlight;
 
     // See AntiToS.java
     @Inject(
-        method = "renderHeldItemTooltip",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;contains(Lnet/minecraft/core/component/DataComponentType;)Z")
+        method = "extractSelectedItemName",
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;has(Lnet/minecraft/core/component/DataComponentType;)Z")
     )
     private void censorItemTooltip(GuiGraphicsExtractor context, CallbackInfo ci, @Local LocalRef<MutableComponent> itemName) {
-        if (this.currentStack.isEmpty()) return;
+        if (this.lastToolHighlight.isEmpty()) return;
 
         Modules modules = Modules.get();
         if (modules == null) return;
@@ -37,7 +37,7 @@ public class InGameHudMixin {
         if (!antiToS.isActive()) return;
 
         if (antiToS.containsBlacklistedText(itemName.get().getString())) {
-            itemName.set(Component.empty().append(antiToS.censorText(itemName.get().getString())).withStyle(this.currentStack.getRarity().color()));
+            itemName.set(Component.empty().append(antiToS.censorText(itemName.get().getString())).withStyle(this.lastToolHighlight.getRarity().color()));
         }
     }
 }

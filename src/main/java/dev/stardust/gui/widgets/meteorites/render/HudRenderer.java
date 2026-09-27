@@ -35,7 +35,8 @@ public class HudRenderer {
         if (widget.CHEAT_MODE) {
             String cheatText = "CHEAT";
             Color cheatShadow = new Color(69, 0, 0);
-            double cheatWidth = theme.font().getWidth(cheatText);
+            // 26.1: GuiTheme#font -> GuiTheme#textRenderer
+            double cheatWidth = theme.textRenderer().getWidth(cheatText);
             renderer.text("CHEAT", bx + (int)width - cheatWidth - 6 - 1, by + 6, cheatShadow, false);
             renderer.text("CHEAT", bx + (int)width - cheatWidth - 6 + 1, by + 6, cheatShadow, false);
             renderer.text("CHEAT", bx + (int)width - cheatWidth - 6, by + 5, cheatShadow, false);
@@ -45,7 +46,7 @@ public class HudRenderer {
 
         int[] yOffsets = {6, 22, 38, 54};
         List<String> hudText = getHudStrings(widget);
-        hudText.sort(Comparator.comparingDouble(str -> theme.font().getWidth((String) str)).reversed());
+        hudText.sort(Comparator.comparingDouble(str -> theme.textRenderer().getWidth((String) str)).reversed());
 
         for (int n = 0; n < 4; n++) {
             int yOffset = yOffsets[n];
@@ -98,7 +99,7 @@ public class HudRenderer {
         if (widget.highScore != null && !widget.CHEAT_MODE) {
             int pts = widget.highScore.getScore(widget.fieldSize);
             int maxWave = widget.highScore.getWave(widget.fieldSize);
-            String bestPower = Powerups.values()[widget.highScore.getBestPowerOrdinal(widget.fieldSize)].asString();
+            String bestPower = Powerups.values()[widget.highScore.getBestPowerOrdinal(widget.fieldSize)].getSerializedName();
 
             inlineRight = "Favorite power: " + bestPower;
             inlineLeft = widget.hasNewHighScore
@@ -116,7 +117,7 @@ public class HudRenderer {
 
             int pts = widget.player.score;
             inlineLeft = String.format("Wave: %d, Score: %,d", widget.wave, pts);
-            inlineRight = "Favorite power: " + bestPower.asString();
+            inlineRight = "Favorite power: " + bestPower;
         }
 
         String[] inlineTriple = new String[] { inlineLeft, separator, inlineRight };
@@ -145,7 +146,7 @@ public class HudRenderer {
         String title, Color titleColor, String[] inlineTriple, Color[] inlineColors, List<String> subtitles, List<Color> subColors
     ) {
         // beware: here be HUD code
-        TextRenderer tr = renderer.theme.font();
+        TextRenderer tr = renderer.theme.textRenderer();
         int titleW = scaledTextWidth(renderer, tr, title, TITLE_SCALE);
         int titleH = scaledTextHeight(renderer, tr, TITLE_SCALE);
 
@@ -256,9 +257,9 @@ public class HudRenderer {
         String powerText = "Powerup: ";
 
         if (player.hasEntropy()) {
-            powerText += "Entropy(" + player.getPowerup().asString() + ")";
+            powerText += "Entropy(" + player.getPowerup().getSerializedName() + ")";
         } else {
-            powerText += player.getPowerup().asString();
+            powerText += player.getPowerup().getSerializedName();
         }
 
         switch (player.getPowerup()) {

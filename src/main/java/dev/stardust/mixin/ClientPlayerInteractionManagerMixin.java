@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class ClientPlayerInteractionManagerMixin {
 
     // See RapidFire.java
-    @Inject(method = "stopUsingItem", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "releaseUsingItem", at = @At("HEAD"), cancellable = true)
     private void preventCrossbowUseReset(CallbackInfo ci) {
         Modules mods = Modules.get();
         if (mods == null) return;

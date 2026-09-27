@@ -27,14 +27,14 @@ import meteordevelopment.meteorclient.pathing.PathManagers;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.pathing.BaritoneUtils;
-import net.minecraft.client.input.KeyEvent;
+import meteordevelopment.meteorclient.events.meteor.KeyInputEvent;
 import meteordevelopment.meteorclient.utils.misc.input.Input;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 import meteordevelopment.meteorclient.settings.StringSetting;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.utils.misc.input.KeyAction;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import net.minecraft.client.input.MouseButtonEvent;
+import meteordevelopment.meteorclient.events.meteor.MouseClickEvent;
 import meteordevelopment.meteorclient.systems.modules.render.Freecam;
 
 /**
@@ -150,13 +150,13 @@ public abstract class FreecamMixin {
             } else {
                 BlockHitResult result = ((BlockHitResult) mc.hitResult);
                 if (mc.level.getBlockState(result.getBlockPos()).getBlock() instanceof AirBlock) {
-                    Vec3 cameraPos = mc.gameRenderer.getMainCamera().getPosition();
-                    float pitch = mc.gameRenderer.getMainCamera().getXRot();
-                    float yaw = mc.gameRenderer.getMainCamera().getYRot();
+                    Vec3 cameraPos = mc.gameRenderer.getMainCamera().position();
+                    float pitch = mc.gameRenderer.getMainCamera().xRot();
+                    float yaw = mc.gameRenderer.getMainCamera().yRot();
 
                     Vec3 direction = getRotationVector(pitch, yaw);
                     ClipContext context = new ClipContext(
-                        cameraPos, cameraPos.add(direction.multiply(256)),
+                        cameraPos, cameraPos.add(direction.scale(256)),
                         ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, mc.getCameraEntity()
                     );
 
@@ -177,7 +177,7 @@ public abstract class FreecamMixin {
             if (side != null) {
                 // Try not to mine the block we clicked on
                 if (side == Direction.DOWN) {
-                    crosshairPos = crosshairPos.offset(side, 2);
+                    crosshairPos = crosshairPos.relative(side, 2);
                 }else if (side == Direction.UP) {
                     crosshairPos = crosshairPos.relative(side);
                 } else {
@@ -216,7 +216,7 @@ public abstract class FreecamMixin {
         if (mc.getCameraEntity() == null || mc.getCameraEntity() == null) return;
         ci.cancel();
 
-        if (mc.getCameraEntity().isInsideWall()) mc.getCameraEntity().noPhysics = true;
+        if (mc.getCameraEntity().isInWall()) mc.getCameraEntity().noPhysics = true;
         if (!perspective.isFirstPerson()) mc.options.setCameraType(CameraType.FIRST_PERSON);
 
         double s = 0.5;
@@ -238,18 +238,18 @@ public abstract class FreecamMixin {
 
     // Allow RocketMan keyboard control to work & only cancel the shift/space preses for satellite cam
     @Inject(method = "onKey", at = @At("HEAD"), cancellable = true)
-    private void hijackOnKey(KeyEvent event, CallbackInfo ci) {
+    private void hijackOnKey(KeyInputEvent event, CallbackInfo ci) {
         if (Input.isKeyPressed(GLFW.GLFW_KEY_F3)) return;
         if (checkGuiMove()) return;
         if (satelliteCameraMode == null || !satelliteCameraMode.get()) return;
 
         ci.cancel();
         boolean cancel = true;
-        if (mc.options.keyJump.matches(event.key, 0)) {
+        if (mc.options.keyJump.matches(event.input)) {
             up = event.action != KeyAction.Release;
             mc.options.keyJump.setDown(false);
         }
-        else if (mc.options.keyShift.matches(event.key, 0)) {
+        else if (mc.options.keyShift.matches(event.input)) {
             down = event.action != KeyAction.Release;
             mc.options.keyShift.setDown(false);
         } else {
@@ -259,11 +259,11 @@ public abstract class FreecamMixin {
         if (cancel) event.cancel();
     }
 
-    @Inject(method = "onMouseButton", at = @At("TAIL"))
-    private void handleMouseClicks(MouseButtonEvent event, CallbackInfo ci) {
+    @Inject(method = "onMouseClick", at = @At("TAIL"))
+    private void handleMouseClicks(MouseClickEvent event, CallbackInfo ci) {
         if (mc.screen != null) return;
         if (clickToCome == null || !clickToCome.get()) return;
-        if (mc.options.keyAttack.matchesMouse(event.button)) {
+        if (mc.options.keyAttack.matchesMouse(event.click)) {
             Instant now = Instant.now();
             if (clickedAt == null || Duration.between(clickedAt, now).toMillis() > 100) {
                 clicks++;

@@ -23,6 +23,7 @@ import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.systems.modules.combat.AutoLog;
 import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import net.minecraft.network.DisconnectionDetails;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>

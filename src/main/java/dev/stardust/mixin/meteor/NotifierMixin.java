@@ -93,7 +93,7 @@ public abstract class NotifierMixin extends Module {
         for (ClientboundPlayerInfoUpdatePacket.Entry entry : packet.newEntries()) {
             if (entry.profile() == null) continue;
 
-            String name = entry.profile().getName();
+            String name = entry.profile().name();
             String format = notificationFormatting == null ? "§o" : notificationFormatting.get().label;
             int luckyInt = ThreadLocalRandom.current().nextInt(3);
             if (luckyInt == 0) {
@@ -115,7 +115,7 @@ public abstract class NotifierMixin extends Module {
             PlayerInfo player = mc.getConnection().getPlayerInfo(id);
             if (player == null) continue;
 
-            String name = player.getProfile().getName();
+            String name = player.getProfile().name();
             String format = notificationFormatting == null ? "§o" : notificationFormatting.get().label;
             int luckyInt = ThreadLocalRandom.current().nextInt(3);
             if (luckyInt == 0) {

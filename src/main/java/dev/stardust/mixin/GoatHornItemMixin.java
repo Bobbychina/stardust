@@ -15,11 +15,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(InstrumentItem.class)
 public class GoatHornItemMixin extends Item {
     // See Honker.java
-    public GoatHornItemMixin(Settings settings) {
+    public GoatHornItemMixin(Item.Properties settings) {
         super(settings);
     }
 
-    @Inject(method = "playSound", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "play", at = @At("HEAD"), cancellable = true)
     private static void mixinPlaySound(CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;

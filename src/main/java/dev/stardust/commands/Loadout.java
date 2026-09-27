@@ -8,6 +8,7 @@ import meteordevelopment.meteorclient.commands.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.systems.modules.Modules;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>

@@ -181,6 +181,18 @@ public class Grinder extends Module {
         if (disableOnDone.get()) toggle();
     }
 
+    /** 26.1: ServerboundContainerClickPacket 改为 (int,int,short,byte,ContainerInput,Int2ObjectMap<HashedStack>,HashedStack)，
+     *  changedSlots / carried 都要 HashedStack；哈希生成器取自 ClientPacketListener.decoratedHashOpsGenenerator()。 */
+    private ServerboundContainerClickPacket buildClickPacket(int containerId, int stateId, int slot, Int2ObjectMap<ItemStack> changedSlots) {
+        net.minecraft.network.HashedPatchMap.HashGenerator hasher = mc.getConnection().decoratedHashOpsGenenerator();
+        Int2ObjectMap<net.minecraft.network.HashedStack> hashed = new Int2ObjectOpenHashMap<>();
+        changedSlots.forEach((k, v) -> hashed.put(k, net.minecraft.network.HashedStack.create(v, hasher)));
+        return new ServerboundContainerClickPacket(
+            containerId, stateId, (short) slot, (byte) 0,
+            ContainerInput.QUICK_MOVE, hashed, net.minecraft.network.HashedStack.create(ItemStack.EMPTY, hasher)
+        );
+    }
+
     private ServerboundContainerClickPacket generatePacket(GrindstoneMenu handler) {
         if (mc.player == null) return null;
         Int2ObjectMap<ItemStack> changedSlots = new Int2ObjectOpenHashMap<>();
@@ -204,10 +216,7 @@ public class Grinder extends Module {
 
             combinedItem = null;
             currentTarget = null;
-            return new ServerboundContainerClickPacket(
-                handler.containerId, handler.getStateId(), 2, 0,
-                ContainerInput.QUICK_MOVE, ItemStack.EMPTY, changedSlots
-            );
+            return buildClickPacket(handler.containerId, handler.getStateId(), 2, changedSlots);
         } else if (currentTarget != null) {
             // fill input slot 2
             for (int n = 3; n < mc.player.getInventory().getNonEquipmentItems().size() + 3; n++) {
@@ -225,10 +234,7 @@ public class Grinder extends Module {
                 changedSlots.put(n, ItemStack.EMPTY);
                 changedSlots.put(2, ((GrindstoneScreenHandlerAccessor) handler).invokeGrind(combinedItem));
 
-                return new ServerboundContainerClickPacket(
-                    handler.containerId, handler.getStateId(), n, 0,
-                    ContainerInput.QUICK_MOVE, ItemStack.EMPTY, changedSlots
-                );
+                return buildClickPacket(handler.containerId, handler.getStateId(), n, changedSlots);
             }
             combinedItem = ItemStack.EMPTY;
             return generatePacket(handler);
@@ -249,10 +255,7 @@ public class Grinder extends Module {
 
                 if (!combine.get()) combinedItem = ItemStack.EMPTY;
 
-                return new ServerboundContainerClickPacket(
-                    handler.containerId, handler.getStateId(), n, 0,
-                    ContainerInput.QUICK_MOVE, ItemStack.EMPTY, changedSlots
-                );
+                return buildClickPacket(handler.containerId, handler.getStateId(), n, changedSlots);
             }
         }
 

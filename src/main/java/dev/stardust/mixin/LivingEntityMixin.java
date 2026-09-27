@@ -28,7 +28,7 @@ public abstract class LivingEntityMixin extends Entity
     private RocketMan rm;
 
     // See RocketMan.java
-    @Inject(method = "calcGlidingVelocity", at = @At(value = "INVOKE", target = "Ljava/lang/Math;sqrt(D)D"))
+    @Inject(method = "calcGlidingVelocity", at = @At(value = "INVOKE", target = "Ljava/lang/Math;sqrt(D)D"), require = 0)
     private void spoofPitchForSpeedCalcs(Vec3 oldVelocity, CallbackInfoReturnable<Vec3> cir, @Local(ordinal = 0) LocalFloatRef f, @Local(ordinal = 1)LocalRef<Vec3> rotationVec) {
         if (this.rm == null) {
             Modules modules = Modules.get();
@@ -37,18 +37,18 @@ public abstract class LivingEntityMixin extends Entity
         }
 
         if (!rm.isActive() || !rm.shouldLockYLevel()) return;
-        if (!this.getUuid().equals(rm.getClientInstance().player.getUUID())) return;
+        if (!this.getUUID().equals(rm.getClientInstance().player.getUUID())) return;
         if (!rm.getClientInstance().player.isFallFlying()|| !rm.hasActiveRocket()) return;
 
         if (rm.getClientInstance().player.input.keyPresses.jump() && rm.verticalSpeed.get() > 0) {
             f.set(-45);
-            rotationVec.set(this.getRotationVector(45, this.getYRot()));
+            rotationVec.set(net.minecraft.world.phys.Vec3.directionFromRotation(45.0f, this.getYRot()));
         } else if (rm.getClientInstance().player.input.keyPresses.shift() && rm.verticalSpeed.get() > 0) {
             f.set(45);
-            rotationVec.set(this.getRotationVector(45, this.getYRot()));
+            rotationVec.set(net.minecraft.world.phys.Vec3.directionFromRotation(45.0f, this.getYRot()));
         } else {
             f.set(0);
-            rotationVec.set(this.getRotationVector(0, this.getYRot()));
+            rotationVec.set(net.minecraft.world.phys.Vec3.directionFromRotation(0.0f, this.getYRot()));
         }
     }
 }

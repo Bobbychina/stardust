@@ -331,7 +331,11 @@ public class WSolitaire extends WWidget {
     }
 
     @Override
-    public boolean onMouseClicked(double mouseX, double mouseY, int button, boolean used) {
+    // 26.1: Meteor WWidget 回调改为 MouseButtonEvent
+    public boolean onMouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean used) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         double localX = mouseX - x;
         double localY = mouseY - y;
 
@@ -491,7 +495,9 @@ public class WSolitaire extends WWidget {
     }
 
     @Override
-    public boolean onMouseReleased(double mouseX, double mouseY, int button) {
+    public boolean onMouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
+        double mouseX = event.x();
+        double mouseY = event.y();
         if (!dragging) return false;
         double localX = mouseX - x;
         double localY = mouseY - y;
@@ -561,6 +567,12 @@ public class WSolitaire extends WWidget {
             && localY >= buttonY && localY <= buttonY + UNDO_BUTTON_HEIGHT);
     }
 
+    // 26.1: WWidget 鼠标回调改吃 MouseButtonEvent，键盘模拟点击需要自己包一个事件
+    private static net.minecraft.client.input.MouseButtonEvent syntheticClick(double x, double y, int button) {
+        return new net.minecraft.client.input.MouseButtonEvent(
+            x, y, new net.minecraft.client.input.MouseButtonInfo(button, 0));
+    }
+
     private void pollInput() {
         boolean wKey = isKeyDown(GLFW_KEY_W);
         boolean eKey = isKeyDown(GLFW_KEY_E);
@@ -572,23 +584,23 @@ public class WSolitaire extends WWidget {
             if ((qKey && inputTracker.isNotHeld(GLFW_KEY_Q))
                 || (wKey && inputTracker.isNotHeld(GLFW_KEY_W))
                 || (space && inputTracker.isNotHeld(GLFW_KEY_SPACE))) {
-                this.onMouseClicked(lastMouseX, lastMouseY, 0, false);
+                this.onMouseClicked(syntheticClick(lastMouseX, lastMouseY, 0), false);
             }
 
             if (eKey && inputTracker.isNotHeld(GLFW_KEY_E)
                 || rKey && inputTracker.isNotHeld(GLFW_KEY_R)) {
-                this.onMouseClicked(lastMouseX, lastMouseY, 1, false);
+                this.onMouseClicked(syntheticClick(lastMouseX, lastMouseY, 1), false);
             }
         } else {
             if ((qKey && inputTracker.isNotHeld(GLFW_KEY_Q))
                 || (wKey && inputTracker.isNotHeld(GLFW_KEY_W))
                 || (space && inputTracker.isNotHeld(GLFW_KEY_SPACE))) {
-                this.onMouseReleased(lastMouseX, lastMouseY, 0);
+                this.onMouseReleased(syntheticClick(lastMouseX, lastMouseY, 0));
             }
 
             if (eKey && inputTracker.isNotHeld(GLFW_KEY_E)
                 || rKey && inputTracker.isNotHeld(GLFW_KEY_R)) {
-                this.onMouseReleased(lastMouseX, lastMouseY, 1);
+                this.onMouseReleased(syntheticClick(lastMouseX, lastMouseY, 1));
             }
         }
 

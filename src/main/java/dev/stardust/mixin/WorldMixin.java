@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Level.class)
 public abstract class WorldMixin implements LevelAccessor, AutoCloseable {
     // See StashBrander.java && AutoSmith.java
-    @Inject(method = "playSoundAtBlockCenter", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "playLocalSound", at = @At("HEAD"), cancellable = true)
     private void mixinPlaySoundAtBlockCenter(BlockPos pos, SoundEvent sound, SoundSource category, float volume, float pitch, boolean useDistance, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;

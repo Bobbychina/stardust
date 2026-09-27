@@ -8,6 +8,6 @@ import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 @Mixin(ServerboundMovePlayerPacket.class)
 public interface PlayerMoveC2SPacketAccessor {
     @Mutable
-    @Accessor("pitch")
+    @Accessor("xRot")
     void setPitch(float pitch);
 }

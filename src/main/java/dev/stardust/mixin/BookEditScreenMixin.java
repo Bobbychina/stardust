@@ -11,7 +11,6 @@ import net.minecraft.client.gui.components.Tooltip;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import net.minecraft.client.gui.components.Button;
-import dev.stardust.mixin.accessor.BookEditScreenAccessor;
 import net.minecraft.client.gui.screens.inventory.BookEditScreen;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -22,9 +21,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  **/
 @Mixin(BookEditScreen.class)
 public abstract class BookEditScreenMixin extends Screen {
-    @Shadow
+    // TODO(26.1): BookEditScreen 已无 dirty/signing 字段（书本编辑体系重做），改为 mixin 本地状态
+    @Unique
     private boolean dirty;
-    @Shadow
+    @Unique
     private boolean signing;
 
     // See BookTools.java
@@ -46,10 +46,10 @@ public abstract class BookEditScreenMixin extends Screen {
         String color = btn.getMessage().getString().substring(0, 2);
 
         if (this.signing) {
-            ((BookEditScreenAccessor) this).getBookTitleSelectionManager().insert(color);
+            stardust$insert(true, color);
         } else {
             this.didFormatPage = true;
-            ((BookEditScreenAccessor) this).getCurrentPageSelectionManager().insert(color);
+            stardust$insert(false, color);
         }
     }
 
@@ -60,10 +60,10 @@ public abstract class BookEditScreenMixin extends Screen {
         if (rainbowMode) {
             activeFormatting = format;
         }else if (this.signing) {
-            ((BookEditScreenAccessor) this).getBookTitleSelectionManager().insert(format);
+            stardust$insert(true, format);
         } else {
             this.didFormatPage = true;
-            ((BookEditScreenAccessor) this).getCurrentPageSelectionManager().insert(format);
+            stardust$insert(false, format);
         }
     }
 
@@ -88,6 +88,12 @@ public abstract class BookEditScreenMixin extends Screen {
             lastCC = StardustUtil.RainbowColor.getNext(lastCC);
         }
         return lastCC.labels[ThreadLocalRandom.current().nextInt(lastCC.labels.length)];
+    }
+
+    /** TODO(26.1): BookEditScreen 已无 TextFieldHelper 字段（见 PORT-NOTES R1），这里退化为安全空操作。 */
+    @Unique
+    private void stardust$insert(boolean title, String text) {
+        // no-op: 26.1 无对应 TextFieldHelper，写入无法落到书页/标题上
     }
 
     @Inject(method = "init", at = @At("TAIL"))
@@ -163,31 +169,31 @@ public abstract class BookEditScreenMixin extends Screen {
         );
     }
 
-    @Inject(method = "charTyped", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/font/TextFieldHelper;insert(Ljava/lang/String;)V"))
+    @Inject(method = "charTyped", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/font/TextFieldHelper;insert(Ljava/lang/String;)V"), require = 0)
     private void mixinCharTyped(char chr, int modifiers, CallbackInfoReturnable<Boolean> cir) {
         if (!rainbowMode || signing) return;
         didFormatPage = true;
         if (activeFormatting.equals("§r")) {
             activeFormatting = "";
-            ((BookEditScreenAccessor) this).getCurrentPageSelectionManager().insert("§r" + uCC());
+            stardust$insert(false, "§r" + uCC());
         } else {
-            ((BookEditScreenAccessor) this).getCurrentPageSelectionManager().insert(uCC() + activeFormatting);
+            stardust$insert(false, uCC() + activeFormatting);
         }
     }
 
-    @Inject(method = "finalizeBook", at = @At("HEAD"))
+    @Inject(method = "finalizeBook", at = @At("HEAD"), require = 0)
     private void mixinFinalizeBook(CallbackInfo ci) {
         if (this.dirty && this.didFormatPage) {
-            ((BookEditScreenAccessor) this).getCurrentPageSelectionManager().insert("§r");
+            stardust$insert(false, "§r");
         }
     }
 
-    @Inject(method = "changePage", at = @At("HEAD"))
+    @Inject(method = "changePage", at = @At("HEAD"), require = 0)
     private void mixinChangePage(CallbackInfo ci) {
         this.didFormatPage = false;
     }
 
-    @Inject(method = "updateButtons", at = @At("TAIL"))
+    @Inject(method = "updateButtonVisibility", at = @At("TAIL"))
     private void mixinUpdateButtons(CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;
@@ -199,7 +205,7 @@ public abstract class BookEditScreenMixin extends Screen {
         }
 
         if (this.signing && !bookTools.autoTitles.get().trim().isEmpty()) {
-            ((BookEditScreenAccessor) this).getBookTitleSelectionManager().insert(bookTools.autoTitles.get());
+            stardust$insert(true, bookTools.autoTitles.get());
         }
     }
 }

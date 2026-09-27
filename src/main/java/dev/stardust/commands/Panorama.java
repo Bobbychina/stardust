@@ -21,6 +21,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.utils.files.StreamUtils;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
@@ -52,7 +53,7 @@ public class Panorama extends Command {
         Screenshot.grab(
             currentPanoramaDir.toFile(),
             "panorama_"+screenshot+".png",
-            instance.getMainRenderTarget(), msg -> {}
+            instance.getMainRenderTarget(), 1, msg -> {}
         );
 
         ++screenshot;
@@ -135,7 +136,7 @@ public class Panorama extends Command {
         readyToAssemble = false;
         if (instance.player != null) {
             instance.player.playSound(SoundEvents.AMETHYST_BLOCK_CHIME, 1f, 1f);
-            instance.player.sendSystemMessage(Component.literal("§8<" + StardustUtil.rCC() + "✨§8> §3§oYour resource pack is ready to be enabled§f§o!"), false);
+            instance.player.sendSystemMessage(Component.literal("§8<" + StardustUtil.rCC() + "✨§8> §3§oYour resource pack is ready to be enabled§f§o!"));
         }
     }
 
@@ -173,9 +174,9 @@ public class Panorama extends Command {
         switch (screenshot) {
             case 0 -> {
                 if (!isWarming) {
-                    instance.gameRenderer.setPanoramicMode(true);
+                    instance.gameRenderer.getMainCamera().enablePanoramicMode();
                     instance.gameRenderer.setRenderBlockOutline(false);
-                    instance.levelRenderer.reload();
+                    instance.levelRenderer.allChanged();
                     if (!instance.options.hideGui) instance.options.hideGui = true;
                     instance.player.setYRot(preYaw);
                     instance.player.setXRot(0f);
@@ -222,19 +223,18 @@ public class Panorama extends Command {
                     instance.player.setXRot(prePitch);
                     instance.player.yRotO = prevYaw;
                     instance.player.xRotO = prevPitch;
-                    instance.gameRenderer.setPanoramicMode(false);
+                    instance.gameRenderer.getMainCamera().disablePanoramicMode();
                     instance.gameRenderer.setRenderBlockOutline(true);
                     instance.getWindow().setWidth(preWidth);
                     instance.getWindow().setHeight(preHeight);
                     if (instance.options.hideGui) instance.options.hideGui = false;
                     instance.getMainRenderTarget().resize(preWidth, preHeight);
-                    instance.levelRenderer.reload();
+                    instance.levelRenderer.allChanged();
 
                     timer = 100; // wait a few seconds for the screenshot files to get fully written to disk,
                     readyToAssemble = true; // and then copy them into a resource pack (this avoids copying empty files.)
                     instance.player.sendSystemMessage(
-                        Component.literal("§8<§2§o✨§8> §8§oFinalizing resource pack§2§o, §8§oplease wait§2§o..."), false
-                    );
+                        Component.literal("§8<§2§o✨§8> §8§oFinalizing resource pack§2§o, §8§oplease wait§2§o..."));
                 }
             }
         }

@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class EntityRendererMixin {
 
     // See AntiToS.java
-    @ModifyVariable(method = "renderLabelIfPresent", at = @At("HEAD"), argsOnly = true)
+    @ModifyVariable(method = "submitNameDisplay", at = @At("HEAD"), argsOnly = true)
     private Component censorEntityName(Component name) {
         Modules modules = Modules.get();
         if (modules == null) return name;

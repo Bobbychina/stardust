@@ -26,9 +26,10 @@ public class BetterTooltipsMixin extends Module {
     @Final
     private SettingGroup sgOther;
 
+    // 26.1: Meteor 把 middle-click-open 改名成 openContents
     @Shadow
     @Final
-    private Setting<Boolean> middleClickOpen;
+    private Setting<Boolean> openContents;
 
     public BetterTooltipsMixin(Category category, String name, String description, String... aliases) {
         super(category, name, description, aliases);
@@ -64,7 +65,7 @@ public class BetterTooltipsMixin extends Module {
                 .description("Left-click on an item in the Peek Screen to add a client-side-only variant to your hotbar.")
                 .defaultValue(false)
                 .onChanged(it -> {
-                    if (it) this.middleClickOpen.set(true);
+                    if (it) this.openContents.set(true);
                 })
                 .build()
         );

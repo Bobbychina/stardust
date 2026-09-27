@@ -650,7 +650,7 @@ public class RocketMan extends Module {
                     if (durabilityCheckTicks < 100) return;
                     if (percentDurability <= durabilityThreshold.get()) {
                         float vol = warnVolume.get() / 100f;
-                        mc.player.playSound(SoundEvents.ITEM_BREAK, vol, 1f);
+                        mc.player.playSound(SoundEvents.ITEM_BREAK.value(), vol, 1f);
                         MsgUtil.updateModuleMsg("Elytra durability: §c" + percentDurability + "§7%", this.name, "elytraDurabilityWarning".hashCode());
                         durabilityCheckTicks = 0;
                     }
@@ -660,7 +660,7 @@ public class RocketMan extends Module {
             if (durabilityCheckTicks < 100) return;
             if (percentDurability <= durabilityThreshold.get()) {
                 float vol = warnVolume.get() / 100f;
-                mc.player.playSound(SoundEvents.ITEM_BREAK, vol, 1f);
+                mc.player.playSound(SoundEvents.ITEM_BREAK.value(), vol, 1f);
                 MsgUtil.updateModuleMsg("Elytra durability: §c" + percentDurability + "§7%", this.name, "elytraDurabilityWarning".hashCode());
                 durabilityCheckTicks = 0;
             }
@@ -1126,13 +1126,15 @@ public class RocketMan extends Module {
         if (!shouldLockYLevel()) return;
         if (!(event.packet instanceof ServerboundMovePlayerPacket packet)) return;
 
+        // 26.1: 本地 PlayerMoveC2SPacketAccessor 现在只有 setPitch(float)（旧的 setXRot(int) 已不存在）
+        // TODO(26.1): 该 accessor 的 @Accessor("pitch") 仍是 Yarn 旧字段名，26.1 ServerboundMovePlayerPacket 的真实字段是 xRot —— 归该文件负责人核对
         if (mc.player.input.keyPresses.jump() && verticalSpeed.get() > 0) {
-            if (isHovering) ((PlayerMoveC2SPacketAccessor) packet).setXRot(-90);
-            else ((PlayerMoveC2SPacketAccessor) packet).setXRot(-45);
+            if (isHovering) ((PlayerMoveC2SPacketAccessor) packet).setPitch(-90f);
+            else ((PlayerMoveC2SPacketAccessor) packet).setPitch(-45f);
         } else if (mc.player.input.keyPresses.shift() && verticalSpeed.get() > 0) {
-            if (isHovering) ((PlayerMoveC2SPacketAccessor) packet).setXRot(90);
-            else ((PlayerMoveC2SPacketAccessor) packet).setXRot(45);
-        } else ((PlayerMoveC2SPacketAccessor) packet).setXRot(0);
+            if (isHovering) ((PlayerMoveC2SPacketAccessor) packet).setPitch(90f);
+            else ((PlayerMoveC2SPacketAccessor) packet).setPitch(45f);
+        } else ((PlayerMoveC2SPacketAccessor) packet).setPitch(0f);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

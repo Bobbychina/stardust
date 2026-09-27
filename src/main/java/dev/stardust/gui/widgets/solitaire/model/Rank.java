@@ -8,7 +8,7 @@ public enum Rank implements StringRepresentable {
     NINE, TEN, JACK, QUEEN, KING;
 
     @Override
-    public String asString() {
+    public String getSerializedName() {
         return switch (this) {
             case ACE -> "A";
             case TWO -> "2";

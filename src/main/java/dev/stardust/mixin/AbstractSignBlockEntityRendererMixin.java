@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import net.minecraft.client.renderer.blockentity.state.SignRenderState;
 import meteordevelopment.meteorclient.systems.modules.render.NoRender;
 import net.minecraft.client.renderer.blockentity.AbstractSignRenderer;
 
@@ -23,10 +24,10 @@ import net.minecraft.client.renderer.blockentity.AbstractSignRenderer;
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
 @Mixin(AbstractSignRenderer.class)
-public abstract class AbstractSignBlockEntityRendererMixin implements BlockEntityRenderer<SignBlockEntity> {
+public abstract class AbstractSignBlockEntityRendererMixin implements BlockEntityRenderer<SignBlockEntity, SignRenderState> {
 
     // See AntiToS.java
-    @ModifyVariable(method = "renderText", at = @At("HEAD"), argsOnly = true)
+    @ModifyVariable(method = "submitSignText", at = @At("HEAD"), argsOnly = true)
     private SignText modifyRenderedText(SignText signText) {
         Modules modules = Modules.get();
         if (modules == null ) return signText;
@@ -41,7 +42,7 @@ public abstract class AbstractSignBlockEntityRendererMixin implements BlockEntit
     }
 
     // See NoRenderMixin.java
-    @Inject(method = "render(Lnet/minecraft/world/level/block/entity/SignBlockEntity;FLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;II)V", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "render(Lnet/minecraft/world/level/block/entity/SignBlockEntity;FLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;II)V", at = @At("HEAD"), cancellable = true, require = 0)
     private void onRender(SignBlockEntity signBlockEntity, float f, PoseStack matrixStack, MultiBufferSource vertexConsumerProvider, int i, int j, CallbackInfo ci) {
         Modules mods = Modules.get();
         if (mods == null) return;

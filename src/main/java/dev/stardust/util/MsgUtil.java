@@ -51,7 +51,7 @@ public class MsgUtil {
 
     public static void sendRawMsg(String msg) {
         if (mc.player == null) return;
-        mc.player.sendSystemMessage(Component.literal(msg), false);
+        mc.player.sendSystemMessage(Component.literal(msg));
     }
 
     public static void sendMsg(String msg) {
@@ -59,7 +59,7 @@ public class MsgUtil {
 
         try {
             StringBuilder sb = new StringBuilder();
-            mc.player.sendSystemMessage(Component.literal(sb.append(getPrefix()).append(' ').append(ChatFormatting.GRAY).append(msg).toString()), false);
+            mc.player.sendSystemMessage(Component.literal(sb.append(getPrefix()).append(' ').append(ChatFormatting.GRAY).append(msg).toString()));
         } catch (Exception ignored) {}
     }
 
@@ -68,7 +68,7 @@ public class MsgUtil {
 
         try {
             String message = getPrefix() + ' ' + ChatFormatting.GRAY + msg;
-            mc.player.sendSystemMessage(Component.literal(message).setStyle(style), false);
+            mc.player.sendSystemMessage(Component.literal(message).setStyle(style));
         } catch (Exception ignored) {}
     }
 
@@ -77,7 +77,7 @@ public class MsgUtil {
 
         try {
             StringBuilder sb = new StringBuilder();
-            mc.player.sendSystemMessage(Component.literal(sb.append(getModulePrefix(module)).append(' ').append(ChatFormatting.GRAY).append(msg).toString()), false);
+            mc.player.sendSystemMessage(Component.literal(sb.append(getModulePrefix(module)).append(' ').append(ChatFormatting.GRAY).append(msg).toString()));
         } catch (Exception ignored) {}
     }
 
@@ -86,7 +86,7 @@ public class MsgUtil {
 
         try {
             String message = getModulePrefix(module) + ' ' + ChatFormatting.GRAY + msg;
-            mc.player.sendSystemMessage(Component.literal(message).setStyle(style), false);
+            mc.player.sendSystemMessage(Component.literal(message).setStyle(style));
         } catch (Exception ignored) {}
     }
 

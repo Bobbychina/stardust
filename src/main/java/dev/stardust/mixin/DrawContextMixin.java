@@ -21,8 +21,9 @@ public abstract class DrawContextMixin {
     public abstract void fill(int x1, int y1, int x2, int y2, int color);
 
     // See LoreLocator.java
-    @Inject(method = "drawItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;IIII)V", at = @At(value = "HEAD"))
-    private void highlightNamedItems(LivingEntity entity, Level world, ItemStack stack, int x, int y, int seed, int z, CallbackInfo ci) {
+    // 26.1: 必须写全描述符（item 有 3/4/5 参重载，裸名会被 Mixin 选错）；实体版是私有 6 参
+    @Inject(method = "item(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;III)V", at = @At(value = "HEAD"))
+    private void highlightNamedItems(LivingEntity entity, Level world, ItemStack stack, int x, int y, int seed, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;
         LoreLocator ll = modules.get(LoreLocator.class);
@@ -30,7 +31,7 @@ public abstract class DrawContextMixin {
         this.fill(x, y, x + 16, y + 16, ll.color.get().getPacked());
     }
 
-    @Inject(method = "drawItemWithoutEntity(Lnet/minecraft/world/item/ItemStack;III)V", at = @At("HEAD"))
+    @Inject(method = "item(Lnet/minecraft/world/item/ItemStack;III)V", at = @At("HEAD"))
     private void highlightNamedItemsNoEntity(ItemStack stack, int x, int y, int seed, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;

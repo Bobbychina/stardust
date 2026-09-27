@@ -8,7 +8,7 @@ public enum Powerups implements StringRepresentable {
     SHOTGUN, SNIPER, HIGH_TECH_HULL, ENTROPY, GRAVITY_WELL, HOMING_SHOTS, PHASE_SHIFT, MIDAS_TOUCH, STARDUST;
 
     @Override
-    public String asString() {
+    public String getSerializedName() {
         return switch (this) {
             case NONE -> "None";
             case SNIPER -> "Sniper"; // fast-moving piercing rounds, precision aim, long cooldown

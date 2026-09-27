@@ -18,16 +18,16 @@ public abstract class EntityMixin
     implements Nameable, EntityAccess, CommandSource {
 
     @Shadow
-    public abstract UUID getUuid();
+    public abstract UUID getUUID();
 
     // See RocketMan.java
-    @ModifyVariable(method = "setVelocity(Lnet/minecraft/world/phys/Vec3;)V", at = @At("HEAD"), argsOnly = true)
+    @ModifyVariable(method = "setDeltaMovement(Lnet/minecraft/world/phys/Vec3;)V", at = @At("HEAD"), argsOnly = true)
     private Vec3 spoofYMovement(Vec3 velocity) {
         Modules modules = Modules.get();
         if (modules == null) return velocity;
         RocketMan rm = modules.get(RocketMan.class);
         if (!rm.isActive() || !rm.shouldLockYLevel()) return velocity;
-        if (!this.getUuid().equals(rm.getClientInstance().player.getUUID())) return velocity;
+        if (!this.getUUID().equals(rm.getClientInstance().player.getUUID())) return velocity;
         if (!rm.getClientInstance().player.isFallFlying() || !rm.hasActiveRocket()) return velocity;
 
         Vec3 spoofVec;

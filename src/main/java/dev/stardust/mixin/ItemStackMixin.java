@@ -23,22 +23,24 @@ public abstract class ItemStackMixin {
     public abstract Rarity getRarity();
 
     @Shadow
-    public abstract Component getName();
+    public abstract Component getHoverName();
 
     // See AntiToS.java
-    @Inject(method = "getFormattedName", at = @At("HEAD"), cancellable = true)
+    // 26.1: getFormattedName/toHoverableText → getStyledHoverName；不能挂在 getHoverName 上（handler 内部会再调 getHoverName，递归爆栈）
+    @Inject(method = "getStyledHoverName", at = @At("HEAD"), cancellable = true)
     private void censorItemTooltip(CallbackInfoReturnable<Component> cir) {
         Modules modules = Modules.get();
         if (modules == null) return;
         AntiToS antiToS = modules.get(AntiToS.class);
         if (!antiToS.isActive()) return;
 
-        if (antiToS.containsBlacklistedText(this.getName().getString())) {
-            cir.setReturnValue(Component.empty().append(antiToS.censorText(this.getName().getString()).formatted(this.getRarity().color())));
+        if (antiToS.containsBlacklistedText(this.getHoverName().getString())) {
+            cir.setReturnValue(Component.empty().append(antiToS.censorText(this.getHoverName().getString()).formatted(this.getRarity().color())));
         }
     }
 
-    @Inject(method = "toHoverableText", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;contains(Lnet/minecraft/core/component/DataComponentType;)Z"))
+    // 26.1: ItemStack.contains(...) → has(...)；挂错方法名会 "Scanned 0 target(s)" 直接崩在 Bootstrap 阶段
+    @Inject(method = "getStyledHoverName", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;has(Lnet/minecraft/core/component/DataComponentType;)Z"))
     private void censorHoveredText(CallbackInfoReturnable<Component> cir, @Local(ordinal = 0)LocalRef<MutableComponent> name) {
         Modules modules = Modules.get();
         if (modules == null) return;

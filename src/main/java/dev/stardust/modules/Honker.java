@@ -125,8 +125,11 @@ public class Honker extends Module {
                 ItemStack stack = mc.player.getInventory().getItem(n);
                 if (!(stack.getItem() instanceof InstrumentItem)) continue;
                 if (!stack.has(DataComponents.INSTRUMENT)) continue;
-                Holder<Instrument> instrument = stack.get(DataComponents.INSTRUMENT);
-                String id = instrument.value().soundEvent().value().location().toUnderscoreSeparatedString();
+                // 26.1: INSTRUMENT 组件类型变成 InstrumentComponent，Holder<Instrument> 要通过 .instrument() 拿
+                Holder<Instrument> instrument = stack.get(DataComponents.INSTRUMENT).instrument();
+                // TODO(26.1): Identifier.toUnderscoreSeparatedString() 已删除（原本产出 ns_path 下划线形式），
+                //  这里按下面的 "minecraft:"+desiredCallId 比较改用 toString()（"minecraft:call_goat_horn" 形式）
+                String id = instrument.value().soundEvent().value().location().toString();
                 if (id == null) continue;
 
                 hornIndex = n;
@@ -156,7 +159,7 @@ public class Honker extends Module {
             if (entity instanceof Player && !(entity instanceof LocalPlayer)) {
                 if (ignoreFakes.get()) {
                     Collection<PlayerInfo> players = mc.player.connection.getOnlinePlayers();
-                    if (players.stream().noneMatch(entry -> entry.getProfile().getId().equals(entity.getUUID()))) continue;
+                    if (players.stream().noneMatch(entry -> entry.getProfile().id().equals(entity.getUUID()))) continue;
                 }
                 honkDesiredHorn();
                 break;
@@ -174,7 +177,7 @@ public class Honker extends Module {
 
         if (ignoreFakes.get()) {
             Collection<PlayerInfo> players = mc.player.connection.getOnlinePlayers();
-            if (players.stream().noneMatch(entry -> entry.getProfile().getId().equals(player.getUUID()))) return;
+            if (players.stream().noneMatch(entry -> entry.getProfile().id().equals(player.getUUID()))) return;
         }
 
         if (!hornSpam.get()) {
@@ -192,7 +195,7 @@ public class Honker extends Module {
             if (entity instanceof Player && !(entity instanceof LocalPlayer)) {
                 if (ignoreFakes.get()) {
                     Collection<PlayerInfo> players = mc.player.connection.getOnlinePlayers();
-                    if (players.stream().noneMatch(entry -> entry.getProfile().getId().equals(entity.getUUID()))) continue;
+                    if (players.stream().noneMatch(entry -> entry.getProfile().id().equals(entity.getUUID()))) continue;
                 }
                 playerNearby = true;
                 break;

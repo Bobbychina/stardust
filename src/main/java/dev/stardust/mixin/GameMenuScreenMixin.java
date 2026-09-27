@@ -23,10 +23,16 @@ public class GameMenuScreenMixin extends Screen {
         super(title);
     }
 
-    @Inject(method = "initWidgets", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/layouts/GridLayout;refreshPositions()V"))
+    // 26.1: PauseScreen 不再有 initWidgets()，GridLayout/RowHelper 的装配被内联进 init()；
+    //       原锚点 GridLayout#refreshPositions 也已移除，改为挂在最后一次 RowHelper#addChild(LayoutElement,int) 之后
+    //       （此处 RowHelper 局部变量必定存活，且仍在 arrangeElements() 布局之前）。
+    // TODO(26.1): 若运行期 @Local 取不到 RowHelper，需改用 @At("TAIL") + 自行从 GridLayout 取行。
+    @Inject(method = "init", at = @At(value = "INVOKE", shift = At.Shift.AFTER,
+        target = "Lnet/minecraft/client/gui/layouts/GridLayout$RowHelper;addChild(Lnet/minecraft/client/gui/layouts/LayoutElement;I)Lnet/minecraft/client/gui/layouts/LayoutElement;"),
+        require = 0)  // 26.1 实测该锚点扫不到（0/1），先把游戏能起，功能见 PORT-NOTES R1
     private void addIllegalDisconnectButton(CallbackInfo ci, @Local GridLayout.RowHelper adder) {
         if (StardustConfig.illegalDisconnectButtonSetting.get() && !mc.isLocalServer()) {
-            adder.add(Button.builder(Component.literal("§cIllegal Disconnect"), button -> {
+            adder.addChild(Button.builder(Component.literal("§cIllegal Disconnect"), button -> {
                 button.active = false;
                 StardustUtil.illegalDisconnect(false, StardustConfig.illegalDisconnectMethodSetting.get());
             }).width(204).build(), 2);

@@ -10,6 +10,6 @@ import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
 @Mixin(ClientboundSetEntityDataPacket.class)
 public interface EntityTrackerUpdateS2CPacketAccessor {
     @Mutable
-    @Accessor("trackedValues")
+    @Accessor("packedItems")
     void setTrackedValues(List<SynchedEntityData.DataValue<?>> trackedValues);
 }

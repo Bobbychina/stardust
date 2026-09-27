@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(GameNarrator.class)
 public class NarratorManagerMixin {
     // See SoundSystemMixin.java
-    @Inject(method = "narrate(Lnet/minecraft/network/chat/Component;)V", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "narrate(Lnet/minecraft/network/chat/Component;)V", at = @At("HEAD"), cancellable = true, require = 0)
     private void mixinNarrate(Component text, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null ) return;

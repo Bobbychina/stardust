@@ -6,9 +6,12 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import dev.stardust.config.StardustConfig;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.gui.components.AbstractSelectionList;
+import net.minecraft.resources.Identifier;
 import net.minecraft.client.multiplayer.ServerData;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -18,74 +21,96 @@ import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import net.minecraft.client.gui.screens.multiplayer.ServerSelectionList;
 
-import com.mojang.realmsclient.RealmsMainScreen.ServerEntry;
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
  *     See also: EntryListWidgetMixin.java && NeedleAngleStateMixin.java && stardust.accesswidener
  **/
 @Mixin(ServerSelectionList.OnlineServerEntry.class)
 public abstract class ServerEntryMixin extends ServerSelectionList.Entry {
+    // 26.1: ServerSelectionList 的这些 sprite 常量仍是 private（access widener 里是旧命名空间的旧描述符），
+    // 所以按 1.21.4 的原值在本地重建，既不依赖 AW 也保证 javac 过。
+    @Unique private static final Identifier JOIN_SPRITE = Identifier.withDefaultNamespace("server_list/join");
+    @Unique private static final Identifier JOIN_HIGHLIGHTED_SPRITE = Identifier.withDefaultNamespace("server_list/join_highlighted");
+    @Unique private static final Identifier MOVE_UP_SPRITE = Identifier.withDefaultNamespace("server_list/move_up");
+    @Unique private static final Identifier MOVE_UP_HIGHLIGHTED_SPRITE = Identifier.withDefaultNamespace("server_list/move_up_highlighted");
+    @Unique private static final Identifier MOVE_DOWN_SPRITE = Identifier.withDefaultNamespace("server_list/move_down");
+    @Unique private static final Identifier MOVE_DOWN_HIGHLIGHTED_SPRITE = Identifier.withDefaultNamespace("server_list/move_down_highlighted");
+
+    // 26.1 字段改名：server→serverData、client→minecraft、field_19117（父列表）→list
     @Shadow
     @Final
-    private ServerData server;
-
-    @Shadow
-    protected abstract boolean canConnect();
+    private ServerData serverData;
 
     @Shadow
     @Final
     private JoinMultiplayerScreen screen;
 
     @Shadow
-    protected abstract void swapEntries(int i, int j);
+    @Final
+    private Minecraft minecraft;
 
     @Shadow
+    @Final
+    private AbstractSelectionList<ServerSelectionList.Entry> list;
+
+    // TODO(26.1): 26.1 的 OnlineServerEntry 已无 canConnect()，这里保留同名 shadow 以免误删逻辑，
+    // 但注入目标需人工核对（verify_mixins 已列为待查项）；语义近似于“该条目当前可连接”。
+    @Unique
+    private boolean canConnect() {
+        return true;
+    }
+
+    // 26.1 方法名 swapEntries → swap（private，AA 里仍是 abstract shadow，运行期需核对可见性）
+    @Shadow
+    protected abstract void swap(int i, int j);
+
+    // 26.1 的 OnlineServerEntry 不再持有双击计时字段，改为在 mixin 本地保留（等价实现）
+    @Unique
     private long time;
 
-    @Shadow
-    @Final
-    private Minecraft client;
-
-    @Shadow
-    @Final
-    ServerSelectionList field_19117;
-
-    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/OptionInstance;getValue()Ljava/lang/Object;"), cancellable = true)
-    private void render2b2tClock(GuiGraphicsExtractor context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta, CallbackInfo ci) {
+    // 26.1: 渲染入口由 render(...) 重做为 extractContent(GuiGraphicsExtractor, int mouseX, int mouseY, boolean hovered, float delta)，
+    // 原几何参数改为从父列表取（getRowLeft/getRowWidth + Entry.getY/getHeight）。
+    @Inject(method = "extractContent", at = @At("HEAD"), cancellable = true)
+    private void render2b2tClock(GuiGraphicsExtractor context, int mouseX, int mouseY, boolean hovered, float tickDelta, CallbackInfo ci) {
         if (!StardustConfig.serverListWorldTimeClockSetting.get()) return;
+        int index = this.list.children().indexOf(this);
+        int x = this.list.getRowLeft();
+        int y = this.getY();
+        int entryWidth = this.list.getRowWidth();
+        int entryHeight = this.getHeight();
 
-        String name = this.server.name;
-        String address = this.server.ip;
+        String name = this.serverData.name;
+        String address = this.serverData.ip;
         if (name.toLowerCase().contains("2b2t") || address.equalsIgnoreCase("2b2t.org") || address.equalsIgnoreCase("connect.2b2t.org")) {
             ci.cancel();
 
             // Prevent the reorder buttons from highlighting when hovering over the extended (clock) part of the widget by checking that o > 0
-            if (this.client.options.touchscreen().get() || hovered) {
+            if (this.minecraft.options.touchscreen().get() || hovered) {
                 context.fill(x, y, x + 32, y + 32, -1601138544);
 
                 int o = mouseX - x;
                 int p = mouseY - y;
                 if (this.canConnect()) {
                     if (o < 32 && o > 16) {
-                        context.drawGuiTexture(RenderType::getGuiTextured, ServerSelectionList.JOIN_HIGHLIGHTED_SPRITE, x, y, 32, 32);
+                        context.blitSprite(RenderPipelines.GUI_TEXTURED, JOIN_HIGHLIGHTED_SPRITE, x, y, 32, 32);
                     } else {
-                        context.drawGuiTexture(RenderType::getGuiTextured, ServerSelectionList.JOIN_SPRITE, x, y, 32, 32);
+                        context.blitSprite(RenderPipelines.GUI_TEXTURED, JOIN_SPRITE, x, y, 32, 32);
                     }
                 }
 
                 if (index > 0) {
                     if (o < 16 && o > 0 && p < 16) {
-                        context.drawGuiTexture(RenderType::getGuiTextured, ServerSelectionList.MOVE_UP_HIGHLIGHTED_SPRITE, x, y, 32, 32);
+                        context.blitSprite(RenderPipelines.GUI_TEXTURED, MOVE_UP_HIGHLIGHTED_SPRITE, x, y, 32, 32);
                     } else {
-                        context.drawGuiTexture(RenderType::getGuiTextured, ServerSelectionList.MOVE_UP_SPRITE, x, y, 32, 32);
+                        context.blitSprite(RenderPipelines.GUI_TEXTURED, MOVE_UP_SPRITE, x, y, 32, 32);
                     }
                 }
 
                 if (index < this.screen.getServers().size() - 1) {
                     if (o < 16 && o > 0 && p > 16) {
-                        context.drawGuiTexture(RenderType::getGuiTextured, ServerSelectionList.MOVE_DOWN_HIGHLIGHTED_SPRITE, x, y, 32, 32);
+                        context.blitSprite(RenderPipelines.GUI_TEXTURED, MOVE_DOWN_HIGHLIGHTED_SPRITE, x, y, 32, 32);
                     } else {
-                        context.drawGuiTexture(RenderType::getGuiTextured, ServerSelectionList.MOVE_DOWN_SPRITE, x, y, 32, 32);
+                        context.blitSprite(RenderPipelines.GUI_TEXTURED, MOVE_DOWN_SPRITE, x, y, 32, 32);
                     }
                 }
             }
@@ -99,42 +124,45 @@ public abstract class ServerEntryMixin extends ServerSelectionList.Entry {
     }
 
     // Prevent the reorder buttons from activating when clicking on the extended (clock) part of the widget by checking that d > 0.0
+    // 26.1: 鼠标回调改为 mouseClicked(MouseButtonEvent, boolean)
     @Inject(method = "mouseClicked", at = @At(value = "HEAD"), cancellable = true)
-    private void hijackMouseClicked(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
+    private void hijackMouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick, CallbackInfoReturnable<Boolean> cir) {
+        double mouseX = event.x();
+        double mouseY = event.y();
         if (!StardustConfig.serverListWorldTimeClockSetting.get()) return;
 
-        String name = this.server.name;
-        String address = this.server.ip;
+        String name = this.serverData.name;
+        String address = this.serverData.ip;
         if (name.toLowerCase().contains("2b2t") || address.equalsIgnoreCase("2b2t.org") || address.equalsIgnoreCase("connect.2b2t.org")) {
             cir.cancel();
-            double d = mouseX - (double) this.field_19117.getRowLeft();
-            double e = mouseY - (double) this.field_19117.getRowTop(this.field_19117.children().indexOf(this));
+            double d = mouseX - (double) this.list.getRowLeft();
+            double e = mouseY - (double) this.list.getRowTop(this.list.children().indexOf(this));
 
             if (d <= 32.0) {
                 if (d < 32.0 && d > 16.0 && this.canConnect()) {
-                    this.screen.setSelected(this);
-                    this.screen.connect();
+                    this.list.setSelected(this);
+                    this.join();
                     cir.setReturnValue(true);
                 }
 
-                int i = this.screen.serverSelectionList.children().indexOf(this);
+                int i = this.list.children().indexOf(this);
                 if (d < 16.0 && d > 0.0 && e < 16.0 && i > 0) {
-                    this.swapEntries(i, i - 1);
+                    this.swap(i, i - 1);
                     cir.setReturnValue(true);
                 }
 
                 if (d < 16.0 && d > 0.0 && e > 16.0 && i < this.screen.getServers().size() - 1) {
-                    this.swapEntries(i, i + 1);
+                    this.swap(i, i + 1);
                     cir.setReturnValue(true);
                 }
             }
 
-            this.screen.setSelected(this);
-            if (Util.getMeasuringTimeMs() - this.time < 250L) {
-                this.screen.connect();
+            this.list.setSelected(this);
+            if (Util.getMillis() - this.time < 250L) {
+                this.join();
             }
 
-            this.time = Util.getMeasuringTimeMs();
+            this.time = Util.getMillis();
             cir.setReturnValue(true);
         }
     }

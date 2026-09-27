@@ -18,6 +18,7 @@ import meteordevelopment.meteorclient.commands.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.utils.network.MeteorExecutor;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
@@ -44,8 +45,7 @@ public class Stats2b2t extends Command {
                     player.sendSystemMessage(
                         Component.literal(
                             "§8<"+ StardustUtil.rCC()+"§o✨"+"§r§8> §4§oPlayer not found§7..."
-                        ), false
-                    );
+                        ));
                 } else {
                     try {
                         Gson gson = new Gson();
@@ -141,8 +141,7 @@ public class Stats2b2t extends Command {
                                 + "\n    §7Chats: "+cc+"§o"+stats.chatsCount+"\n    §7Prio: "+cc+"§o"+stats.prio
                                 + "\n    §7First Seen: "+cc+"§o"+formattedFirstSeen+"\n    §7Last Seen: "+cc+"§o"+formattedLastSeen
                                 + "\n    §7Playtime: "+cc+"§o"+formattedPlaytime+"\n    §7Playtime in last month: "+cc+"§o"+formattedPlaytimeInMonth
-                            ), false
-                        );
+                            ));
                     } catch (Exception err) {
                         error("§7Failed to deserialize response from the server§4..!");
                         LogUtil.error("Failed to deserialize Json: " + err, this.getName());

@@ -10,7 +10,7 @@ public enum Suit implements StringRepresentable {
     }
 
     @Override
-    public String asString() {
+    public String getSerializedName() {
         return switch (this) {
             case CLUBS -> "♣";
             case SPADES -> "♠";

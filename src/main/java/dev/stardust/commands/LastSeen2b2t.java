@@ -18,6 +18,7 @@ import meteordevelopment.meteorclient.commands.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.utils.network.MeteorExecutor;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
@@ -48,8 +49,7 @@ public class LastSeen2b2t extends Command {
                         player.sendSystemMessage(
                             Component.literal(
                                 "§8<"+StardustUtil.rCC()+"§o✨"+"§r§8> §4§oThat player has not been seen§7..."
-                            ), false
-                        );
+                            ));
                     }else {
                         JsonElement seenJson = JsonParser.parseString(response);
 
@@ -67,8 +67,7 @@ public class LastSeen2b2t extends Command {
                                     Component.literal(
                                         "§8<" + StardustUtil.rCC() + "§o✨" + "§r§8> "+cc+"§o"
                                             + playerString + "§r§7 was last seen on "+cc+"§o" + formattedTimestamp + "§7."
-                                    ),false
-                                );
+                                    ));
                             }
                         } else {
                             ApiHandler.sendErrorResponse();

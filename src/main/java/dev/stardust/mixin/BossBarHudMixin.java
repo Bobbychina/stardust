@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class BossBarHudMixin {
 
     // See AntiToS.java
-    @Inject(method = "renderBossBar(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IILnet/minecraft/world/BossEvent;)V", at = @At("HEAD"))
+    @Inject(method = "extractBar", at = @At("HEAD"))
     private void censorBossBar(GuiGraphicsExtractor context, int x, int y, BossEvent bossBar, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;

@@ -32,7 +32,7 @@ public abstract class ScreenMixin extends AbstractContainerEventHandler implemen
     protected Component title;
 
     // See AntiToS.java
-    @Inject(method = "render", at = @At("HEAD"))
+    @Inject(method = "extractRenderState", at = @At("HEAD"))
     private void censorScreenTitles(CallbackInfo ci) {
         Modules mods = Modules.get();
         if (mods == null) return;
@@ -43,14 +43,16 @@ public abstract class ScreenMixin extends AbstractContainerEventHandler implemen
     }
 
     // See ChatSigns.java
-    @Inject(method = "handleTextClick", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "handleTextClick", at = @At("HEAD"), cancellable = true, require = 0)
     private void handleClickESP(Style style, CallbackInfoReturnable<Boolean> cir) {
         if (style == null) return;
         ClickEvent event = style.getClickEvent();
-        if (event == null || event.getAction() != ClickEvent.Action.RUN_COMMAND) return;
+        // 26.1: ClickEvent 变成接口 + RunCommand record，动作/命令都要走记录访问器
+        if (!(event instanceof ClickEvent.RunCommand runCommand)) return;
 
-        if (event.getValue().startsWith("clickESP~")) {
-            String[] args = event.getValue().split("~");
+        String command = runCommand.command();
+        if (command.startsWith("clickESP~")) {
+            String[] args = command.split("~");
 
             String mod;
             BlockPos pos;
@@ -73,16 +75,14 @@ public abstract class ScreenMixin extends AbstractContainerEventHandler implemen
                     if (mods == null) return;
                     ChatSigns chatSigns = mods.get(ChatSigns.class);
                     if (chatSigns.toggleClickESP(pos, now)) {
-                        ((StyleAccessor) style).setHoverEvent(
-                            new HoverEvent(
-                                HoverEvent.Action.SHOW_TEXT,
+                        ((StyleAccessor) (Object) style).setHoverEvent(
+                            new HoverEvent.ShowText(
                                 Component.literal("§4§oDisable §7§oESP for this sign.")
                             )
                         );
                     } else {
-                        ((StyleAccessor) style).setHoverEvent(
-                            new HoverEvent(
-                                HoverEvent.Action.SHOW_TEXT,
+                        ((StyleAccessor) (Object) style).setHoverEvent(
+                            new HoverEvent.ShowText(
                                 Component.literal("§2§oEnable §7§oESP for this sign.")
                             )
                         );
