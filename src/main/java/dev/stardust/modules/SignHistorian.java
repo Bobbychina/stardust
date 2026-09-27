@@ -349,7 +349,7 @@ public class SignHistorian extends Module {
                     if (be instanceof SignBlockEntity sbeReconstructed) {
                         if (!serverSigns.containsKey(bPos)) {
                             if (state.getBlock() instanceof SignBlock signBlock) {
-                                woodTypeMap.put(sbeReconstructed, signBlock.getWoodType());
+                                woodTypeMap.put(sbeReconstructed, SignBlock.getWoodType(signBlock));
                             }
                             serverSigns.put(bPos, new Tuple<>(sbeReconstructed, sbeReconstructed.getBlockState()));
                         }
@@ -555,7 +555,7 @@ public class SignHistorian extends Module {
             if (sbe1.getFrontText().hasGlowingText() != sbe2.getFrontText().hasGlowingText()) return false;
         }
 
-        return ((SignBlock) sbe1.getBlockState().getBlock()).getWoodType() == ((SignBlock) sbe2.getBlockState().getBlock()).getWoodType();
+        return ((SignBlock) SignBlock.getWoodType(sbe1.getBlockState().getBlock())) == ((SignBlock) SignBlock.getWoodType(sbe2.getBlockState().getBlock()));
     }
 
     private boolean containsBlacklistedText(SignBlockEntity sbe) {
@@ -587,7 +587,7 @@ public class SignHistorian extends Module {
     private boolean mobHasLineOfSight(Monster mob) {
         Vec3 mobEyePos = mob.getEyePosition();
         Vec3 eyePos = mc.player.getEyePosition();
-        HitResult lineOfSightCheck = mc.level.raycast(
+        HitResult lineOfSightCheck = mc.level.clip(
             new ClipContext(
                 mobEyePos, eyePos,
                 ClipContext.Block.COLLIDER,
@@ -653,7 +653,7 @@ public class SignHistorian extends Module {
             destroyedSigns.remove(serverSigns.get(pos).getLeft());
         } else {
             if (sbe.getBlockState().getBlock() instanceof SignBlock signBlock) {
-                woodTypeMap.put(sbe, signBlock.getWoodType());
+                woodTypeMap.put(sbe, SignBlock.getWoodType(signBlock));
             }
             serverSigns.put(pos, new Tuple<>(sbe, sbe.getBlockState()));
             if (persistenceSetting.get()) {
@@ -743,7 +743,7 @@ public class SignHistorian extends Module {
             if (event.result.getBlockPos().closerThan(sbe.getBlockPos(), 1)) {
                 MsgUtil.sendModuleMsg("§e§lOriginal§7§l: §7§o" + Arrays.stream(sbe.getFrontText().getMessages(false)).map(Component::getString).collect(Collectors.joining(" ")), this.name);
                 MsgUtil.sendModuleMsg(
-                    "§6§lWoodType§7§l: " + ((SignBlock) sbe.getBlockState().getBlock()).getWoodType().name()
+                    "§6§lWoodType§7§l: " + ((SignBlock) SignBlock.getWoodType(sbe.getBlockState().getBlock())).name()
                     + " | §3§lColor§7§l: " + sbe.getText(true).getColor().name()
                     + " | §f§lGlow Ink§7§l: " + sbe.getText(true).hasGlowingText(), this.name
                 );
@@ -762,7 +762,7 @@ public class SignHistorian extends Module {
             if (packet.getPos().closerThan(ghost.getBlockPos(), 1.5)) {
                 MsgUtil.sendModuleMsg("§e§lOriginal§7§l: §7§o" + Arrays.stream(ghost.getFrontText().getMessages(false)).map(Component::getString).collect(Collectors.joining(" ")), this.name);
                 MsgUtil.sendModuleMsg(
-                    "§6§lWoodType§7§l: " + ((SignBlock) ghost.getBlockState().getBlock()).getWoodType().name()
+                    "§6§lWoodType§7§l: " + ((SignBlock) SignBlock.getWoodType(ghost.getBlockState().getBlock())).name()
                         + " | §3§lColor§7§l: " + ghost.getText(true).getColor().name()
                         + " | §f§lGlow Ink§7§l: " + ghost.getText(true).hasGlowingText(), this.name
                 );

@@ -255,7 +255,7 @@ public class Archaeology extends Module {
                 && (mc.level.getBlockState(pos2).is(Blocks.SUSPICIOUS_SAND)
                 || mc.level.getBlockState(pos2).is(Blocks.SUSPICIOUS_GRAVEL)))
             {
-                if (mc.level.getBlockState(pos2.below()).isAir() || mc.level.getBlockState(pos2.below()).isReplaceable()) {
+                if (mc.level.getBlockState(pos2.below()).isAir() || mc.level.getBlockState(pos2.below()).canBeReplaced()) {
                     preventingBreakageBlocks.add(pos2);
                     MsgUtil.updateModuleMsg("It is not yet safe to brush this suspicious block, as doing so will update an adjacent floating one§e..!", this.name, "preventBreakageBrush".hashCode());
                     return false;
@@ -280,7 +280,7 @@ public class Archaeology extends Module {
         for (Direction dir : Direction.values()) {
             checkPos.set(pos.relative(dir));
             if (!toIgnore.contains(checkPos.asLong()) && mc.level.getBlockState(checkPos).is(Blocks.SUSPICIOUS_SAND) || mc.level.getBlockState(checkPos).is(Blocks.SUSPICIOUS_GRAVEL)) {
-                if (mc.level.getBlockState(checkPos.below()).isAir() || mc.level.getBlockState(checkPos.below()).isReplaceable()) {
+                if (mc.level.getBlockState(checkPos.below()).isAir() || mc.level.getBlockState(checkPos.below()).canBeReplaced()) {
                     preventingBreakageBlocks.add(new BlockPos(checkPos));
                     MsgUtil.updateModuleMsg("§aPreventing accidental breakage from indirect block update for floating suspicious block§c..!", this.name, "indirectBreakPrevent".hashCode());
                     return false;
@@ -311,7 +311,7 @@ public class Archaeology extends Module {
                         && (mc.level.getBlockState(indirectPos).is(Blocks.SUSPICIOUS_GRAVEL)
                         || mc.level.getBlockState(indirectPos).is(Blocks.SUSPICIOUS_SAND)))
                     {
-                        if (mc.level.getBlockState(indirectPos.below()).isAir() || mc.level.getBlockState(indirectPos.below()).isReplaceable()) {
+                        if (mc.level.getBlockState(indirectPos.below()).isAir() || mc.level.getBlockState(indirectPos.below()).canBeReplaced()) {
                             preventingBreakageBlocks.add(new BlockPos(indirectPos));
                             MsgUtil.updateModuleMsg("§ePreventing accidental breakage from indirect block update for floating suspicious block§c..!", this.name, "indirectBreakPrevent".hashCode());
                             return false;

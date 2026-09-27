@@ -477,8 +477,8 @@ public class ChatSigns extends Module {
             if (!String.join(" ", lines).contains("**Pre-1.19 Sign restored by 0xTas' SignHistorian**")) {
                 WoodType woodType = WoodType.BAMBOO;
                 Block block = sign.getBlockState().getBlock();
-                if (block instanceof SignBlock signBlock) woodType = signBlock.getWoodType();
-                else if (block instanceof WallSignBlock wallSignBlock) woodType = wallSignBlock.getWoodType();
+                if (block instanceof SignBlock signBlock) woodType = SignBlock.getWoodType(signBlock);
+                else if (block instanceof WallSignBlock wallSignBlock) woodType = SignBlock.getWoodType(wallSignBlock);
 
                 if (woodType == WoodType.OAK) {
                     CompoundTag metadata = sign.saveWithoutMetadata(mc.level.registryAccess());
@@ -838,7 +838,7 @@ public class ChatSigns extends Module {
             } else {
                 signBoardAutoLog.set(false);
                 StardustUtil.disableAutoReconnect();
-                mc.getConnection().onDisconnect(new ClientboundDisconnectPacket(reason));
+                mc.getConnection().onDisconnect(new DisconnectionDetails(reason));
             }
             toggle();
             return;

@@ -160,7 +160,7 @@ public abstract class FreecamMixin {
                         ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, mc.getCameraEntity()
                     );
 
-                    BlockHitResult rayCast = mc.level.raycast(context);
+                    BlockHitResult rayCast = mc.level.clip(context);
                     if (rayCast != null && !(mc.level.getBlockState(rayCast.getBlockPos()).getBlock() instanceof AirBlock)) {
                         crosshairPos = rayCast.getBlockPos();
                         side = rayCast.getDirection();

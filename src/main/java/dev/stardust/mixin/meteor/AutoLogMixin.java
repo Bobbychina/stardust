@@ -77,7 +77,7 @@ public abstract class AutoLogMixin extends Module {
         if (!Utils.canUpdate() || !isActive()) ci.cancel();
         if (didLog && System.currentTimeMillis() - requestedDcAt >= 1337) {
             LogUtil.warn("Detected illegal disconnect failure, falling back on regular disconnect (try adjusting your illegal disconnect method config setting).");
-            if (mc.getConnection() != null) mc.getConnection().onDisconnect(new ClientboundDisconnectPacket(disconnectReason));
+            if (mc.getConnection() != null) mc.getConnection().onDisconnect(new DisconnectionDetails(disconnectReason));
             disconnectReason = null;
             didLog = false;
             requestedDcAt = 0L;

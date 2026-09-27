@@ -16,7 +16,7 @@ public class Loadout extends Command {
     public Loadout() { super("loadout", "Save and load inventory configurations."); }
 
     @Override
-    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
         builder.then(literal("save").then(argument("name", StringArgumentType.word()).executes(ctx -> {
             String loadoutName = ctx.getArgument("name", String.class);
             Modules mods = Modules.get();

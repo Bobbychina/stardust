@@ -41,3 +41,9 @@ python E:\Files\tools\portkit\fix_rules.py
 python E:\Files\tools\portkit\compile.py
 python E:\Files\tools\portkit\port_loop.py 8
 ```
+
+## 2026-09-28 02:30 存档（重启 dsh 前）
+- 本轮自动化已收敛到平台期：**BepHax 213 错 / stardust 274 错**（自动 pass 每轮几乎无改动）。
+- 剩余属于「26.1 重做 API」清单（见上）：GUI extractor 方法族、packet 记录化、`PlayerFaceRenderer`、`Box.from` 等零散点。
+- 工具链：`E:\Files\tools\portkit\`（grind.py 串起全部 pass；`PORT_PROJ` / `PORT_MCVER` / `PORT_MAPS` 环境变量指定项目与映射）。
+- 恢复方式：设好环境变量 → `python E:\Files\tools\portkit\grind.py 3` 看收敛情况，再按 docs 里清单人工改。

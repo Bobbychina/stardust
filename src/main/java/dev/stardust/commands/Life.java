@@ -62,7 +62,7 @@ public class Life extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
         builder.then(literal("new").executes(ctx -> {
             Hud.get().forEach(element -> {
                 if (element instanceof ConwayHud hud) {

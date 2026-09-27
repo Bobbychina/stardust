@@ -29,7 +29,7 @@ public class Stats2b2t extends Command {
     public Stats2b2t() { super("stats2b2t", "Fetch stats for a 2b2t player from api.2b2t.vc.", "stats"); }
 
     @Override
-    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
         builder.then(argument("player", StringArgumentType.word()).executes(ctx -> {
             MeteorExecutor.execute(() -> {
                 LocalPlayer player = mc.player;

@@ -140,7 +140,7 @@ public class Panorama extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
         builder.then(
             argument("name", StringArgumentType.word()).executes(ctx -> {
                 String name = ctx.getArgument("name", String.class);

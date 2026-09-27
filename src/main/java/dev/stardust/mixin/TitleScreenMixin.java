@@ -48,7 +48,7 @@ public abstract class TitleScreenMixin extends Screen {
     @Inject(method = "init", at = @At("TAIL"))
     private void mixinInit(CallbackInfo ci) {
         if (StardustConfig.directConnectButtonSetting.get()) {
-            this.addDrawableChild(Button.builder(
+            this.addRenderableWidget(Button.builder(
                     Component.literal("§c§l2§a§lB"), this::onClick2b2tButton)
                 .bounds(this.width / 2 + 104, this.height / 4 + 72, 20, 20)
                 .build()

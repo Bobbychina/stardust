@@ -143,7 +143,7 @@ public class VaultESP extends Module {
         BlockState vaultState = mc.level.getBlockState(be.getBlockPos());
 
         return vaultState.getBlock() instanceof VaultBlock
-            && vaultState.contains(VaultBlock.OMINOUS) && vaultState.get(VaultBlock.OMINOUS);
+            && vaultState.hasProperty(VaultBlock.OMINOUS) && vaultState.getValue(VaultBlock.OMINOUS);
     }
 
     @Override

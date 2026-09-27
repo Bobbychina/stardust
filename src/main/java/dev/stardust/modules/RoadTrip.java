@@ -362,7 +362,7 @@ public class RoadTrip extends Module {
     private void disconnect(Component reason) {
         if (mc.getConnection() == null) return;
         StardustUtil.disableAutoReconnect();
-        mc.getConnection().onDisconnect(new ClientboundDisconnectPacket(reason));
+        mc.getConnection().onDisconnect(new DisconnectionDetails(reason));
         switch (autoLogToggle.get()) {
             case Module -> toggle();
             case Settings -> disableAutoLogSettings();

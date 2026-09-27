@@ -118,7 +118,7 @@ public class Loadouts extends Module {
             for (Map.Entry<String, HashMap<Integer, String>> entry : loaded.entrySet()) {
                 HashMap<Integer, Item> itemMap = new HashMap<>();
                 for (Map.Entry<Integer, String> itemId : entry.getValue().entrySet()) {
-                    itemMap.put(itemId.getKey(), BuiltInRegistries.ITEM.get(Identifier.parse(itemId.getValue())));
+                    itemMap.put(itemId.getKey(), BuiltInRegistries.ITEM.getValue(Identifier.parse(itemId.getValue())));
                 }
 
                 loadouts.put(entry.getKey(), itemMap);
@@ -209,7 +209,7 @@ public class Loadouts extends Module {
             ItemStack current = handler.getSlot(to).getItem();
             if (debug.get()) {
                 LogUtil.info(
-                    "Assigned: " + assigned.getName().getString()
+                    "Assigned: " + new ItemStack(assigned).getHoverName().getString()
                     + " | Current: " + current.getHoverName().getString(), this.name
                 );
             }
@@ -230,7 +230,7 @@ public class Loadouts extends Module {
                 }
                 if (debug.get()) {
                     LogUtil.info(
-                        "Looking for: " + assigned.getName().getString()
+                        "Looking for: " + new ItemStack(assigned).getHoverName().getString()
                         + " | found: " + occupiedBy.getHoverName().getString(), this.name
                     );
                 }

@@ -31,7 +31,7 @@ public class LastSeen2b2t extends Command {
 
 
     @Override
-    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
         builder.then(
             argument("player", StringArgumentType.word()).executes(ctx -> {
                 MeteorExecutor.execute(() -> {

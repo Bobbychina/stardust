@@ -104,7 +104,7 @@ public abstract class BookEditScreenMixin extends Screen {
             if (color.label.isEmpty()) continue;
 
             this.buttons.add(
-                this.addDrawableChild(
+                this.addRenderableWidget(
                     Button.builder(
                             Component.literal(color.label+"§l◼"),
                             this::onClickColorButton
@@ -122,7 +122,7 @@ public abstract class BookEditScreenMixin extends Screen {
             if (format.label.isEmpty()) continue;
 
             this.buttons.add(
-                this.addDrawableChild(
+                this.addRenderableWidget(
                     Button.builder(
                             Component.literal(format.label+"A"),
                             this::onClickFormatButton
@@ -137,7 +137,7 @@ public abstract class BookEditScreenMixin extends Screen {
         }
 
         this.buttons.add(
-            this.addDrawableChild(
+            this.addRenderableWidget(
                 Button.builder(
                         Component.literal("§rA"),
                         this::onClickFormatButton
@@ -151,7 +151,7 @@ public abstract class BookEditScreenMixin extends Screen {
         if (odd) offset += 12;
         odd = !odd;
         this.buttons.add(
-            this.addDrawableChild(
+            this.addRenderableWidget(
                 Button.builder(
                         Component.literal("🌈"),
                         this::onClickRainbowButton

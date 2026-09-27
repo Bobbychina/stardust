@@ -35,7 +35,7 @@ public class HudRenderer {
         if (widget.CHEAT_MODE) {
             String cheatText = "CHEAT";
             Color cheatShadow = new Color(69, 0, 0);
-            double cheatWidth = theme.textRenderer().getWidth(cheatText);
+            double cheatWidth = theme.font().getWidth(cheatText);
             renderer.text("CHEAT", bx + (int)width - cheatWidth - 6 - 1, by + 6, cheatShadow, false);
             renderer.text("CHEAT", bx + (int)width - cheatWidth - 6 + 1, by + 6, cheatShadow, false);
             renderer.text("CHEAT", bx + (int)width - cheatWidth - 6, by + 5, cheatShadow, false);
@@ -45,7 +45,7 @@ public class HudRenderer {
 
         int[] yOffsets = {6, 22, 38, 54};
         List<String> hudText = getHudStrings(widget);
-        hudText.sort(Comparator.comparingDouble(str -> theme.textRenderer().getWidth((String) str)).reversed());
+        hudText.sort(Comparator.comparingDouble(str -> theme.font().getWidth((String) str)).reversed());
 
         for (int n = 0; n < 4; n++) {
             int yOffset = yOffsets[n];
@@ -145,7 +145,7 @@ public class HudRenderer {
         String title, Color titleColor, String[] inlineTriple, Color[] inlineColors, List<String> subtitles, List<Color> subColors
     ) {
         // beware: here be HUD code
-        TextRenderer tr = renderer.theme.textRenderer();
+        TextRenderer tr = renderer.theme.font();
         int titleW = scaledTextWidth(renderer, tr, title, TITLE_SCALE);
         int titleH = scaledTextHeight(renderer, tr, TITLE_SCALE);
 
