@@ -2,15 +2,14 @@ package dev.stardust.gui.widgets.solitaire;
 
 import java.util.*;
 import static org.lwjgl.glfw.GLFW.*;
-import net.minecraft.sound.SoundEvent;
+import net.minecraft.sounds.SoundEvent;
 import dev.stardust.modules.Solitaire;
-import net.minecraft.sound.SoundEvents;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.sounds.SoundEvents;
 import java.util.concurrent.ThreadLocalRandom;
 import dev.stardust.gui.widgets.solitaire.model.*;
 import meteordevelopment.meteorclient.gui.GuiTheme;
 import meteordevelopment.meteorclient.gui.widgets.WWidget;
-import net.minecraft.client.sound.PositionedSoundInstance;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import dev.stardust.gui.widgets.solitaire.input.InputTracker;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 import dev.stardust.gui.widgets.solitaire.render.CardRenderer;
@@ -52,7 +51,7 @@ public class WSolitaire extends WWidget {
     private double dragX, dragY;
     public boolean dragging = false;
     private int dragOriginIndex = -1;
-    private @Nullable Move lastMove = null;
+    private Move lastMove = null;
     private List<Card> dragOriginPile = null;
     private List<Card> draggedCards = new ArrayList<>();
 
@@ -123,7 +122,7 @@ public class WSolitaire extends WWidget {
                         if (tryAutoMoveToFoundations(move.card, origin)) {
                             origin.removeLast();
                             playSound(
-                                SoundEvents.BLOCK_END_PORTAL_FRAME_FILL,
+                                SoundEvents.END_PORTAL_FRAME_FILL,
                                 rng.nextFloat(0.77f, 1.420f),
                                 module.soundVolume.get().floatValue()
                             );
@@ -385,7 +384,7 @@ public class WSolitaire extends WWidget {
                         module.clearSave();
                         gameEnd = System.currentTimeMillis();
                         playSound(
-                            SoundEvents.ENTITY_VILLAGER_NO,
+                            SoundEvents.VILLAGER_NO,
                             rng.nextFloat(0.69f, 1.337f)
                         );
                     }
@@ -400,7 +399,7 @@ public class WSolitaire extends WWidget {
                     if (tryAutoMoveToFoundations(top, waste)) {
                         waste.removeLast();
                         playSound(
-                            SoundEvents.BLOCK_END_PORTAL_FRAME_FILL,
+                            SoundEvents.END_PORTAL_FRAME_FILL,
                             rng.nextFloat(0.77f, 1.420f),
                             module.soundVolume.get().floatValue()
                         );
@@ -422,7 +421,7 @@ public class WSolitaire extends WWidget {
                 if (tryAutoMoveToFoundations(top, waste)) {
                     waste.removeLast();
                     playSound(
-                        SoundEvents.BLOCK_END_PORTAL_FRAME_FILL,
+                        SoundEvents.END_PORTAL_FRAME_FILL,
                         rng.nextFloat(0.77f, 1.420f),
                         module.soundVolume.get().floatValue()
                     );
@@ -475,7 +474,7 @@ public class WSolitaire extends WWidget {
                     if (tryAutoMoveToFoundations(top, pile)) {
                         pile.removeLast();
                         playSound(
-                            SoundEvents.BLOCK_END_PORTAL_FRAME_FILL,
+                            SoundEvents.END_PORTAL_FRAME_FILL,
                             rng.nextFloat(0.77f, 1.420f),
                             module.soundVolume.get().floatValue()
                         );
@@ -505,7 +504,7 @@ public class WSolitaire extends WWidget {
             if (localX >= fx && localX <= fx + CARD_WIDTH && localY >= fy && localY <= fy + CARD_HEIGHT) {
                 if (canDropOnFoundation(draggedCards, foundations.get(n))) {
                     playSound(
-                        SoundEvents.BLOCK_END_PORTAL_FRAME_FILL,
+                        SoundEvents.END_PORTAL_FRAME_FILL,
                         rng.nextFloat(0.77f, 1.420f),
                         module.soundVolume.get().floatValue()
                     );
@@ -644,7 +643,7 @@ public class WSolitaire extends WWidget {
         gameStart = System.currentTimeMillis();
 
         playSound(
-            SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
+            SoundEvents.EXPERIENCE_ORB_PICKUP,
             rng.nextFloat(0.69f, 1.337f)
         );
     }
@@ -657,7 +656,7 @@ public class WSolitaire extends WWidget {
 
         if (!moved.isEmpty()) {
             playSound(
-                SoundEvents.ENTITY_PLAYER_TELEPORT,
+                SoundEvents.PLAYER_TELEPORT,
                 rng.nextFloat(0.42f, 0.69f)
             );
         }
@@ -688,7 +687,7 @@ public class WSolitaire extends WWidget {
         dragY = localMouseY - (CARD_HEIGHT / 2.0);
 
         playSound(
-            SoundEvents.ENTITY_ITEM_FRAME_REMOVE_ITEM,
+            SoundEvents.ITEM_FRAME_REMOVE_ITEM,
             rng.nextFloat(0.69f, 1.337f),
             module.soundVolume.get().floatValue() * 0.77f
         );
@@ -713,7 +712,7 @@ public class WSolitaire extends WWidget {
         lastMove = new Move(moved, origin, dest);
 
         playSound(
-            SoundEvents.ENTITY_ITEM_FRAME_ADD_ITEM,
+            SoundEvents.ITEM_FRAME_ADD_ITEM,
             rng.nextFloat(0.69f, 1.337f),
             module.soundVolume.get().floatValue() * 0.77f
         );
@@ -725,11 +724,11 @@ public class WSolitaire extends WWidget {
             module.clearSave();
             gameEnd = System.currentTimeMillis();
             playSound(
-                SoundEvents.ENTITY_VILLAGER_CELEBRATE,
+                SoundEvents.VILLAGER_CELEBRATE,
                 rng.nextFloat(0.69f, 1.337f)
             );
             playSound(
-                SoundEvents.BLOCK_END_PORTAL_SPAWN,
+                SoundEvents.END_PORTAL_SPAWN,
                 rng.nextFloat(0.777f, 1.1337f),
                 module.soundVolume.get().floatValue() * 0.42f
             );
@@ -892,11 +891,11 @@ public class WSolitaire extends WWidget {
                     module.clearSave();
                     gameEnd = System.currentTimeMillis();
                     playSound(
-                        SoundEvents.ENTITY_VILLAGER_CELEBRATE,
+                        SoundEvents.VILLAGER_CELEBRATE,
                         rng.nextFloat(0.69f, 1.337f)
                     );
                     playSound(
-                        SoundEvents.BLOCK_END_PORTAL_SPAWN,
+                        SoundEvents.END_PORTAL_SPAWN,
                         rng.nextFloat(0.777f, 1.1337f),
                         module.soundVolume.get().floatValue() * 0.42f
                     );
@@ -944,7 +943,7 @@ public class WSolitaire extends WWidget {
 
     public void cancelDragReturn() {
         playSound(
-            SoundEvents.ENTITY_ITEM_FRAME_ADD_ITEM,
+            SoundEvents.ITEM_FRAME_ADD_ITEM,
             rng.nextFloat(0.69f, 1.337f),
             module.soundVolume.get().floatValue() * 0.69f
         );
@@ -966,7 +965,7 @@ public class WSolitaire extends WWidget {
         try {
             if (mc == null) return;
             if (mc.getSoundManager() == null) return;
-            mc.getSoundManager().play(PositionedSoundInstance.master(sound, pitch, module.soundVolume.get().floatValue()));
+            mc.getSoundManager().play(SimpleSoundInstance.forUI(sound, pitch, module.soundVolume.get().floatValue()));
         } catch (Throwable ignored) {}
     }
 
@@ -975,7 +974,7 @@ public class WSolitaire extends WWidget {
         try {
             if (mc == null) return;
             if (mc.getSoundManager() == null) return;
-            mc.getSoundManager().play(PositionedSoundInstance.master(sound, pitch, volume));
+            mc.getSoundManager().play(SimpleSoundInstance.forUI(sound, pitch, volume));
         } catch (Throwable ignored) {}
     }
 

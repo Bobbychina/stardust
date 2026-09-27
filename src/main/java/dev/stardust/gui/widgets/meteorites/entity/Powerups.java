@@ -1,8 +1,8 @@
 package dev.stardust.gui.widgets.meteorites.entity;
 
-import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.StringRepresentable;
 
-public enum Powerups implements StringIdentifiable {
+public enum Powerups implements StringRepresentable {
     NONE, PRECISION_AIM, BULLET_HELL, REINFORCED_HULL, PIERCING_SHOTS,
     THRUSTER_UPGRADES, RAPID_FIRE, SUPERCHARGED_FSD, CALIBRATED_FSD, DOUBLE_POINTS,
     SHOTGUN, SNIPER, HIGH_TECH_HULL, ENTROPY, GRAVITY_WELL, HOMING_SHOTS, PHASE_SHIFT, MIDAS_TOUCH, STARDUST;

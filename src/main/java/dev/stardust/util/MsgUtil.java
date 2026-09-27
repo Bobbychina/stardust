@@ -3,9 +3,9 @@ package dev.stardust.util;
 import java.util.Map;
 import java.util.HashMap;
 import dev.stardust.Stardust;
-import net.minecraft.text.Text;
-import net.minecraft.text.Style;
-import net.minecraft.util.Formatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.ChatFormatting;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
@@ -19,8 +19,8 @@ public class MsgUtil {
     private final static Map<String, String> modulePrefixes = new HashMap<>();
 
     public static String getPrefix() {
-        return Formatting.DARK_GRAY + "<" + StardustUtil.rCC() +
-            Formatting.ITALIC + "✨" + Formatting.DARK_GRAY + ">";
+        return ChatFormatting.DARK_GRAY + "<" + StardustUtil.rCC() +
+            ChatFormatting.ITALIC + "✨" + ChatFormatting.DARK_GRAY + ">";
     }
 
     public static String getRawPrefix() {
@@ -41,17 +41,17 @@ public class MsgUtil {
 
     public static String getModulePrefix(String module) {
         if (!modulePrefixes.containsKey(module)) {
-            return String.valueOf(Formatting.DARK_GRAY) + '[' + StardustUtil.rCC() +
-                Formatting.ITALIC + Utils.nameToTitle(module) + Formatting.DARK_GRAY + ']';
+            return String.valueOf(ChatFormatting.DARK_GRAY) + '[' + StardustUtil.rCC() +
+                ChatFormatting.ITALIC + Utils.nameToTitle(module) + ChatFormatting.DARK_GRAY + ']';
         } else {
-            return String.valueOf(Formatting.DARK_GRAY) + '[' + modulePrefixes.get(module) +
-                Formatting.ITALIC + Utils.nameToTitle(module) + Formatting.DARK_GRAY + ']';
+            return String.valueOf(ChatFormatting.DARK_GRAY) + '[' + modulePrefixes.get(module) +
+                ChatFormatting.ITALIC + Utils.nameToTitle(module) + ChatFormatting.DARK_GRAY + ']';
         }
     }
 
     public static void sendRawMsg(String msg) {
         if (mc.player == null) return;
-        mc.player.sendMessage(Text.literal(msg), false);
+        mc.player.sendSystemMessage(Component.literal(msg), false);
     }
 
     public static void sendMsg(String msg) {
@@ -59,7 +59,7 @@ public class MsgUtil {
 
         try {
             StringBuilder sb = new StringBuilder();
-            mc.player.sendMessage(Text.literal(sb.append(getPrefix()).append(' ').append(Formatting.GRAY).append(msg).toString()), false);
+            mc.player.sendSystemMessage(Component.literal(sb.append(getPrefix()).append(' ').append(ChatFormatting.GRAY).append(msg).toString()), false);
         } catch (Exception ignored) {}
     }
 
@@ -67,8 +67,8 @@ public class MsgUtil {
         if (mc.player == null) return;
 
         try {
-            String message = getPrefix() + ' ' + Formatting.GRAY + msg;
-            mc.player.sendMessage(Text.literal(message).setStyle(style), false);
+            String message = getPrefix() + ' ' + ChatFormatting.GRAY + msg;
+            mc.player.sendSystemMessage(Component.literal(message).setStyle(style), false);
         } catch (Exception ignored) {}
     }
 
@@ -77,7 +77,7 @@ public class MsgUtil {
 
         try {
             StringBuilder sb = new StringBuilder();
-            mc.player.sendMessage(Text.literal(sb.append(getModulePrefix(module)).append(' ').append(Formatting.GRAY).append(msg).toString()), false);
+            mc.player.sendSystemMessage(Component.literal(sb.append(getModulePrefix(module)).append(' ').append(ChatFormatting.GRAY).append(msg).toString()), false);
         } catch (Exception ignored) {}
     }
 
@@ -85,8 +85,8 @@ public class MsgUtil {
         if (mc.player == null) return;
 
         try {
-            String message = getModulePrefix(module) + ' ' + Formatting.GRAY + msg;
-            mc.player.sendMessage(Text.literal(message).setStyle(style), false);
+            String message = getModulePrefix(module) + ' ' + ChatFormatting.GRAY + msg;
+            mc.player.sendSystemMessage(Component.literal(message).setStyle(style), false);
         } catch (Exception ignored) {}
     }
 
@@ -95,8 +95,8 @@ public class MsgUtil {
 
         try {
             StringBuilder sb = new StringBuilder();
-            ((IChatHud) mc.inGameHud.getChatHud()).meteor$add(
-                Text.literal(sb.append(getPrefix()).append(' ').append(Formatting.GRAY).append(msg).toString()), hashcode
+            ((IChatHud) mc.gui.getChat()).meteor$add(
+                Component.literal(sb.append(getPrefix()).append(' ').append(ChatFormatting.GRAY).append(msg).toString()), hashcode
             );
         } catch (Exception ignored) {}
     }
@@ -106,8 +106,8 @@ public class MsgUtil {
 
         try {
             StringBuilder sb = new StringBuilder();
-            ((IChatHud) mc.inGameHud.getChatHud()).meteor$add(
-                Text.literal(sb.append(getModulePrefix(module)).append(' ').append(Formatting.GRAY).append(msg).toString()), hashcode
+            ((IChatHud) mc.gui.getChat()).meteor$add(
+                Component.literal(sb.append(getModulePrefix(module)).append(' ').append(ChatFormatting.GRAY).append(msg).toString()), hashcode
             );
         } catch (Exception ignored) {}
     }

@@ -2,10 +2,10 @@ package dev.stardust.mixin.accessor;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
-import net.minecraft.block.entity.SignText;
+import net.minecraft.world.level.block.entity.SignText;
 import org.spongepowered.asm.mixin.gen.Accessor;
-import net.minecraft.block.entity.SignBlockEntity;
-import net.minecraft.client.gui.screen.ingame.AbstractSignEditScreen;
+import net.minecraft.world.level.block.entity.SignBlockEntity;
+import net.minecraft.client.gui.screens.inventory.AbstractSignEditScreen;
 
 @Mixin(AbstractSignEditScreen.class)
 public interface AbstractSignEditScreenAccessor {

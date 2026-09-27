@@ -1,28 +1,28 @@
 package dev.stardust.mixin;
 
 import java.util.Arrays;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import java.util.stream.Collectors;
 import dev.stardust.modules.AntiToS;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
-import net.minecraft.block.entity.SignText;
+import net.minecraft.world.level.block.entity.SignText;
 import org.spongepowered.asm.mixin.injection.At;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.block.entity.SignBlockEntity;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.world.level.block.entity.SignBlockEntity;
 import org.spongepowered.asm.mixin.injection.Inject;
-import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.renderer.MultiBufferSource;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import net.minecraft.client.render.block.entity.BlockEntityRenderer;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import meteordevelopment.meteorclient.systems.modules.render.NoRender;
-import net.minecraft.client.render.block.entity.AbstractSignBlockEntityRenderer;
+import net.minecraft.client.renderer.blockentity.AbstractSignRenderer;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
-@Mixin(AbstractSignBlockEntityRenderer.class)
+@Mixin(AbstractSignRenderer.class)
 public abstract class AbstractSignBlockEntityRendererMixin implements BlockEntityRenderer<SignBlockEntity> {
 
     // See AntiToS.java
@@ -34,15 +34,15 @@ public abstract class AbstractSignBlockEntityRendererMixin implements BlockEntit
         if (!antiToS.isActive()) return signText;
 
         String testText = Arrays.stream(signText.getMessages(false))
-            .map(Text::getString)
+            .map(Component::getString)
             .collect(Collectors.joining(" "))
             .trim();
         return antiToS.containsBlacklistedText(testText) ? antiToS.familyFriendlySignText(signText) : signText;
     }
 
     // See NoRenderMixin.java
-    @Inject(method = "render(Lnet/minecraft/block/entity/SignBlockEntity;FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;II)V", at = @At("HEAD"), cancellable = true)
-    private void onRender(SignBlockEntity signBlockEntity, float f, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, int j, CallbackInfo ci) {
+    @Inject(method = "render(Lnet/minecraft/world/level/block/entity/SignBlockEntity;FLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;II)V", at = @At("HEAD"), cancellable = true)
+    private void onRender(SignBlockEntity signBlockEntity, float f, PoseStack matrixStack, MultiBufferSource vertexConsumerProvider, int i, int j, CallbackInfo ci) {
         Modules mods = Modules.get();
         if (mods == null) return;
         AntiToS antiToS = mods.get(AntiToS.class);
@@ -54,7 +54,7 @@ public abstract class AbstractSignBlockEntityRendererMixin implements BlockEntit
         }
 
         if (antiToS.isActive() && antiToS.signMode.get().equals(AntiToS.SignMode.NoRender)) {
-            if (antiToS.containsBlacklistedText(Arrays.stream(signBlockEntity.getFrontText().getMessages(false)).map(Text::getString).collect(Collectors.joining()))) {
+            if (antiToS.containsBlacklistedText(Arrays.stream(signBlockEntity.getFrontText().getMessages(false)).map(Component::getString).collect(Collectors.joining()))) {
                 ci.cancel();
             }
         }

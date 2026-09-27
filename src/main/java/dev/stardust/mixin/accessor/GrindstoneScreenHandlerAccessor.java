@@ -1,11 +1,11 @@
 package dev.stardust.mixin.accessor;
 
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
-import net.minecraft.screen.GrindstoneScreenHandler;
+import net.minecraft.world.inventory.GrindstoneMenu;
 
-@Mixin(GrindstoneScreenHandler.class)
+@Mixin(GrindstoneMenu.class)
 public interface GrindstoneScreenHandlerAccessor {
     @Invoker("grind")
     ItemStack invokeGrind(ItemStack item);

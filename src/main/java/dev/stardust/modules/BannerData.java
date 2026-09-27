@@ -3,18 +3,18 @@ package dev.stardust.modules;
 import java.util.Optional;
 import dev.stardust.Stardust;
 import dev.stardust.util.MsgUtil;
-import net.minecraft.block.entity.*;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.world.level.block.entity.*;
+import net.minecraft.nbt.CompoundTag;
 import dev.stardust.util.StardustUtil;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.core.BlockPos;
 import dev.stardust.util.StardustUtil.*;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.world.phys.BlockHitResult;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.EnumSetting;
-import net.minecraft.component.type.BannerPatternsComponent;
+import net.minecraft.world.level.block.entity.BannerPatternLayers;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.events.entity.player.InteractBlockEvent;
@@ -98,12 +98,12 @@ public class BannerData extends Module {
 
     @EventHandler
     private void onRightClickBlock(InteractBlockEvent event) {
-        if (mc.world == null || mc.player == null) return;
+        if (mc.level == null || mc.player == null) return;
 
         BlockHitResult result = event.result;
         if (isActive() && result.getType() == HitResult.Type.BLOCK) {
             BlockPos pos = result.getBlockPos();
-            BlockEntity blockEntity = mc.world.getBlockEntity(pos);
+            BlockEntity blockEntity = mc.level.getBlockEntity(pos);
 
             if (blockEntity == null) return;
             // InteractBlockEvents fire twice sometimes, so we must cull the extra ones manually.
@@ -118,10 +118,10 @@ public class BannerData extends Module {
                     });
                 }
                 String bannerName = customName.toString();
-                String baseColor = banner.getColorForState().name();
+                String baseColor = banner.getBaseColor().name();
                 baseColor = baseColor.charAt(0) +baseColor.substring(1).toLowerCase();
 
-                BannerPatternsComponent patterns = banner.getPatterns();
+                BannerPatternLayers patterns = banner.getPatterns();
 
                 String txtFormat = textFormatSetting.get().label;
                 StringBuilder patternsList = new StringBuilder();
@@ -143,7 +143,7 @@ public class BannerData extends Module {
                     patternsList.append(cc).append("   ◦ ").append("§7")
                         .append(txtFormat).append(baseColor).append(" ").append("Base").append("\n");
 
-                    for (BannerPatternsComponent.Layer layer : patterns.layers()) {
+                    for (BannerPatternLayers.Layer layer : patterns.layers()) {
                         String patternColor = layer.color().name().charAt(0)
                             +layer.color().name().substring(1).toLowerCase();
 
@@ -163,16 +163,16 @@ public class BannerData extends Module {
                 MsgUtil.sendRawMsg(bannerData);
 
                 if (copyToClipboard.get()) {
-                    mc.keyboard.setClipboard(patterns.toString());
+                    mc.keyboardHandler.setClipboard(patterns.toString());
                     MsgUtil.updateModuleMsg(txtFormat + "Copied NBT data to clipboard§8.", this.name, "clipboardUpdate".hashCode());
                 }
 
                 lastEventPos = pos;
             } else if (blockEntity instanceof SignBlockEntity sign) {
                 if (!signData.get()) return;
-                NbtCompound metadata = sign.createNbt(mc.world.getRegistryManager());
+                CompoundTag metadata = sign.saveWithoutMetadata(mc.level.registryAccess());
                 if (copyToClipboard.get()) {
-                    mc.keyboard.setClipboard(metadata.toString());
+                    mc.keyboardHandler.setClipboard(metadata.toString());
                     MsgUtil.updateModuleMsg("§oCopied NBT data to clipboard§8§o..!", this.name, "bdclipboardUpdate".hashCode());
                 } else {
                     MsgUtil.sendMsg(metadata.toString());
@@ -189,7 +189,7 @@ public class BannerData extends Module {
         timer++;
         if (timer >= 20) {
             timer = 0;
-            lastEventPos = lastEventPos.add(2000000, 2000000, 2000000);
+            lastEventPos = lastEventPos.offset(2000000, 2000000, 2000000);
         }
     }
 }

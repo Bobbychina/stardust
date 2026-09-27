@@ -11,7 +11,6 @@ import dev.stardust.util.MsgUtil;
 import com.google.gson.GsonBuilder;
 import dev.stardust.util.StardustUtil;
 import java.nio.file.StandardOpenOption;
-import org.jetbrains.annotations.Nullable;
 import net.fabricmc.loader.api.FabricLoader;
 import meteordevelopment.meteorclient.settings.*;
 import dev.stardust.gui.screens.MinesweeperScreen;
@@ -252,7 +251,7 @@ public class Minesweeper extends Module {
             .build()
     );
 
-    public @Nullable WMinesweeper.SaveState saveData = null;
+    public WMinesweeper.SaveState saveData = null;
 
     public void saveGame(WMinesweeper.SaveState data) {
         saveData = data;
@@ -309,7 +308,7 @@ public class Minesweeper extends Module {
 
     @Override
     public void onDeactivate() {
-        if (mc.currentScreen instanceof MinesweeperScreen) {
+        if (mc.screen instanceof MinesweeperScreen) {
             try {
                 mc.setScreen(null);
             } catch (Exception err) {

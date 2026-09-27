@@ -3,12 +3,12 @@ package dev.stardust.util;
 import java.util.List;
 import java.util.Optional;
 import java.util.ArrayList;
-import net.minecraft.text.*;
+import net.minecraft.network.chat.*;
 import java.util.function.UnaryOperator;
 
 public class TextUtil {
     // See ChatHudMixin.java && EntityRendererMixin.java
-    public static Text modifyWithStyle(Text original, UnaryOperator<String> modifier) {
+    public static Component modifyWithStyle(Component original, UnaryOperator<String> modifier) {
         List<StyledChar> chars = new ArrayList<>();
         collectStyledChars(original, original.getStyle(), chars);
 
@@ -22,7 +22,7 @@ public class TextUtil {
         return rebuildFromStyledChars(modifiedChars);
     }
 
-    private static void collectStyledChars(Text original, Style inherited, List<StyledChar> out) {
+    private static void collectStyledChars(Component original, Style inherited, List<StyledChar> out) {
         Style style = original.getStyle().withParent(inherited);
         String content = original.getContent().visit(Optional::of).orElse("");
 
@@ -30,22 +30,22 @@ public class TextUtil {
             out.add(new StyledChar(c, style));
         }
 
-        for (Text sibling : original.getSiblings()) {
+        for (Component sibling : original.getSiblings()) {
             collectStyledChars(sibling, style, out);
         }
     }
 
-    private static Text rebuildFromStyledChars(List<StyledChar> chars) {
-        if (chars.isEmpty()) return Text.literal("");
+    private static Component rebuildFromStyledChars(List<StyledChar> chars) {
+        if (chars.isEmpty()) return Component.literal("");
 
-        MutableText root = null;
+        MutableComponent root = null;
         StringBuilder sb = new StringBuilder();
         Style currentStyle = chars.getFirst().style();
 
         for (StyledChar sc : chars) {
             if (!sc.style.equals(currentStyle)) {
                 if (!sb.isEmpty()) {
-                    MutableText chunk = Text.literal(sb.toString()).setStyle(currentStyle);
+                    MutableComponent chunk = Component.literal(sb.toString()).setStyle(currentStyle);
                     if (root == null) root = chunk;
                     else root.append(chunk);
                     sb.setLength(0);
@@ -56,7 +56,7 @@ public class TextUtil {
         }
 
         if (!sb.isEmpty()) {
-            MutableText chunk = Text.literal(sb.toString()).setStyle(currentStyle);
+            MutableComponent chunk = Component.literal(sb.toString()).setStyle(currentStyle);
             if (root == null) root = chunk;
             else root.append(chunk);
         }

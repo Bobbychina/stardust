@@ -1,8 +1,7 @@
 package dev.stardust.mixin.meteor;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import dev.stardust.util.LogUtil;
-import javax.annotation.Nullable;
 import dev.stardust.util.StardustUtil;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,8 +20,8 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import dev.stardust.mixin.accessor.DisconnectS2CPacketAccessor;
 import meteordevelopment.meteorclient.systems.modules.Category;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
-import meteordevelopment.meteorclient.systems.modules.misc.AutoLog;
-import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
+import meteordevelopment.meteorclient.systems.modules.combat.AutoLog;
+import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
@@ -51,10 +50,8 @@ public abstract class AutoLogMixin extends Module {
     @Unique
     private long requestedDcAt = 0L;
     @Unique
-    @Nullable
-    private Text disconnectReason = null;
+    private Component disconnectReason = null;
     @Unique
-    @Nullable
     private Setting<Boolean> forceKick = null;
 
     @Override
@@ -80,20 +77,20 @@ public abstract class AutoLogMixin extends Module {
         if (!Utils.canUpdate() || !isActive()) ci.cancel();
         if (didLog && System.currentTimeMillis() - requestedDcAt >= 1337) {
             LogUtil.warn("Detected illegal disconnect failure, falling back on regular disconnect (try adjusting your illegal disconnect method config setting).");
-            if (mc.getNetworkHandler() != null) mc.getNetworkHandler().onDisconnect(new DisconnectS2CPacket(disconnectReason));
+            if (mc.getConnection() != null) mc.getConnection().onDisconnect(new ClientboundDisconnectPacket(disconnectReason));
             disconnectReason = null;
             didLog = false;
             requestedDcAt = 0L;
         }
     }
 
-    @Inject(method = "disconnect(Lnet/minecraft/text/Text;)V", at = @At("HEAD"), cancellable = true, remap = true)
-    private void maybeIllegalDisconnect(Text reason, CallbackInfo ci) {
+    @Inject(method = "disconnect(Lnet/minecraft/network/chat/Component;)V", at = @At("HEAD"), cancellable = true, remap = true)
+    private void maybeIllegalDisconnect(Component reason, CallbackInfo ci) {
         if (forceKick != null && forceKick.get()) {
             ci.cancel();
             didLog = true;
             requestedDcAt = System.currentTimeMillis();
-            disconnectReason = Text.literal("§8[§a§oAutoLog§8] §f" + reason.getString());
+            disconnectReason = Component.literal("§8[§a§oAutoLog§8] §f" + reason.getString());
             StardustUtil.illegalDisconnect(true, StardustConfig.illegalDisconnectMethodSetting.get());
         }
     }
@@ -101,7 +98,7 @@ public abstract class AutoLogMixin extends Module {
     @Unique
     @EventHandler
     private void onPacketReceive(PacketEvent.Receive event) {
-        if (disconnectReason == null || !(event.packet instanceof DisconnectS2CPacket packet))  return;
+        if (disconnectReason == null || !(event.packet instanceof ClientboundDisconnectPacket packet))  return;
         if (didLog) {
             ((DisconnectS2CPacketAccessor)(Object) packet).setReason(disconnectReason);
             if (!isActive()) MeteorClient.EVENT_BUS.unsubscribe(this);

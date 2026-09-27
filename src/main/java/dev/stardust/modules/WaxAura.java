@@ -5,31 +5,30 @@ import java.util.List;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.nio.file.Files;
-import net.minecraft.block.*;
+import net.minecraft.world.level.block.*;
 import dev.stardust.Stardust;
 import java.util.stream.Stream;
-import net.minecraft.text.Text;
-import net.minecraft.util.Hand;
-import net.minecraft.item.Items;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.Items;
 import dev.stardust.util.MsgUtil;
 import dev.stardust.util.LogUtil;
 import java.util.stream.Collectors;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 import dev.stardust.util.StardustUtil;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import org.jetbrains.annotations.Nullable;
-import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import meteordevelopment.orbit.EventHandler;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import meteordevelopment.meteorclient.settings.*;
-import net.minecraft.block.entity.SignBlockEntity;
+import net.minecraft.world.level.block.entity.SignBlockEntity;
 import meteordevelopment.meteorclient.utils.Utils;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.block.entity.HangingSignBlockEntity;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.level.block.entity.HangingSignBlockEntity;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.player.Rotations;
@@ -40,6 +39,7 @@ import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.meteorclient.systems.modules.render.blockesp.ESPBlockData;
 
+import net.minecraft.world.level.block.state.BlockState;
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
@@ -162,7 +162,7 @@ public class WaxAura extends Module {
     private int timer = 0;
     private int combSlot = -1;
     private int rotPriority = 69420;
-    private @Nullable SignBlockEntity currentSign = null;
+    private SignBlockEntity currentSign = null;
     private final HashSet<String> blacklisted = new HashSet<>();
     private final HashSet<BlockPos> signsToESP = new HashSet<>();
     private final HashSet<SignBlockEntity> signsToWax = new HashSet<>();
@@ -180,17 +180,17 @@ public class WaxAura extends Module {
     private void resetBlacklistFileSetting() { openBlacklistFile.set(false); }
 
     private boolean isSignEmpty(SignBlockEntity sbe) {
-        return !sbe.getFrontText().hasText(mc.player) && !sbe.getBackText().hasText(mc.player);
+        return !sbe.getFrontText().hasMessage(mc.player) && !sbe.getBackText().hasMessage(mc.player);
     }
 
     private boolean containsBlacklistedText(SignBlockEntity sbe) {
         String front = Arrays.stream(sbe.getFrontText().getMessages(false))
-            .map(Text::getString)
+            .map(Component::getString)
             .collect(Collectors.joining(" "))
             .trim();
 
         String back = Arrays.stream(sbe.getBackText().getMessages(false))
-            .map(Text::getString)
+            .map(Component::getString)
             .collect(Collectors.joining(" "))
             .trim();
 
@@ -202,41 +202,41 @@ public class WaxAura extends Module {
     private void getSignsToESP() {
         for (BlockEntity be : Utils.blockEntities()) {
             if (be instanceof SignBlockEntity sbe && !sbe.isWaxed() && !isSignEmpty(sbe)) {
-                if (!contentBlacklist.get() || !containsBlacklistedText(sbe)) signsToESP.add(sbe.getPos());
+                if (!contentBlacklist.get() || !containsBlacklistedText(sbe)) signsToESP.add(sbe.getBlockPos());
             }
         }
     }
 
     private void getSignsToWax() {
-        if (mc.player == null || mc.world == null || mc.currentScreen != null) return;
-        for (BlockPos pos : BlockPos.iterateOutwards(mc.player.getBlockPos(), 5, 5, 5)) {
-            if (mc.world.getBlockEntity(pos) instanceof SignBlockEntity sbe && !sbe.isWaxed() && !isSignEmpty(sbe)) {
+        if (mc.player == null || mc.level == null || mc.screen != null) return;
+        for (BlockPos pos : BlockPos.withinManhattan(mc.player.blockPosition(), 5, 5, 5)) {
+            if (mc.level.getBlockEntity(pos) instanceof SignBlockEntity sbe && !sbe.isWaxed() && !isSignEmpty(sbe)) {
                 if (!contentBlacklist.get() || !containsBlacklistedText(sbe)) signsToWax.add(sbe);
             }
         }
     }
 
     private void waxSign(SignBlockEntity sbe) {
-        if (mc.player == null || mc.interactionManager == null) return;
+        if (mc.player == null || mc.gameMode == null) return;
 
-        BlockPos pos = sbe.getPos();
-        Vec3d hitVec = Vec3d.ofCenter(pos);
-        BlockHitResult hit = new BlockHitResult(hitVec, mc.player.getHorizontalFacing().getOpposite(), pos, false);
+        BlockPos pos = sbe.getBlockPos();
+        Vec3 hitVec = Vec3.atCenterOf(pos);
+        BlockHitResult hit = new BlockHitResult(hitVec, mc.player.getDirection().getOpposite(), pos, false);
 
-        ItemStack current = mc.player.getInventory().getMainHandStack();
+        ItemStack current = mc.player.getInventory().getSelectedItem();
         if (current.getItem() != Items.HONEYCOMB) {
             int end;
             if (hotbarOnly.get()) {
                 end = 9;
-            } else end = mc.player.getInventory().main.size();
+            } else end = mc.player.getInventory().getNonEquipmentItems().size();
 
             for (int n = 0; n < end; n++) {
-                ItemStack stack = mc.player.getInventory().getStack(n);
+                ItemStack stack = mc.player.getInventory().getItem(n);
                 if (stack.getItem() == Items.HONEYCOMB) {
                     combSlot = n;
                     timer = Math.max(0, tickRate.get() - 5);
                     if (n < 9) InvUtils.swap(n, true);
-                    else InvUtils.move().from(n).to(mc.player.getInventory().selectedSlot);
+                    else InvUtils.move().from(n).to(mc.player.getInventory().getSelectedSlot());
                     return;
                 }
             }
@@ -244,7 +244,7 @@ public class WaxAura extends Module {
             Rotations.rotate(
                 Rotations.getYaw(pos),
                 Rotations.getPitch(pos), rotPriority,
-                () -> mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hit)
+                () -> mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, hit)
             );
             ++rotPriority;
             currentSign = null;
@@ -254,7 +254,7 @@ public class WaxAura extends Module {
 
     @Override
     public void onActivate() {
-        if (mc.world == null) {
+        if (mc.level == null) {
             toggle();
             return;
         }
@@ -273,18 +273,18 @@ public class WaxAura extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Pre event) {
-        if (mc.player == null || mc.interactionManager == null) return;
+        if (mc.player == null || mc.gameMode == null) return;
 
         getSignsToESP();
         if (standingStill.get()) {
-            Vec3d vel = mc.player.getVelocity();
+            Vec3 vel = mc.player.getDeltaMovement();
             if (vel.length() >= 0.08d) return;
         }
         if (timer % 2 == 0) getSignsToWax();
 
         ++timer;
         ItemStack active = mc.player.getActiveItem();
-        if ((active.contains(DataComponentTypes.FOOD) || Utils.isThrowable(active.getItem())) && mc.player.getItemUseTime() > 0) return;
+        if ((active.has(DataComponents.FOOD) || Utils.isThrowable(active.getItem())) && mc.player.getTicksUsingItem() > 0) return;
         if (timer >= tickRate.get()) {
             timer = 0;
             if (currentSign != null) waxSign(currentSign);
@@ -294,12 +294,12 @@ public class WaxAura extends Module {
                     signsToWax.removeIf(SignBlockEntity::isWaxed);
                     signsToWax.removeIf(sbe -> contentBlacklist.get() && containsBlacklistedText(sbe));
                     signsToWax.removeIf(sbe -> !hangingSigns.get() && sbe instanceof HangingSignBlockEntity);
-                    signsToWax.removeIf(sbe -> !sbe.getPos().isWithinDistance(mc.player.getBlockPos(), 6));
+                    signsToWax.removeIf(sbe -> !sbe.getBlockPos().closerThan(mc.player.blockPosition(), 6));
 
                     if (signsToWax.isEmpty()) {
                         if (swapBack.get() && combSlot != -1) {
                             if (combSlot < 9) InvUtils.swapBack();
-                            else InvUtils.move().from(mc.player.getInventory().selectedSlot).to(combSlot);
+                            else InvUtils.move().from(mc.player.getInventory().getSelectedSlot()).to(combSlot);
                             combSlot = -1;
                         }
                         return;
@@ -314,25 +314,25 @@ public class WaxAura extends Module {
 
     @EventHandler
     private void onRender(Render3DEvent event) {
-        if (mc.player == null || mc.world == null || !espNonWaxed.get()) return;
+        if (mc.player == null || mc.level == null || !espNonWaxed.get()) return;
         List<BlockPos> valid = signsToESP
             .stream()
-            .filter(pos -> pos.isWithinDistance(mc.player.getBlockPos(), espRange.get()))
-            .filter(pos -> mc.world.getBlockEntity(pos) instanceof SignBlockEntity sbe && !sbe.isWaxed())
-            .filter(pos -> hangingSigns.get() || !(mc.world.getBlockEntity(pos) instanceof HangingSignBlockEntity))
+            .filter(pos -> pos.closerThan(mc.player.blockPosition(), espRange.get()))
+            .filter(pos -> mc.level.getBlockEntity(pos) instanceof SignBlockEntity sbe && !sbe.isWaxed())
+            .filter(pos -> hangingSigns.get() || !(mc.level.getBlockEntity(pos) instanceof HangingSignBlockEntity))
             .toList();
 
         ESPBlockData esp = espSettings.get();
         for (BlockPos pos : valid) {
-            BlockState state = mc.world.getBlockState(pos);
-            VoxelShape shape = state.getOutlineShape(mc.world, pos);
+            BlockState state = mc.level.getBlockState(pos);
+            VoxelShape shape = state.getOutlineShape(mc.level, pos);
 
-            double x1 = pos.getX() + shape.getMin(Direction.Axis.X);
-            double y1 = pos.getY() + shape.getMin(Direction.Axis.Y);
-            double z1 = pos.getZ() + shape.getMin(Direction.Axis.Z);
-            double x2 = pos.getX() + shape.getMax(Direction.Axis.X);
-            double y2 = pos.getY() + shape.getMax(Direction.Axis.Y);
-            double z2 = pos.getZ() + shape.getMax(Direction.Axis.Z);
+            double x1 = pos.getX() + shape.min(Direction.Axis.X);
+            double y1 = pos.getY() + shape.min(Direction.Axis.Y);
+            double z1 = pos.getZ() + shape.min(Direction.Axis.Z);
+            double x2 = pos.getX() + shape.max(Direction.Axis.X);
+            double y2 = pos.getY() + shape.max(Direction.Axis.Y);
+            double z2 = pos.getZ() + shape.max(Direction.Axis.Z);
 
             event.renderer.box(
                 x1, y1, z1, x2, y2, z2,
@@ -351,8 +351,8 @@ public class WaxAura extends Module {
                     } else if (state.getBlock() instanceof WallSignBlock || state.getBlock() instanceof WallHangingSignBlock) {
                         Direction facing;
                         if (state.getBlock() instanceof WallSignBlock) {
-                            facing = state.get(WallSignBlock.FACING);
-                        } else facing = state.get(WallHangingSignBlock.FACING);
+                            facing = state.getValue(WallSignBlock.FACING);
+                        } else facing = state.getValue(WallHangingSignBlock.FACING);
                         switch (facing) {
                             case NORTH -> {
                                 offsetX = pos.getX() + .5;

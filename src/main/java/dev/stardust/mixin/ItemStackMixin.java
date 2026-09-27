@@ -1,10 +1,10 @@
 package dev.stardust.mixin;
 
-import net.minecraft.text.Text;
-import net.minecraft.util.Rarity;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Rarity;
 import dev.stardust.modules.AntiToS;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.MutableText;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.chat.MutableComponent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -23,30 +23,30 @@ public abstract class ItemStackMixin {
     public abstract Rarity getRarity();
 
     @Shadow
-    public abstract Text getName();
+    public abstract Component getName();
 
     // See AntiToS.java
     @Inject(method = "getFormattedName", at = @At("HEAD"), cancellable = true)
-    private void censorItemTooltip(CallbackInfoReturnable<Text> cir) {
+    private void censorItemTooltip(CallbackInfoReturnable<Component> cir) {
         Modules modules = Modules.get();
         if (modules == null) return;
         AntiToS antiToS = modules.get(AntiToS.class);
         if (!antiToS.isActive()) return;
 
         if (antiToS.containsBlacklistedText(this.getName().getString())) {
-            cir.setReturnValue(Text.empty().append(antiToS.censorText(this.getName().getString()).formatted(this.getRarity().getFormatting())));
+            cir.setReturnValue(Component.empty().append(antiToS.censorText(this.getName().getString()).formatted(this.getRarity().color())));
         }
     }
 
-    @Inject(method = "toHoverableText", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;contains(Lnet/minecraft/component/ComponentType;)Z"))
-    private void censorHoveredText(CallbackInfoReturnable<Text> cir, @Local(ordinal = 0)LocalRef<MutableText> name) {
+    @Inject(method = "toHoverableText", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;contains(Lnet/minecraft/core/component/DataComponentType;)Z"))
+    private void censorHoveredText(CallbackInfoReturnable<Component> cir, @Local(ordinal = 0)LocalRef<MutableComponent> name) {
         Modules modules = Modules.get();
         if (modules == null) return;
         AntiToS antiToS = modules.get(AntiToS.class);
         if (!antiToS.isActive()) return;
 
         if (antiToS.containsBlacklistedText(name.get().getString())) {
-            name.set(Text.empty().append(antiToS.censorText(name.get().getString())));
+            name.set(Component.empty().append(antiToS.censorText(name.get().getString())));
         }
     }
 }

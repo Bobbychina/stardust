@@ -1,12 +1,12 @@
 package dev.stardust.mixin;
 
 import org.joml.Quaternionf;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.entity.ItemEntity;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.entity.item.ItemEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
-import net.minecraft.util.math.RotationAxis;
-import net.minecraft.util.math.random.Random;
+import com.mojang.math.Axis;
+import net.minecraft.util.RandomSource;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import dev.stardust.mixininterface.IItemEntityMixin;
@@ -22,7 +22,7 @@ public abstract class ItemEntityMixin implements IItemEntityMixin {
     @Unique private boolean seeded;
     @Unique private boolean landed;
     @Unique private boolean tumbling;
-    @Unique private final Random rng = Random.createLocal();
+    @Unique private final RandomSource rng = RandomSource.createNewThreadLocalInstance();
 
     @Unique private int ticksAirborne;
     @Unique private float tumbleAngle;
@@ -51,7 +51,7 @@ public abstract class ItemEntityMixin implements IItemEntityMixin {
             tumbleIntensity = 0.25f + (rng.nextFloat() * rng.nextFloat());
         }
 
-        if (!self.isOnGround()) {
+        if (!self.onGround()) {
             ++ticksAirborne;
             if (landed) {
                 landed = false;
@@ -64,7 +64,7 @@ public abstract class ItemEntityMixin implements IItemEntityMixin {
             ticksAirborne = 0;
         }
 
-        if (tumbling && self.isOnGround()) {
+        if (tumbling && self.onGround()) {
             tumbling = false;
             settling = true;
             settleTicks = 0;
@@ -81,31 +81,31 @@ public abstract class ItemEntityMixin implements IItemEntityMixin {
             return;
         }
 
-        Vec3d velocity = self.getVelocity();
-        if (velocity.lengthSquared() < 0.0001 || self.isOnGround()) return;
+        Vec3 velocity = self.getDeltaMovement();
+        if (velocity.lengthSqr() < 0.0001 || self.onGround()) return;
 
         if (!tumbling) {
             tumbling = true;
-            Vec3d motion = velocity.normalize();
+            Vec3 motion = velocity.normalize();
 
-            Vec3d fallback = new Vec3d(
+            Vec3 fallback = new Vec3(
                 rng.nextFloat() * 2f - 1f,
                 rng.nextFloat() * 2f - 1f,
                 rng.nextFloat() * 2f - 1f
             );
 
-            Vec3d axis = motion.crossProduct(fallback);
+            Vec3 axis = motion.cross(fallback);
 
-            if (axis.lengthSquared() < 0.0001) {
-                axis = motion.crossProduct(new Vec3d(0, 1, 0));
+            if (axis.lengthSqr() < 0.0001) {
+                axis = motion.cross(new Vec3(0, 1, 0));
             }
 
-            if (axis.lengthSquared() < 0.0001) {
-                axis = new Vec3d(0, 1, 0);
+            if (axis.lengthSqr() < 0.0001) {
+                axis = new Vec3(0, 1, 0);
             }
 
             axis = axis.normalize();
-            axis = new Vec3d(
+            axis = new Vec3(
                 axis.x * tumbleIntensity + 0.2f * (1f - tumbleIntensity),
                 axis.y,
                 axis.z * tumbleIntensity + 0.2f * (1f - tumbleIntensity)
@@ -137,7 +137,7 @@ public abstract class ItemEntityMixin implements IItemEntityMixin {
             tumbleAxisZ
         );
 
-        Quaternionf rest = RotationAxis.POSITIVE_Z.rotationDegrees(restingRotation);
+        Quaternionf rest = Axis.ZP.rotationDegrees(restingRotation);
 
         if (tumbling)
             return tumble;

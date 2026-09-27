@@ -1,8 +1,8 @@
 package dev.stardust.gui.widgets.solitaire.model;
 
-import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.StringRepresentable;
 
-public enum Rank implements StringIdentifiable {
+public enum Rank implements StringRepresentable {
     ACE, TWO, THREE, FOUR,
     FIVE, SIX, SEVEN, EIGHT,
     NINE, TEN, JACK, QUEEN, KING;

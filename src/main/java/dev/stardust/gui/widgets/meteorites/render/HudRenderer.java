@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.text.DecimalFormat;
-import org.jetbrains.annotations.NotNull;
 import meteordevelopment.meteorclient.gui.GuiTheme;
 import dev.stardust.gui.widgets.meteorites.WMeteorites;
 import dev.stardust.gui.widgets.meteorites.entity.Ship;
@@ -248,7 +247,7 @@ public class HudRenderer {
         renderer.text(text, x, y, color, title);
     }
 
-    private static @NotNull List<String> getHudStrings(WMeteorites widget) {
+    private static List<String> getHudStrings(WMeteorites widget) {
         Ship player = widget.player;
         List<String> hudText = new ArrayList<>();
         String waveText = "Wave: " + widget.wave;

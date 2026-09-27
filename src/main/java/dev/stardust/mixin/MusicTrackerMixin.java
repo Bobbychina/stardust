@@ -2,7 +2,7 @@ package dev.stardust.mixin;
 
 import dev.stardust.modules.MusicTweaks;
 import org.spongepowered.asm.mixin.Mixin;
-import net.minecraft.client.sound.MusicTracker;
+import net.minecraft.client.sounds.MusicManager;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import dev.stardust.mixin.accessor.MusicTrackerAccessor;
@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
-@Mixin(MusicTracker.class)
+@Mixin(MusicManager.class)
 public class MusicTrackerMixin {
     // See MusicTweaks.java
     @Inject(method = "tick", at = @At("TAIL"))

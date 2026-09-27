@@ -1,23 +1,22 @@
 package dev.stardust.mixin;
 
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.phys.Vec3;
 import dev.stardust.modules.RocketMan;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
-import net.minecraft.util.math.MathHelper;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.util.Mth;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
-import net.minecraft.entity.FlyingItemEntity;
+import net.minecraft.world.entity.projectile.ItemSupplier;
 import com.llamalad7.mixinextras.sugar.Local;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import org.spongepowered.asm.mixin.injection.Constant;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.projectile.FireworkRocketEntity;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.entity.projectile.FireworkRocketEntity;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -26,13 +25,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
 @Mixin(value = FireworkRocketEntity.class)
-public abstract class FireworkRocketEntityMixin implements FlyingItemEntity {
+public abstract class FireworkRocketEntityMixin implements ItemSupplier {
 
     @Shadow
-    private @Nullable LivingEntity shooter;
+    private LivingEntity shooter;
 
     @Unique
-    private @Nullable RocketMan rm;
+    private RocketMan rm;
 
     // See RocketMan.java
     @Inject(method = "tick", at = @At("HEAD"))
@@ -45,11 +44,11 @@ public abstract class FireworkRocketEntityMixin implements FlyingItemEntity {
             rm = modules.get(RocketMan.class);
         }
 
-        if (!rm.getClientInstance().player.isGliding()) return;
-        if (!this.shooter.getUuid().equals(rm.getClientInstance().player.getUuid())) return;
+        if (!rm.getClientInstance().player.isFallFlying()) return;
+        if (!this.shooter.getUUID().equals(rm.getClientInstance().player.getUUID())) return;
         if (!rm.isActive() || rm.currentRocket == (Object)this) return;
 
-        ClientPlayerEntity player = rm.getClientInstance().player;
+        LocalPlayer player = rm.getClientInstance().player;
         if (rm.currentRocket != null) {
             if (rm.currentRocket.getId() != ((FireworkRocketEntity)(Object)this).getId()) {
                 rm.discardCurrentRocket("overwrite current");
@@ -59,7 +58,7 @@ public abstract class FireworkRocketEntityMixin implements FlyingItemEntity {
         } else {
             rm.currentRocket = (FireworkRocketEntity)(Object)this;
             rm.extensionStartPos = new BlockPos(player.getBlockX(), 0, player.getBlockZ());
-            if (rm.debug.get()) player.sendMessage(Text.literal("§7Created tracked rocket entity!"), false);
+            if (rm.debug.get()) player.sendSystemMessage(Component.literal("§7Created tracked rocket entity!"), false);
         }
     }
 
@@ -75,24 +74,24 @@ public abstract class FireworkRocketEntityMixin implements FlyingItemEntity {
         return rm.getRocketBoostAcceleration();
     }
 
-    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;getVelocity()Lnet/minecraft/util/math/Vec3d;"))
-    private void spoofRotationVector(CallbackInfo ci, @Local(ordinal = 0) LocalRef<Vec3d> rotationVec) {
+    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;getVelocity()Lnet/minecraft/world/phys/Vec3;"))
+    private void spoofRotationVector(CallbackInfo ci, @Local(ordinal = 0) LocalRef<Vec3> rotationVec) {
         if (this.rm == null) {
             Modules modules = Modules.get();
             if (modules == null) return;
             rm = modules.get(RocketMan.class);
         }
         if (!rm.isActive() || !rm.shouldLockYLevel()) return;
-        if (!rm.getClientInstance().player.isGliding() || !rm.hasActiveRocket()) return;
+        if (!rm.getClientInstance().player.isFallFlying() || !rm.hasActiveRocket()) return;
 
-        float g = -rm.getClientInstance().player.getYaw() * ((float)Math.PI / 180);
-        float h = MathHelper.cos(g);
-        float i = MathHelper.sin(g);
+        float g = -rm.getClientInstance().player.getYRot() * ((float)Math.PI / 180);
+        float h = Mth.cos(g);
+        float i = Mth.sin(g);
 
-        rotationVec.set(new Vec3d(i, -1, h));
+        rotationVec.set(new Vec3(i, -1, h));
     }
 
-    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/projectile/FireworkRocketEntity;explodeAndRemove(Lnet/minecraft/server/world/ServerWorld;)V"), cancellable = true)
+    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/projectile/FireworkRocketEntity;explodeAndRemove(Lnet/minecraft/server/level/ServerLevel;)V"), cancellable = true)
     private void extendFireworkDuration(CallbackInfo ci) {
         if (this.rm == null) {
             Modules modules = Modules.get();
@@ -102,7 +101,7 @@ public abstract class FireworkRocketEntityMixin implements FlyingItemEntity {
         if (rm.currentRocket == null) return;
         if (!rm.isActive() || !rm.extendRockets.get()) return;
         if (rm.currentRocket.getId() != ((FireworkRocketEntity)(Object)this).getId()) return;
-        if (rm.debug.get()) rm.getClientInstance().player.sendMessage(Text.literal("§7Cancelling natural rocket expiration!"), false);
+        if (rm.debug.get()) rm.getClientInstance().player.sendSystemMessage(Component.literal("§7Cancelling natural rocket expiration!"), false);
         ci.cancel();
     }
 }

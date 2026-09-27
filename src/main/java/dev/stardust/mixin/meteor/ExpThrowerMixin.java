@@ -1,15 +1,14 @@
 package dev.stardust.mixin.meteor;
 
-import net.minecraft.item.Items;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.MiningToolItem;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.DiggerItem;
 import org.spongepowered.asm.mixin.Mixin;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Unique;
-import net.minecraft.registry.tag.ItemTags;
+import net.minecraft.tags.ItemTags;
 import java.util.concurrent.ThreadLocalRandom;
 import org.spongepowered.asm.mixin.injection.At;
-import net.minecraft.component.DataComponentTypes;
+import net.minecraft.core.component.DataComponents;
 import org.spongepowered.asm.mixin.injection.Inject;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.IntSetting;
@@ -31,11 +30,11 @@ public abstract class ExpThrowerMixin extends Module {
     }
 
     @Unique
-    private @Nullable Setting<Integer> levelCap = null;
+    private Setting<Integer> levelCap = null;
     @Unique
-    private @Nullable Setting<Boolean> autoToggle = null;
+    private Setting<Boolean> autoToggle = null;
     @Unique
-    private @Nullable Setting<Boolean> hotbarSwap = null;
+    private Setting<Boolean> hotbarSwap = null;
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void addLevelCapSetting(CallbackInfo ci) {
@@ -78,7 +77,7 @@ public abstract class ExpThrowerMixin extends Module {
 
                     if (emptySlot.found()) InvUtils.move().from(result1.slot()).to(emptySlot.slot());
                     else {
-                        FindItemResult nonCriticalSlot = InvUtils.findInHotbar(stack -> !(stack.getItem() instanceof MiningToolItem) && !(stack.isIn(ItemTags.WEAPON_ENCHANTABLE)) && !(stack.contains(DataComponentTypes.FOOD)));
+                        FindItemResult nonCriticalSlot = InvUtils.findInHotbar(stack -> !(stack.getItem() instanceof DiggerItem) && !(stack.is(ItemTags.WEAPON_ENCHANTABLE)) && !(stack.has(DataComponents.FOOD)));
 
                         if (nonCriticalSlot.found()) InvUtils.move().from(result1.slot()).to(emptySlot.slot());
                         else {

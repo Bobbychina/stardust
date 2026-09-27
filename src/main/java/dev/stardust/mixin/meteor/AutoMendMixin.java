@@ -1,15 +1,14 @@
 package dev.stardust.mixin.meteor;
 
-import net.minecraft.item.Items;
+import net.minecraft.world.item.Items;
 import dev.stardust.util.MsgUtil;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
-import org.jetbrains.annotations.Nullable;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.enchantment.Enchantments;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.enchantment.Enchantments;
 import org.spongepowered.asm.mixin.injection.At;
 import meteordevelopment.meteorclient.utils.Utils;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -51,16 +50,12 @@ public abstract class AutoMendMixin extends Module {
     @Unique
     private boolean didWearMending = false;
     @Unique
-    @Nullable
     private Setting<Boolean> auto = null;
     @Unique
-    @Nullable
     private Setting<Boolean> wearMendElytras = null;
     @Unique
-    @Nullable
     private Setting<Boolean> mendElytrasOnly = null;
     @Unique
-    @Nullable
     private Setting<Boolean> ignoreOffhand = null;
 
     @Unique
@@ -69,10 +64,10 @@ public abstract class AutoMendMixin extends Module {
     @Unique
     private void replaceElytra() {
         if (mc.player == null) return;
-        for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
-            ItemStack stack = mc.player.getInventory().getStack(n);
+        for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
+            ItemStack stack = mc.player.getInventory().getItem(n);
             if (stack.getItem() == Items.ELYTRA) {
-                if (Utils.hasEnchantment(stack, Enchantments.MENDING) && stack.getDamage() > 0) {
+                if (Utils.hasEnchantment(stack, Enchantments.MENDING) && stack.getDamageValue() > 0) {
                     InvUtils.move().from(n).toArmor(2);
                     didWearMending = true;
                     return;
@@ -100,10 +95,10 @@ public abstract class AutoMendMixin extends Module {
     @Unique
     private int getDamagedElytraSlot() {
         if (mc.player == null) return -1;
-        for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
-            ItemStack stack = mc.player.getInventory().getStack(n);
+        for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
+            ItemStack stack = mc.player.getInventory().getItem(n);
             if (stack.getItem() == Items.ELYTRA) {
-                if (Utils.hasEnchantment(stack, Enchantments.MENDING) && stack.getDamage() > 0) {
+                if (Utils.hasEnchantment(stack, Enchantments.MENDING) && stack.getDamageValue() > 0) {
                     return n;
                 }
             }
@@ -148,8 +143,8 @@ public abstract class AutoMendMixin extends Module {
     private void hijackOnTick(CallbackInfo ci) {
         if (mc.player == null) return;
         if (wearMendElytras == null || !wearMendElytras.get()) return;
-        ItemStack chest = mc.player.getEquippedStack(EquipmentSlot.CHEST);
-        if (chest.isEmpty() || chest.getItem() != Items.ELYTRA || !Utils.hasEnchantment(chest, Enchantments.MENDING) || chest.getDamage() <= 0) {
+        ItemStack chest = mc.player.getItemBySlot(EquipmentSlot.CHEST);
+        if (chest.isEmpty() || chest.getItem() != Items.ELYTRA || !Utils.hasEnchantment(chest, Enchantments.MENDING) || chest.getDamageValue() <= 0) {
             // momentarily pause EXPThrower to prevent inventory thrashing
             if (auto != null && auto.get() && Modules.get().isActive(EXPThrower.class)) Modules.get().get(EXPThrower.class).toggle();
             replaceElytra();
@@ -167,8 +162,8 @@ public abstract class AutoMendMixin extends Module {
             ci.cancel();
         } else if (mendElytrasOnly != null && mendElytrasOnly.get()) {
             ci.cancel();
-            ItemStack offhand = mc.player.getOffHandStack();
-            if (offhand.isEmpty() || !Utils.hasEnchantment(offhand, Enchantments.MENDING) || offhand.getDamage() <= 0) {
+            ItemStack offhand = mc.player.getOffhandItem();
+            if (offhand.isEmpty() || !Utils.hasEnchantment(offhand, Enchantments.MENDING) || offhand.getDamageValue() <= 0) {
                 int slot = getDamagedElytraSlot();
                 if (slot == -1) {
                     if (autoDisable.get()) {

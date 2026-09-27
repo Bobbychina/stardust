@@ -4,7 +4,6 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
-import org.jetbrains.annotations.Nullable;
 import com.llamalad7.mixinextras.sugar.Local;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -35,7 +34,7 @@ public abstract class NametagsMixin extends Module {
     }
 
     @Unique
-    private @Nullable Setting<Boolean> forceDefaultFont = null;
+    private Setting<Boolean> forceDefaultFont = null;
 
     @Inject(method = "<init>", at = @At(value = "FIELD", target = "Lmeteordevelopment/meteorclient/systems/modules/render/Nametags;scale:Lmeteordevelopment/meteorclient/settings/Setting;", shift = At.Shift.AFTER))
     private void addDefaultFontSettings(CallbackInfo ci) {

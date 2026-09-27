@@ -21,7 +21,7 @@ public abstract class WWindowMixin extends WVerticalList {
     @Inject(method = "setExpanded", at = @At("HEAD"))
     private void injectSetExpanded(boolean expanded, CallbackInfo ci) {
         if (expanded) return;
-        if (!(mc.currentScreen instanceof MeteoritesScreen meteorites)) return;
+        if (!(mc.screen instanceof MeteoritesScreen meteorites)) return;
 
         Cell<? extends WWidget> widget = meteorites.getWidget();
         if (widget != null && widget.widget() instanceof WMeteorites mw) {

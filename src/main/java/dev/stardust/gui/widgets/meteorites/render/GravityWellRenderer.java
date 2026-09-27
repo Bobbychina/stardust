@@ -1,6 +1,6 @@
 package dev.stardust.gui.widgets.meteorites.render;
 
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.Mth;
 import dev.stardust.gui.widgets.meteorites.entity.Ship;
 import meteordevelopment.meteorclient.gui.renderer.GuiRenderer;
 import meteordevelopment.meteorclient.utils.render.color.Color;
@@ -16,7 +16,7 @@ public class GravityWellRenderer {
         // pulse animation
         double t = System.nanoTime() * 1e-9;
         float pulse = (float)(0.9 + 0.15 * Math.sin(t * Math.PI * 1.5));
-        pulse = MathHelper.clamp(pulse, 0.13f, 1.0f);
+        pulse = Mth.clamp(pulse, 0.13f, 1.0f);
 
         int segments = 28;
 

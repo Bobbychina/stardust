@@ -9,7 +9,6 @@ import dev.stardust.util.TimeUtil;
 import dev.stardust.hud.ConwayHud;
 import com.mojang.logging.LogUtils;
 import dev.stardust.util.StardustUtil;
-import org.jetbrains.annotations.Nullable;
 import dev.stardust.config.StardustConfig;
 import dev.stardust.managers.PacketManager;
 import net.fabricmc.loader.api.FabricLoader;
@@ -33,7 +32,7 @@ public class Stardust extends MeteorAddon {
     public static final Category CATEGORY = new Category("Stardust", StardustUtil.chooseMenuIcon());
 
     private PacketManager packetManager;
-    public static @Nullable TimeUtil TIME;
+    public static TimeUtil TIME;
 
     @Override
     public void onInitialize() {

@@ -1,44 +1,53 @@
 plugins {
-    id "fabric-loom" version "1.17-SNAPSHOT"
+    id 'net.fabricmc.fabric-loom' version '1.17-SNAPSHOT'
 }
 
 version = project.mod_version
 group = project.maven_group
 
+base {
+    archivesName = project.archives_base_name
+}
+
 repositories {
+    // 国内镜像优先
     maven {
-        name = "Meteor Dev Releases"
-        url = "https://maven.meteordev.org/releases"
+        name = 'AliyunPublic'
+        url = 'https://maven.aliyun.com/repository/public'
     }
     maven {
-        name = "Meteor Dev Snapshots"
-        url = "https://maven.meteordev.org/snapshots"
+        name = 'Meteor Dev Releases'
+        url = 'https://maven.meteordev.org/releases'
     }
     maven {
-        name = "Modrinth"
-        url = "https://api.modrinth.com/maven"
+        name = 'Meteor Dev Snapshots'
+        url = 'https://maven.meteordev.org/snapshots'
     }
+    maven {
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+    }
+    mavenCentral()
 }
 
 dependencies {
-    // Fabric
+    // 26.1 起 Minecraft 未混淆：没有 mappings 行，mod 依赖也不再 remap
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     // Meteor
-    modImplementation("meteordevelopment:meteor-client:${project.meteor_version}") {
+    implementation("meteordevelopment:meteor-client:${project.meteor_version}") {
         changing = false
     }
 
-    // XaeroMinimap
-    modImplementation("maven.modrinth:xaeros-minimap:${project.xaeros_minimap_version}")
+    // XaeroMinimap / XaeroWorldMap（编译期）
+    compileOnly("maven.modrinth:xaeros-minimap:${project.xaeros_minimap_version}")
+    compileOnly("maven.modrinth:xaeros-world-map:${project.xaeros_worldmap_version}")
+}
 
-    // XaeroWorldMap
-    modImplementation "maven.modrinth:xaeros-world-map:${project.xaeros_worldmap_version}"
-
-    configurations.configureEach {
-        resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
@@ -57,17 +66,6 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
     it.options.encoding("UTF-8")
-}
-
-tasks.register("sortImports", Exec) {
-    description = "Runs import-organizer.py in the scripts folder to sort import blocks by length in all Java source files in the project."
-    group = "build"
-
-    var pythonCmd = System.getenv("OS") != null && System.getenv("OS").contains("Windows") ? "python" : "python3"
-
-    commandLine(pythonCmd, "${projectDir}/scripts/import-organizer.py")
-
-    setIgnoreExitValue(true)
 }
 
 loom {

@@ -1,18 +1,18 @@
 package dev.stardust.managers;
 
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import dev.stardust.config.StardustConfig;
-import net.minecraft.screen.ScreenHandler;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import meteordevelopment.orbit.EventHandler;
 import meteordevelopment.orbit.EventPriority;
-import net.minecraft.screen.PlayerScreenHandler;
-import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.world.inventory.ContainerInput;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.MeteorClient;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
-import net.minecraft.network.packet.s2c.play.OverlayMessageS2CPacket;
+import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
@@ -30,7 +30,7 @@ public class PacketManager {
     private void onReceivePacket(PacketEvent.Receive event) {
         if (!Utils.canUpdate()) return;
         if (!StardustConfig.ignoreOverlayMessages.get()) return;
-        if (!(event.packet instanceof OverlayMessageS2CPacket packet)) return;
+        if (!(event.packet instanceof ClientboundSetActionBarTextPacket packet)) return;
         if (StardustConfig.overlayMessageFilter.get().isEmpty()
             || StardustConfig.overlayMessageFilter.get().stream().allMatch(String::isBlank)) return;
 
@@ -53,13 +53,13 @@ public class PacketManager {
     private void onSendPacket(PacketEvent.Send event) {
         if (mc.player == null) return;
         if (!StardustConfig.antiInventoryPacketKick.get()) return;
-        if (!(event.packet instanceof ClickSlotC2SPacket packet)) return;
-        if (!packet.getActionType().equals(SlotActionType.QUICK_MOVE)) return;
+        if (!(event.packet instanceof ServerboundContainerClickPacket packet)) return;
+        if (!packet.getClickType().equals(ContainerInput.QUICK_MOVE)) return;
 
-        int origin = packet.getSlot();
-        ScreenHandler handler = mc.player.currentScreenHandler;
+        int origin = packet.getSlotNum();
+        AbstractContainerMenu handler = mc.player.containerMenu;
         if (origin < 0 || origin >= handler.slots.size()) return;
-        ItemStack toMove = handler.getSlot(origin).getStack();
+        ItemStack toMove = handler.getSlot(origin).getItem();
 
         if (toMove.isEmpty()) {
             return;
@@ -67,7 +67,7 @@ public class PacketManager {
 
         int start;
         int until;
-        if (handler instanceof PlayerScreenHandler) {
+        if (handler instanceof InventoryMenu) {
             if (origin < 9) {
                 // from armor/crafting to hotbar/inventory
                 start = 9;
@@ -108,8 +108,8 @@ public class PacketManager {
 
         boolean foundValidSlot = false;
         for (int n = start; n < until; n++) {
-            ItemStack stack = handler.getSlot(n).getStack();
-            if (stack.isEmpty() || (ItemStack.areItemsAndComponentsEqual(toMove, stack) && stack.getCount() < stack.getMaxCount())) {
+            ItemStack stack = handler.getSlot(n).getItem();
+            if (stack.isEmpty() || (ItemStack.isSameItemSameComponents(toMove, stack) && stack.getCount() < stack.getMaxStackSize())) {
                 foundValidSlot = true;
                 break;
             }

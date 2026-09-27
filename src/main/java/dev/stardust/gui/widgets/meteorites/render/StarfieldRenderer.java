@@ -1,7 +1,7 @@
 package dev.stardust.gui.widgets.meteorites.render;
 
 import java.util.Random;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.Mth;
 import dev.stardust.gui.widgets.meteorites.entity.Ship;
 import meteordevelopment.meteorclient.gui.renderer.GuiRenderer;
 import meteordevelopment.meteorclient.utils.render.color.Color;
@@ -106,7 +106,7 @@ public class StarfieldRenderer {
         double curY = this.worldY;
         if (this.resetting) {
             double t = (timeSec - this.resetStartTimeSec) / Math.max(1e-9, this.resetDurationSec);
-            t = MathHelper.clamp((float) t, 0f, 1f);
+            t = Mth.clamp((float) t, 0f, 1f);
 
             double ease = easeInOutCubic(t);
             curX = lerp(this.resetFromX, this.resetToX, ease);
@@ -138,7 +138,7 @@ public class StarfieldRenderer {
 
         if (resetting) {
             double t = (time - resetStartTimeSec) / resetDurationSec;
-            t = MathHelper.clamp((float) t, 0f, 1f);
+            t = Mth.clamp((float) t, 0f, 1f);
 
             double ease = easeInOutCubic(t);
             worldX = lerp(resetFromX, resetToX, ease);
@@ -191,7 +191,7 @@ public class StarfieldRenderer {
 
             Color color = new Color(
                 255, 255, 255,
-                Math.round(255 * MathHelper.clamp((float) a, 0f, 1f))
+                Math.round(255 * Mth.clamp((float) a, 0f, 1f))
             );
 
             double sr = s.size;
@@ -224,7 +224,7 @@ public class StarfieldRenderer {
 
             Color col = new Color(
                 220, 220, 240,
-                Math.round(255 * MathHelper.clamp((float)(d.alpha * pulse), 0f, 0.42f))
+                Math.round(255 * Mth.clamp((float)(d.alpha * pulse), 0f, 0.42f))
             );
 
             drawCircleWrapped(renderer, bx, by, width, height, wx, wy, d.size * pulse, col);

@@ -9,7 +9,6 @@ import com.google.gson.Gson;
 import java.text.DecimalFormat;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonElement;
-import org.jetbrains.annotations.Nullable;
 import dev.stardust.util.commands.ApiHandler;
 import java.util.concurrent.ThreadLocalRandom;
 import meteordevelopment.meteorclient.MeteorClient;
@@ -22,7 +21,7 @@ import static meteordevelopment.meteorclient.MeteorClient.mc;
 public class TimeUtil {
     public record TimeData(String lastUpdated, long worldTime) {}
 
-    private @Nullable TimeData time = null;
+    private TimeData time = null;
 
     private boolean exhausted;
     private int totalAPIFetchAttempts;
@@ -30,7 +29,7 @@ public class TimeUtil {
     private static final Gson GSON = new Gson();
     private final double refreshInterval = ThreadLocalRandom.current().nextDouble(2.0, 8.0);
 
-    public @Nullable TimeData getTime() {
+    public TimeData getTime() {
         if (time != null) {
             // Periodically update time data to avoid drift if the client stays running for long periods of time
             Instant lastUpdated = Instant.parse(time.lastUpdated());
@@ -48,7 +47,7 @@ public class TimeUtil {
         return getTimeData();
     }
 
-    private @Nullable TimeData getTimeData() {
+    private TimeData getTimeData() {
         long now = System.currentTimeMillis();
         if (lastAPIFetchAttempt != -1 && now - lastAPIFetchAttempt > (15000L * totalAPIFetchAttempts)) {
             lastAPIFetchAttempt = -1;
@@ -95,7 +94,7 @@ public class TimeUtil {
         return fetchServerTime();
     }
 
-    private @Nullable TimeData fetchServerTime() {
+    private TimeData fetchServerTime() {
         ++totalAPIFetchAttempts;
         lastAPIFetchAttempt = System.currentTimeMillis();
         if (totalAPIFetchAttempts >= 25) {

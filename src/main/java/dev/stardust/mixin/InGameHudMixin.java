@@ -1,14 +1,14 @@
 package dev.stardust.mixin;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import dev.stardust.modules.AntiToS;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.MutableText;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.chat.MutableComponent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import com.llamalad7.mixinextras.sugar.Local;
-import net.minecraft.client.gui.hud.InGameHud;
+import net.minecraft.client.gui.Gui;
 import org.spongepowered.asm.mixin.injection.At;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
-@Mixin(InGameHud.class)
+@Mixin(Gui.class)
 public class InGameHudMixin {
     @Shadow
     private ItemStack currentStack;
@@ -26,9 +26,9 @@ public class InGameHudMixin {
     // See AntiToS.java
     @Inject(
         method = "renderHeldItemTooltip",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;contains(Lnet/minecraft/component/ComponentType;)Z")
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;contains(Lnet/minecraft/core/component/DataComponentType;)Z")
     )
-    private void censorItemTooltip(DrawContext context, CallbackInfo ci, @Local LocalRef<MutableText> itemName) {
+    private void censorItemTooltip(GuiGraphicsExtractor context, CallbackInfo ci, @Local LocalRef<MutableComponent> itemName) {
         if (this.currentStack.isEmpty()) return;
 
         Modules modules = Modules.get();
@@ -37,7 +37,7 @@ public class InGameHudMixin {
         if (!antiToS.isActive()) return;
 
         if (antiToS.containsBlacklistedText(itemName.get().getString())) {
-            itemName.set(Text.empty().append(antiToS.censorText(itemName.get().getString())).formatted(this.currentStack.getRarity().getFormatting()));
+            itemName.set(Component.empty().append(antiToS.censorText(itemName.get().getString())).withStyle(this.currentStack.getRarity().color()));
         }
     }
 }

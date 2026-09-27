@@ -4,7 +4,18 @@ pluginManagement {
             name = 'Fabric'
             url = 'https://maven.fabricmc.net/'
         }
+        // 国内镜像优先，避免 plugins.gradle.org / repo1.maven.org 拉不动
+        maven {
+            name = 'AliyunGradlePlugin'
+            url = 'https://maven.aliyun.com/repository/gradle-plugin'
+        }
+        maven {
+            name = 'AliyunPublic'
+            url = 'https://maven.aliyun.com/repository/public'
+        }
         mavenCentral()
         gradlePluginPortal()
     }
 }
+
+rootProject.name = 'stardust'

@@ -1,26 +1,25 @@
 package dev.stardust.mixin.meteor;
 
 import org.lwjgl.glfw.GLFW;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import dev.stardust.util.MsgUtil;
 import dev.stardust.util.LogUtil;
-import javax.annotation.Nullable;
-import net.minecraft.item.ItemStack;
-import net.minecraft.entity.EntityType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.EntityType;
 import org.spongepowered.asm.mixin.Mixin;
-import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.world.entity.EquipmentSlot;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.screen.ShulkerBoxScreenHandler;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.ShulkerBoxMenu;
 import org.spongepowered.asm.mixin.injection.Inject;
-import net.minecraft.component.type.EquippableComponent;
+import net.minecraft.world.item.equipment.Equippable;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.utils.render.PeekScreen;
-import net.minecraft.client.gui.screen.ingame.ShulkerBoxScreen;
+import net.minecraft.client.gui.screens.inventory.ShulkerBoxScreen;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.systems.modules.render.BetterTooltips;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -31,12 +30,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  **/
 @Mixin(value = PeekScreen.class, remap = false)
 public abstract class PeekScreenMixin extends ShulkerBoxScreen {
-    public PeekScreenMixin(ShulkerBoxScreenHandler handler, PlayerInventory inventory, Text title) {
+    public PeekScreenMixin(ShulkerBoxMenu handler, Inventory inventory, Component title) {
         super(handler, inventory, title);
     }
 
     @Unique
-    private @Nullable BetterTooltips btt = null;
+    private BetterTooltips btt = null;
 
     // See BetterTooltipsMixin.java
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true, remap = true)
@@ -56,7 +55,7 @@ public abstract class PeekScreenMixin extends ShulkerBoxScreen {
             if ((boolean) setting.get() && button == GLFW.GLFW_MOUSE_BUTTON_LEFT && focusedSlot != null && !focusedSlot.getStack().isEmpty()) {
                 FindItemResult empty;
                 if (InvUtils.testInMainHand(ItemStack::isEmpty)) {
-                    empty = new FindItemResult(mc.player.getInventory().selectedSlot, mc.player.getMainHandStack().getCount());
+                    empty = new FindItemResult(mc.player.getInventory().getSelectedSlot(), mc.player.getMainHandItem().getCount());
                 } else {
                     empty = InvUtils.find(ItemStack::isEmpty, 0, 8);
                 }
@@ -67,15 +66,15 @@ public abstract class PeekScreenMixin extends ShulkerBoxScreen {
                     // Skull-block items aren't swappable by default,
                     // causing the ghost item to disappear without this.
                     // I don't distinguish the item type here, allowing you to put any ghost-item on your head.
-                    EquippableComponent equippableComponent = EquippableComponent.builder(EquipmentSlot.HEAD)
+                    Equippable equippableComponent = Equippable.builder(EquipmentSlot.HEAD)
                         .swappable(true)
                         .allowedEntities(EntityType.PLAYER)
                         .dispensable(true)
                         .build();
                     if (shouldSetComponent(stack))
-                        stack.set(DataComponentTypes.EQUIPPABLE, equippableComponent);
+                        stack.set(DataComponents.EQUIPPABLE, equippableComponent);
 
-                    mc.player.getInventory().setStack(empty.slot(), stack);
+                    mc.player.getInventory().setItem(empty.slot(), stack);
                     cir.setReturnValue(true);
                 } else {
                     MsgUtil.sendModuleMsg("Peeking at ghost items requires an empty hotbar slot§c..!", "better-tooltips");
@@ -89,7 +88,7 @@ public abstract class PeekScreenMixin extends ShulkerBoxScreen {
 
     @Unique
     private boolean shouldSetComponent(ItemStack stack) {
-        return (!stack.contains(DataComponentTypes.EQUIPPABLE)
-            || !stack.get(DataComponentTypes.EQUIPPABLE).swappable());
+        return (!stack.has(DataComponents.EQUIPPABLE)
+            || !stack.get(DataComponents.EQUIPPABLE).swappable());
     }
 }

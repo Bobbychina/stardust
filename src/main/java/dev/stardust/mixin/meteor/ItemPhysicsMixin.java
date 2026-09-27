@@ -1,9 +1,9 @@
 package dev.stardust.mixin.meteor;
 
-import net.minecraft.entity.ItemEntity;
+import net.minecraft.world.entity.item.ItemEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import net.minecraft.client.util.math.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import org.spongepowered.asm.mixin.injection.Inject;
 import dev.stardust.mixininterface.IItemEntityMixin;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -18,7 +18,7 @@ import meteordevelopment.meteorclient.events.render.RenderItemEntityEvent;
 @Mixin(value = ItemPhysics.class, remap = false)
 public abstract class ItemPhysicsMixin {
     @Inject(method = "offsetInWater", at = @At("HEAD"), cancellable = true)
-    private void fixCrashNPE(MatrixStack matrices, ItemEntity entity, CallbackInfo ci) {
+    private void fixCrashNPE(PoseStack matrices, ItemEntity entity, CallbackInfo ci) {
         if (entity == null)
             ci.cancel();
     }
@@ -27,11 +27,11 @@ public abstract class ItemPhysicsMixin {
         method = "onRenderItemEntity",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/util/math/MatrixStack;multiply(Lorg/joml/Quaternionf;)V",
+            target = "Lcom/mojang/blaze3d/vertex/PoseStack;multiply(Lorg/joml/Quaternionf;)V",
             ordinal = 1,
             shift = At.Shift.AFTER
         ),
-        // remap must be true to properly target an invocation of a remapped class/method like MatrixStack#multiply (I think)
+        // remap must be true to properly target an invocation of a remapped class/method like PoseStack#multiply (I think)
         remap = true
     )
     private void addItemTumble(RenderItemEntityEvent event, CallbackInfo ci) {

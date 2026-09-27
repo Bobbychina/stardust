@@ -3,8 +3,7 @@ package dev.stardust.util;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
-import net.minecraft.util.math.BlockPos;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.core.BlockPos;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 /**
@@ -50,23 +49,23 @@ public class MapUtil {
             }
         }
 
-        static @Nullable xaero.hud.minimap.module.MinimapSession getMinimapSession() {
+        static xaero.hud.minimap.module.MinimapSession getMinimapSession() {
             return xaero.hud.minimap.BuiltInHudModules.MINIMAP.getCurrentSession();
         }
 
-        static @Nullable xaero.hud.minimap.world.MinimapWorld getWaypointWorld() {
+        static xaero.hud.minimap.world.MinimapWorld getWaypointWorld() {
             xaero.hud.minimap.module.MinimapSession session = getMinimapSession();
             if (session == null) return null;
             return session.getWorldManager().getCurrentWorld();
         }
 
-        static @Nullable xaero.hud.minimap.waypoint.set.WaypointSet getWaypointSet() {
+        static xaero.hud.minimap.waypoint.set.WaypointSet getWaypointSet() {
             xaero.hud.minimap.world.MinimapWorld currentWorld = getWaypointWorld();
             if (currentWorld == null) return null;
             return currentWorld.getCurrentWaypointSet();
         }
 
-        static @Nullable xaero.common.minimap.waypoints.Waypoint getWaypointByCoordinate(int x, int z) {
+        static xaero.common.minimap.waypoints.Waypoint getWaypointByCoordinate(int x, int z) {
             xaero.hud.minimap.waypoint.set.WaypointSet waypointSet = getWaypointSet();
             if (waypointSet == null) return null;
             for (xaero.common.minimap.waypoints.Waypoint waypoint : waypointSet.getWaypoints()) {
@@ -82,7 +81,7 @@ public class MapUtil {
             try {
                 xaero.hud.minimap.waypoint.set.WaypointSet set = getWaypointSet();
                 if (set == null) return;
-                BlockPos.Mutable mPos = new BlockPos.Mutable();
+                BlockPos.MutableBlockPos mPos = new BlockPos.MutableBlockPos();
                 List<xaero.common.minimap.waypoints.Waypoint> toRemove = new ObjectArrayList<>();
                 for (xaero.common.minimap.waypoints.Waypoint wp : set.getWaypoints()) {
                     if (wp.getName().trim().startsWith(name.trim())) {

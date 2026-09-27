@@ -4,29 +4,29 @@ import java.io.File;
 import java.util.UUID;
 import java.time.Instant;
 import java.util.Optional;
-import net.minecraft.util.Hand;
-import net.minecraft.text.Style;
-import net.minecraft.item.Items;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.ClickEvent;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.network.chat.Style;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.chat.ClickEvent;
 import com.mojang.authlib.GameProfile;
-import net.minecraft.network.packet.Packet;
+import net.minecraft.network.protocol.Packet;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import com.mojang.authlib.properties.Property;
-import net.minecraft.network.packet.c2s.play.*;
+import net.minecraft.network.protocol.game.*;
 import io.netty.util.internal.ThreadLocalRandom;
 import meteordevelopment.meteorclient.utils.Utils;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.ProfileComponent;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.ResolvableProfile;
 import meteordevelopment.meteorclient.utils.world.Dimension;
 import dev.stardust.mixin.accessor.ClientConnectionAccessor;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.utils.player.PlayerUtils;
-import net.minecraft.network.encryption.NetworkEncryptionUtils;
-import net.minecraft.network.packet.c2s.common.SyncedClientOptions;
-import net.minecraft.network.packet.c2s.common.ClientOptionsC2SPacket;
+import net.minecraft.util.Crypt;
+import net.minecraft.server.level.ClientInformation;
+import net.minecraft.network.protocol.common.ServerboundClientInformationPacket;
 import meteordevelopment.meteorclient.systems.modules.misc.AutoReconnect;
 import meteordevelopment.meteorclient.mixin.ClientPlayNetworkHandlerAccessor;
 
@@ -112,79 +112,79 @@ public class StardustUtil {
     }
 
     private static final ItemStack[] discIcons = {
-        Items.MUSIC_DISC_5.getDefaultStack(),
-        Items.MUSIC_DISC_11.getDefaultStack(),
-        Items.MUSIC_DISC_13.getDefaultStack(),
-        Items.MUSIC_DISC_CAT.getDefaultStack(),
-        Items.MUSIC_DISC_FAR.getDefaultStack(),
-        Items.MUSIC_DISC_MALL.getDefaultStack(),
-        Items.MUSIC_DISC_STAL.getDefaultStack(),
-        Items.MUSIC_DISC_WARD.getDefaultStack(),
-        Items.MUSIC_DISC_WAIT.getDefaultStack(),
-        Items.MUSIC_DISC_CHIRP.getDefaultStack(),
-        Items.MUSIC_DISC_STRAD.getDefaultStack(),
-        Items.MUSIC_DISC_RELIC.getDefaultStack(),
-        Items.MUSIC_DISC_BLOCKS.getDefaultStack(),
-        Items.MUSIC_DISC_MELLOHI.getDefaultStack(),
-        Items.MUSIC_DISC_PIGSTEP.getDefaultStack(),
-        Items.MUSIC_DISC_CREATOR.getDefaultStack(),
-        Items.MUSIC_DISC_PRECIPICE.getDefaultStack(),
-        Items.MUSIC_DISC_OTHERSIDE.getDefaultStack(),
-        Items.MUSIC_DISC_CREATOR_MUSIC_BOX.getDefaultStack(),
+        Items.MUSIC_DISC_5.getDefaultInstance(),
+        Items.MUSIC_DISC_11.getDefaultInstance(),
+        Items.MUSIC_DISC_13.getDefaultInstance(),
+        Items.MUSIC_DISC_CAT.getDefaultInstance(),
+        Items.MUSIC_DISC_FAR.getDefaultInstance(),
+        Items.MUSIC_DISC_MALL.getDefaultInstance(),
+        Items.MUSIC_DISC_STAL.getDefaultInstance(),
+        Items.MUSIC_DISC_WARD.getDefaultInstance(),
+        Items.MUSIC_DISC_WAIT.getDefaultInstance(),
+        Items.MUSIC_DISC_CHIRP.getDefaultInstance(),
+        Items.MUSIC_DISC_STRAD.getDefaultInstance(),
+        Items.MUSIC_DISC_RELIC.getDefaultInstance(),
+        Items.MUSIC_DISC_BLOCKS.getDefaultInstance(),
+        Items.MUSIC_DISC_MELLOHI.getDefaultInstance(),
+        Items.MUSIC_DISC_PIGSTEP.getDefaultInstance(),
+        Items.MUSIC_DISC_CREATOR.getDefaultInstance(),
+        Items.MUSIC_DISC_PRECIPICE.getDefaultInstance(),
+        Items.MUSIC_DISC_OTHERSIDE.getDefaultInstance(),
+        Items.MUSIC_DISC_CREATOR_MUSIC_BOX.getDefaultInstance(),
     };
     private static final ItemStack[] doorIcons = {
-        Items.OAK_DOOR.getDefaultStack(),
-        Items.IRON_DOOR.getDefaultStack(),
-        Items.BIRCH_DOOR.getDefaultStack(),
-        Items.BAMBOO_DOOR.getDefaultStack(),
-        Items.CHERRY_DOOR.getDefaultStack(),
-        Items.JUNGLE_DOOR.getDefaultStack(),
-        Items.ACACIA_DOOR.getDefaultStack(),
-        Items.SPRUCE_DOOR.getDefaultStack(),
-        Items.WARPED_DOOR.getDefaultStack(),
-        Items.COPPER_DOOR.getDefaultStack(),
-        Items.CRIMSON_DOOR.getDefaultStack(),
-        Items.MANGROVE_DOOR.getDefaultStack(),
-        Items.DARK_OAK_DOOR.getDefaultStack(),
-        Items.EXPOSED_COPPER_DOOR.getDefaultStack(),
-        Items.OXIDIZED_COPPER_DOOR.getDefaultStack(),
-        Items.WEATHERED_COPPER_DOOR.getDefaultStack()
+        Items.OAK_DOOR.getDefaultInstance(),
+        Items.IRON_DOOR.getDefaultInstance(),
+        Items.BIRCH_DOOR.getDefaultInstance(),
+        Items.BAMBOO_DOOR.getDefaultInstance(),
+        Items.CHERRY_DOOR.getDefaultInstance(),
+        Items.JUNGLE_DOOR.getDefaultInstance(),
+        Items.ACACIA_DOOR.getDefaultInstance(),
+        Items.SPRUCE_DOOR.getDefaultInstance(),
+        Items.WARPED_DOOR.getDefaultInstance(),
+        Items.COPPER_DOOR.getDefaultInstance(),
+        Items.CRIMSON_DOOR.getDefaultInstance(),
+        Items.MANGROVE_DOOR.getDefaultInstance(),
+        Items.DARK_OAK_DOOR.getDefaultInstance(),
+        Items.EXPOSED_COPPER_DOOR.getDefaultInstance(),
+        Items.OXIDIZED_COPPER_DOOR.getDefaultInstance(),
+        Items.WEATHERED_COPPER_DOOR.getDefaultInstance()
     };
     private static final ItemStack[] menuIcons = {
-        Items.CAKE.getDefaultStack(),
-        Items.SPAWNER.getDefaultStack(),
-        Items.BEDROCK.getDefaultStack(),
-        Items.GOAT_HORN.getDefaultStack(),
-        Items.HONEYCOMB.getDefaultStack(),
-        Items.LODESTONE.getDefaultStack(),
-        Items.DRAGON_EGG.getDefaultStack(),
-        Items.FILLED_MAP.getDefaultStack(),
-        Items.PINK_TULIP.getDefaultStack(),
-        Items.TURTLE_EGG.getDefaultStack(),
-        Items.NETHER_STAR.getDefaultStack(),
-        Items.WITHER_ROSE.getDefaultStack(),
-        Items.PINK_PETALS.getDefaultStack(),
-        Items.WARPED_SIGN.getDefaultStack(),
-        Items.CHERRY_SIGN.getDefaultStack(),
-        Items.WIND_CHARGE.getDefaultStack(),
-        Items.WRITTEN_BOOK.getDefaultStack(),
-        Items.DAMAGED_ANVIL.getDefaultStack(),
-        Items.CHERRY_SAPLING.getDefaultStack(),
-        Items.JACK_O_LANTERN.getDefaultStack(),
-        Items.KNOWLEDGE_BOOK.getDefaultStack(),
-        Items.FIREWORK_ROCKET.getDefaultStack(),
-        Items.TOTEM_OF_UNDYING.getDefaultStack(),
-        Items.LIME_SHULKER_BOX.getDefaultStack(),
-        Items.AMETHYST_CLUSTER.getDefaultStack(),
-        Items.FLOWERING_AZALEA.getDefaultStack(),
-        Items.PINK_SHULKER_BOX.getDefaultStack(),
-        Items.GILDED_BLACKSTONE.getDefaultStack(),
-        Items.OMINOUS_TRIAL_KEY.getDefaultStack(),
-        Items.HEART_POTTERY_SHERD.getDefaultStack(),
-        Items.LIGHT_BLUE_SHULKER_BOX.getDefaultStack(),
-        Items.ENCHANTED_GOLDEN_APPLE.getDefaultStack(),
-        Items.HEARTBREAK_POTTERY_SHERD.getDefaultStack(),
-        Items.EYE_ARMOR_TRIM_SMITHING_TEMPLATE.getDefaultStack(),
+        Items.CAKE.getDefaultInstance(),
+        Items.SPAWNER.getDefaultInstance(),
+        Items.BEDROCK.getDefaultInstance(),
+        Items.GOAT_HORN.getDefaultInstance(),
+        Items.HONEYCOMB.getDefaultInstance(),
+        Items.LODESTONE.getDefaultInstance(),
+        Items.DRAGON_EGG.getDefaultInstance(),
+        Items.FILLED_MAP.getDefaultInstance(),
+        Items.PINK_TULIP.getDefaultInstance(),
+        Items.TURTLE_EGG.getDefaultInstance(),
+        Items.NETHER_STAR.getDefaultInstance(),
+        Items.WITHER_ROSE.getDefaultInstance(),
+        Items.PINK_PETALS.getDefaultInstance(),
+        Items.WARPED_SIGN.getDefaultInstance(),
+        Items.CHERRY_SIGN.getDefaultInstance(),
+        Items.WIND_CHARGE.getDefaultInstance(),
+        Items.WRITTEN_BOOK.getDefaultInstance(),
+        Items.DAMAGED_ANVIL.getDefaultInstance(),
+        Items.CHERRY_SAPLING.getDefaultInstance(),
+        Items.JACK_O_LANTERN.getDefaultInstance(),
+        Items.KNOWLEDGE_BOOK.getDefaultInstance(),
+        Items.FIREWORK_ROCKET.getDefaultInstance(),
+        Items.TOTEM_OF_UNDYING.getDefaultInstance(),
+        Items.LIME_SHULKER_BOX.getDefaultInstance(),
+        Items.AMETHYST_CLUSTER.getDefaultInstance(),
+        Items.FLOWERING_AZALEA.getDefaultInstance(),
+        Items.PINK_SHULKER_BOX.getDefaultInstance(),
+        Items.GILDED_BLACKSTONE.getDefaultInstance(),
+        Items.OMINOUS_TRIAL_KEY.getDefaultInstance(),
+        Items.HEART_POTTERY_SHERD.getDefaultInstance(),
+        Items.LIGHT_BLUE_SHULKER_BOX.getDefaultInstance(),
+        Items.ENCHANTED_GOLDEN_APPLE.getDefaultInstance(),
+        Items.HEARTBREAK_POTTERY_SHERD.getDefaultInstance(),
+        Items.EYE_ARMOR_TRIM_SMITHING_TEMPLATE.getDefaultInstance(),
         discIcons[ThreadLocalRandom.current().nextInt(discIcons.length)],
         doorIcons[ThreadLocalRandom.current().nextInt(doorIcons.length)],
         getCustomIcons()[ThreadLocalRandom.current().nextInt(getCustomIcons().length)]
@@ -217,7 +217,7 @@ public class StardustUtil {
 
         ItemStack playerHead = new ItemStack(Items.PLAYER_HEAD);
         GameProfile profile = new GameProfile(UUID.randomUUID(), "Stardust");
-        ProfileComponent profileComponent = new ProfileComponent(profile);
+        ResolvableProfile profileComponent = new ResolvableProfile(profile);
 
         // Apply a player head texture to the ItemStack
         profileComponent.properties().put(
@@ -227,42 +227,42 @@ public class StardustUtil {
                 playerHeadTextures[ThreadLocalRandom.current().nextInt(playerHeadTextures.length)],""
             )
         );
-        playerHead.set(DataComponentTypes.PROFILE, profileComponent);
+        playerHead.set(DataComponents.PROFILE, profileComponent);
 
         ItemStack enchantedPick = new ItemStack(
             ThreadLocalRandom.current().nextInt(2) == 0 ? Items.DIAMOND_PICKAXE : Items.NETHERITE_PICKAXE);
-        enchantedPick.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
+        enchantedPick.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
 
         ItemStack[] enchantedGlass = new ItemStack[] {
-            Items.GLASS.getDefaultStack(),
-            Items.RED_STAINED_GLASS.getDefaultStack(),
-            Items.CYAN_STAINED_GLASS.getDefaultStack(),
-            Items.LIME_STAINED_GLASS.getDefaultStack(),
-            Items.PINK_STAINED_GLASS.getDefaultStack(),
-            Items.WHITE_STAINED_GLASS.getDefaultStack(),
-            Items.BLACK_STAINED_GLASS.getDefaultStack(),
-            Items.LIGHT_BLUE_STAINED_GLASS.getDefaultStack(),
+            Items.GLASS.getDefaultInstance(),
+            Items.RED_STAINED_GLASS.getDefaultInstance(),
+            Items.CYAN_STAINED_GLASS.getDefaultInstance(),
+            Items.LIME_STAINED_GLASS.getDefaultInstance(),
+            Items.PINK_STAINED_GLASS.getDefaultInstance(),
+            Items.WHITE_STAINED_GLASS.getDefaultInstance(),
+            Items.BLACK_STAINED_GLASS.getDefaultInstance(),
+            Items.LIGHT_BLUE_STAINED_GLASS.getDefaultInstance(),
         };
 
         for (ItemStack g : enchantedGlass) {
-            g.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
+            g.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
         }
 
         ItemStack cgiElytra = new ItemStack(Items.ELYTRA);
-        cgiElytra.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
+        cgiElytra.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
 
         ItemStack sword32k = new ItemStack(
             ThreadLocalRandom.current().nextInt(2) == 0 ? Items.DIAMOND_SWORD : Items.WOODEN_SWORD);
-        sword32k.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
+        sword32k.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
 
         ItemStack illegalBow = new ItemStack(Items.BOW);
-        illegalBow.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
+        illegalBow.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
 
         ItemStack bindingPumpkin = new ItemStack(Items.CARVED_PUMPKIN);
-        bindingPumpkin.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
+        bindingPumpkin.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
 
         ItemStack ripTridentFly = new ItemStack(Items.TRIDENT);
-        ripTridentFly.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
+        ripTridentFly.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
 
         return new ItemStack[] {
             playerHead,
@@ -271,7 +271,7 @@ public class StardustUtil {
         };
     }
 
-    public static boolean checkOrCreateFile(MinecraftClient mc, String fileName) {
+    public static boolean checkOrCreateFile(Minecraft mc, String fileName) {
         File file =FabricLoader.getInstance().getGameDir().resolve(fileName).toFile();
 
         if (!file.exists()) {
@@ -311,10 +311,10 @@ public class StardustUtil {
     }
 
     public static boolean isIn2b2tQueue() {
-        if (mc.player == null || mc.getNetworkHandler() == null) return false;
+        if (mc.player == null || mc.getConnection() == null) return false;
 
         return PlayerUtils.getDimension().equals(Dimension.End)
-            && mc.player.getAbilities().allowFlying && mc.getNetworkHandler().getPlayerList().size() <= 1;
+            && mc.player.getAbilities().mayfly && mc.getConnection().getOnlinePlayers().size() <= 1;
     }
 
     public enum IllegalDisconnectMethod {
@@ -327,26 +327,26 @@ public class StardustUtil {
 
         Packet<?> illegalPacket = null;
         switch (illegalDisconnectMethod) {
-            case Slot -> illegalPacket = new UpdateSelectedSlotC2SPacket(-69);
-            case Chat -> illegalPacket = new ChatMessageC2SPacket(
+            case Slot -> illegalPacket = new ServerboundSetCarriedItemPacket(-69);
+            case Chat -> illegalPacket = new ServerboundChatPacket(
                 "§",
                 Instant.now(),
-                NetworkEncryptionUtils.SecureRandomUtil.nextLong(),
+                Crypt.SaltSupplier.nextLong(),
                 null,
-                ((ClientPlayNetworkHandlerAccessor) mc.getNetworkHandler()).getLastSeenMessagesCollector().collect().update()
+                ((ClientPlayNetworkHandlerAccessor) mc.getConnection()).getLastSeenMessagesCollector().collect().update()
             );
-            case Interact -> illegalPacket = PlayerInteractEntityC2SPacket.interact(mc.player, false, Hand.MAIN_HAND);
+            case Interact -> illegalPacket = PlayerInteractEntityC2SPacket.interact(mc.player, false, InteractionHand.MAIN_HAND);
             case Movement -> illegalPacket = new PlayerMoveC2SPacket.PositionAndOnGround(Double.NaN, 69, Double.NaN, false, false);
-            case SequenceBreak -> illegalPacket = new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, -420, 13.37F, 69.69F);
-            case InvalidSettings -> illegalPacket = new ClientOptionsC2SPacket(new SyncedClientOptions(
-                mc.options.language, -69,
-                mc.options.getChatVisibility().getValue(), mc.options.getChatColors().getValue(),
-                mc.options.getSyncedOptions().playerModelParts(), mc.options.getMainArm().getValue(),
-                mc.options.getSyncedOptions().filtersText(), mc.options.getAllowServerListing().getValue(),
-                mc.options.getSyncedOptions().particleStatus()
+            case SequenceBreak -> illegalPacket = new ServerboundUseItemPacket(InteractionHand.MAIN_HAND, -420, 13.37F, 69.69F);
+            case InvalidSettings -> illegalPacket = new ServerboundClientInformationPacket(new ClientInformation(
+                mc.options.languageCode, -69,
+                mc.options.chatVisibility().get(), mc.options.chatColors().get(),
+                mc.options.buildPlayerInformation().modelCustomisation(), mc.options.mainHand().get(),
+                mc.options.buildPlayerInformation().textFilteringEnabled(), mc.options.allowServerListing().get(),
+                mc.options.buildPlayerInformation().particleStatus()
             ));
         }
-        if (illegalPacket != null) ((ClientConnectionAccessor) mc.getNetworkHandler().getConnection()).invokeSendImmediately(
+        if (illegalPacket != null) ((ClientConnectionAccessor) mc.getConnection().getConnection()).invokeSendImmediately(
             illegalPacket, null, true
         );
     }

@@ -6,7 +6,6 @@ import java.time.Duration;
 import dev.stardust.util.StardustUtil;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.injection.At;
 import meteordevelopment.meteorclient.gui.tabs.Tab;
 import meteordevelopment.meteorclient.gui.GuiTheme;
@@ -32,7 +31,6 @@ public abstract class ModulesScreenMixin extends TabScreen {
     }
 
     @Unique
-    @Nullable
     private Instant createdAt = null;
 
     @Inject(method = "createCategory", at = @At("HEAD"))

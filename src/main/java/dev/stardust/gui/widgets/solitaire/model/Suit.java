@@ -1,8 +1,8 @@
 package dev.stardust.gui.widgets.solitaire.model;
 
-import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.StringRepresentable;
 
-public enum Suit implements StringIdentifiable {
+public enum Suit implements StringRepresentable {
     HEARTS, DIAMONDS, CLUBS, SPADES;
 
     public boolean isRed() {

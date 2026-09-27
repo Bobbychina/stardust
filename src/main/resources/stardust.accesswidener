@@ -1,10 +1,10 @@
-accessWidener v2 named
+accessWidener v2 official
 
 accessible class net/minecraft/client/gui/widget/EntryListWidget$Entry
-accessible field net/minecraft/client/gui/screen/multiplayer/MultiplayerServerListWidget JOIN_TEXTURE Lnet/minecraft/util/Identifier;
-accessible field net/minecraft/client/gui/screen/multiplayer/MultiplayerServerListWidget MOVE_UP_TEXTURE Lnet/minecraft/util/Identifier;
-accessible field net/minecraft/client/gui/screen/multiplayer/MultiplayerServerListWidget MOVE_DOWN_TEXTURE Lnet/minecraft/util/Identifier;
-accessible field net/minecraft/client/gui/screen/multiplayer/MultiplayerServerListWidget JOIN_HIGHLIGHTED_TEXTURE Lnet/minecraft/util/Identifier;
-accessible field net/minecraft/client/gui/screen/multiplayer/MultiplayerServerListWidget MOVE_UP_HIGHLIGHTED_TEXTURE Lnet/minecraft/util/Identifier;
-accessible field net/minecraft/client/gui/screen/multiplayer/MultiplayerServerListWidget MOVE_DOWN_HIGHLIGHTED_TEXTURE Lnet/minecraft/util/Identifier;
-accessible field net/minecraft/client/gui/screen/multiplayer/MultiplayerScreen serverListWidget Lnet/minecraft/client/gui/screen/multiplayer/MultiplayerServerListWidget;
+accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList JOIN_SPRITE Lnet/minecraft/resources/ResourceLocation;
+accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList MOVE_UP_SPRITE Lnet/minecraft/resources/ResourceLocation;
+accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList MOVE_DOWN_SPRITE Lnet/minecraft/resources/ResourceLocation;
+accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList JOIN_HIGHLIGHTED_SPRITE Lnet/minecraft/resources/ResourceLocation;
+accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList MOVE_UP_HIGHLIGHTED_SPRITE Lnet/minecraft/resources/ResourceLocation;
+accessible field net/minecraft/client/gui/screens/multiplayer/ServerSelectionList MOVE_DOWN_HIGHLIGHTED_SPRITE Lnet/minecraft/resources/ResourceLocation;
+accessible field net/minecraft/client/gui/screens/multiplayer/JoinMultiplayerScreen serverSelectionList Lnet/minecraft/client/gui/screens/multiplayer/ServerSelectionList;

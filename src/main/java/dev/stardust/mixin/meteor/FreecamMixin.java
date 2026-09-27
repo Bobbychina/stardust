@@ -5,37 +5,36 @@ import org.joml.Vector3d;
 import java.time.Duration;
 import org.lwjgl.glfw.GLFW;
 import dev.stardust.util.MsgUtil;
-import net.minecraft.block.AirBlock;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
+import net.minecraft.world.level.block.AirBlock;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
-import org.jetbrains.annotations.Nullable;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.RaycastContext;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.client.option.Perspective;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.client.CameraType;
 import org.spongepowered.asm.mixin.injection.At;
 import meteordevelopment.meteorclient.settings.*;
 import org.spongepowered.asm.mixin.injection.Inject;
-import net.minecraft.entity.ai.pathing.NavigationType;
+import net.minecraft.world.level.pathfinder.PathComputationType;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.pathing.PathManagers;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.pathing.BaritoneUtils;
-import meteordevelopment.meteorclient.events.meteor.KeyEvent;
+import net.minecraft.client.input.KeyEvent;
 import meteordevelopment.meteorclient.utils.misc.input.Input;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 import meteordevelopment.meteorclient.settings.StringSetting;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.utils.misc.input.KeyAction;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import meteordevelopment.meteorclient.events.meteor.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import meteordevelopment.meteorclient.systems.modules.render.Freecam;
 
 /**
@@ -50,7 +49,7 @@ public abstract class FreecamMixin {
     private SettingGroup sgGeneral;
 
     @Shadow
-    private Perspective perspective;
+    private CameraType perspective;
     @Shadow
     private double speedValue;
     @Shadow
@@ -72,25 +71,18 @@ public abstract class FreecamMixin {
     @Unique
     private int clicks = 0;
     @Unique
-    @Nullable
     private Instant clickedAt = null;
     @Unique
-    @Nullable
     private Setting<Boolean> clickToCome = null;
     @Unique
-    @Nullable
     private Setting<Boolean> useBaritoneChat = null;
     @Unique
-    @Nullable
     private Setting<String> baritoneChatPrefix = null;
     @Unique
-    @Nullable
     private Setting<Boolean> doubleClickToCome = null;
     @Unique
-    @Nullable
     private Setting<Boolean> satelliteCameraMode = null;
     @Unique
-    @Nullable
     private Setting<Double> orbitHeight = null;
 
     @Inject(method = "<init>", at = @At(value = "FIELD", target = "Lmeteordevelopment/meteorclient/systems/modules/render/Freecam;rotate:Lmeteordevelopment/meteorclient/settings/Setting;"))
@@ -148,37 +140,37 @@ public abstract class FreecamMixin {
 
     @Inject(method = "onTick", at = @At("HEAD"), cancellable = true)
     private void handleClickToCome(CallbackInfo ci) {
-        if (mc.player == null || mc.world == null) return;
-        if (mc.currentScreen == null && ((doubleClickToCome != null && !doubleClickToCome.get() && clicks >= 1) || clicks >= 2)) {
+        if (mc.player == null || mc.level == null) return;
+        if (mc.screen == null && ((doubleClickToCome != null && !doubleClickToCome.get() && clicks >= 1) || clicks >= 2)) {
             clicks = 0;
             Direction side = null;
             BlockPos crosshairPos;
-            if (mc.crosshairTarget instanceof EntityHitResult) {
-                crosshairPos = ((EntityHitResult) mc.crosshairTarget).getEntity().getBlockPos();
+            if (mc.hitResult instanceof EntityHitResult) {
+                crosshairPos = ((EntityHitResult) mc.hitResult).getEntity().blockPosition();
             } else {
-                BlockHitResult result = ((BlockHitResult) mc.crosshairTarget);
-                if (mc.world.getBlockState(result.getBlockPos()).getBlock() instanceof AirBlock) {
-                    Vec3d cameraPos = mc.gameRenderer.getCamera().getPos();
-                    float pitch = mc.gameRenderer.getCamera().getPitch();
-                    float yaw = mc.gameRenderer.getCamera().getYaw();
+                BlockHitResult result = ((BlockHitResult) mc.hitResult);
+                if (mc.level.getBlockState(result.getBlockPos()).getBlock() instanceof AirBlock) {
+                    Vec3 cameraPos = mc.gameRenderer.getMainCamera().getPosition();
+                    float pitch = mc.gameRenderer.getMainCamera().getXRot();
+                    float yaw = mc.gameRenderer.getMainCamera().getYRot();
 
-                    Vec3d direction = getRotationVector(pitch, yaw);
-                    RaycastContext context = new RaycastContext(
+                    Vec3 direction = getRotationVector(pitch, yaw);
+                    ClipContext context = new ClipContext(
                         cameraPos, cameraPos.add(direction.multiply(256)),
-                        RaycastContext.ShapeType.VISUAL, RaycastContext.FluidHandling.NONE, mc.getCameraEntity()
+                        ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, mc.getCameraEntity()
                     );
 
-                    BlockHitResult rayCast = mc.world.raycast(context);
-                    if (rayCast != null && !(mc.world.getBlockState(rayCast.getBlockPos()).getBlock() instanceof AirBlock)) {
+                    BlockHitResult rayCast = mc.level.raycast(context);
+                    if (rayCast != null && !(mc.level.getBlockState(rayCast.getBlockPos()).getBlock() instanceof AirBlock)) {
                         crosshairPos = rayCast.getBlockPos();
-                        side = rayCast.getSide();
+                        side = rayCast.getDirection();
                     } else {
                         crosshairPos = result.getBlockPos();
-                        side = result.getSide();
+                        side = result.getDirection();
                     }
                 } else {
                     crosshairPos = result.getBlockPos();
-                    side = result.getSide();
+                    side = result.getDirection();
                 }
             }
 
@@ -187,17 +179,17 @@ public abstract class FreecamMixin {
                 if (side == Direction.DOWN) {
                     crosshairPos = crosshairPos.offset(side, 2);
                 }else if (side == Direction.UP) {
-                    crosshairPos = crosshairPos.offset(side);
+                    crosshairPos = crosshairPos.relative(side);
                 } else {
-                    crosshairPos = crosshairPos.offset(side);
-                    if (mc.world.getBlockState(crosshairPos.offset(Direction.DOWN)).canPathfindThrough(NavigationType.LAND)) {
-                        crosshairPos = crosshairPos.offset(Direction.DOWN);
+                    crosshairPos = crosshairPos.relative(side);
+                    if (mc.level.getBlockState(crosshairPos.relative(Direction.DOWN)).isPathfindable(PathComputationType.LAND)) {
+                        crosshairPos = crosshairPos.relative(Direction.DOWN);
                     }
                 }
             }
 
             if (useBaritoneChat != null && useBaritoneChat.get() && baritoneChatPrefix != null && !baritoneChatPrefix.get().isBlank()) {
-                mc.getNetworkHandler().sendChatMessage(baritoneChatPrefix.get() + "goto "
+                mc.getConnection().sendChat(baritoneChatPrefix.get() + "goto "
                     + crosshairPos.getX() + " "
                     + crosshairPos.getY() + " "
                     + crosshairPos.getZ()
@@ -211,7 +203,7 @@ public abstract class FreecamMixin {
             }
         }
 
-        if (mc.currentScreen == null && clicks > 0) {
+        if (mc.screen == null && clicks > 0) {
             ++timer;
             if (timer >= 10) {
                 timer = 0;
@@ -221,15 +213,15 @@ public abstract class FreecamMixin {
         }
 
         if (satelliteCameraMode == null || !satelliteCameraMode.get()) return;
-        if (mc.cameraEntity == null || mc.getCameraEntity() == null) return;
+        if (mc.getCameraEntity() == null || mc.getCameraEntity() == null) return;
         ci.cancel();
 
-        if (mc.cameraEntity.isInsideWall()) mc.getCameraEntity().noClip = true;
-        if (!perspective.isFirstPerson()) mc.options.setPerspective(Perspective.FIRST_PERSON);
+        if (mc.getCameraEntity().isInsideWall()) mc.getCameraEntity().noPhysics = true;
+        if (!perspective.isFirstPerson()) mc.options.setCameraType(CameraType.FIRST_PERSON);
 
         double s = 0.5;
         double velY = 0;
-        if (mc.options.sprintKey.isPressed()) s = 1;
+        if (mc.options.keySprint.isDown()) s = 1;
 
         if (this.up) {
             velY += s * speedValue;
@@ -238,7 +230,7 @@ public abstract class FreecamMixin {
             velY -= s * speedValue;
         }
 
-        Vec3d orbitPos = getOrbitPos(velY);
+        Vec3 orbitPos = getOrbitPos(velY);
 
         prevPos.set(pos);
         pos.set(orbitPos.x, orbitPos.y, orbitPos.z);
@@ -253,13 +245,13 @@ public abstract class FreecamMixin {
 
         ci.cancel();
         boolean cancel = true;
-        if (mc.options.jumpKey.matchesKey(event.key, 0)) {
+        if (mc.options.keyJump.matches(event.key, 0)) {
             up = event.action != KeyAction.Release;
-            mc.options.jumpKey.setPressed(false);
+            mc.options.keyJump.setDown(false);
         }
-        else if (mc.options.sneakKey.matchesKey(event.key, 0)) {
+        else if (mc.options.keyShift.matches(event.key, 0)) {
             down = event.action != KeyAction.Release;
-            mc.options.sneakKey.setPressed(false);
+            mc.options.keyShift.setDown(false);
         } else {
             cancel = false;
         }
@@ -269,9 +261,9 @@ public abstract class FreecamMixin {
 
     @Inject(method = "onMouseButton", at = @At("TAIL"))
     private void handleMouseClicks(MouseButtonEvent event, CallbackInfo ci) {
-        if (mc.currentScreen != null) return;
+        if (mc.screen != null) return;
         if (clickToCome == null || !clickToCome.get()) return;
-        if (mc.options.attackKey.matchesMouse(event.button)) {
+        if (mc.options.keyAttack.matchesMouse(event.button)) {
             Instant now = Instant.now();
             if (clickedAt == null || Duration.between(clickedAt, now).toMillis() > 100) {
                 clicks++;
@@ -288,22 +280,22 @@ public abstract class FreecamMixin {
     }
 
     @Unique
-    private Vec3d getRotationVector(float pitch, float yaw) {
+    private Vec3 getRotationVector(float pitch, float yaw) {
         float f = pitch * ((float)Math.PI / 180);
         float g = -yaw * ((float)Math.PI / 180);
-        float h = MathHelper.cos(g);
-        float i = MathHelper.sin(g);
-        float j = MathHelper.cos(f);
-        float k = MathHelper.sin(f);
-        return new Vec3d(i * j, -k, h * j);
+        float h = Mth.cos(g);
+        float i = Mth.sin(g);
+        float j = Mth.cos(f);
+        float k = Mth.sin(f);
+        return new Vec3(i * j, -k, h * j);
     }
 
     @Unique
-    private Vec3d getOrbitPos(double velY) {
+    private Vec3 getOrbitPos(double velY) {
         if (orbitHeight != null) {
             orbitHeight.set(orbitHeight.get() + velY);
         }
-        if (mc.player == null || orbitHeight == null) return new Vec3d(0, orbitHeight == null ? velY : orbitHeight.get(), 0);
-        return new Vec3d(mc.player.getX(), orbitHeight.get(), mc.player.getZ());
+        if (mc.player == null || orbitHeight == null) return new Vec3(0, orbitHeight == null ? velY : orbitHeight.get(), 0);
+        return new Vec3(mc.player.getX(), orbitHeight.get(), mc.player.getZ());
     }
 }

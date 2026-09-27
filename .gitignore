@@ -1,34 +1,8 @@
-# gradle
-
+﻿build/
 .gradle/
-build/
-out/
-classes/
-
-# eclipse
-
-*.launch
-
-# idea
-
-.idea/
-*.iml
-*.ipr
-*.iws
-.editorconfig
-
-# vscode
-
-.settings/
-.vscode/
-bin/
-.classpath
-.project
-
-# macos
-
-*.DS_Store
-
-# fabric
-
-run/
+libs/
+docs/hierarchy.json
+docs/member-map.json
+docs/mapping-raw.json
+docs/javap*.txt
+__pycache__/

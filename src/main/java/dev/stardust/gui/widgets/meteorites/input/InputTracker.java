@@ -59,13 +59,13 @@ public class InputTracker {
 
     public static boolean isKeyDown(int key) {
         if (mc == null || mc.getWindow() == null) return false;
-        long handle = mc.getWindow().getHandle();
+        long handle = mc.getWindow().getWindow();
         return glfwGetKey(handle, key) == GLFW_PRESS;
     }
 
     public static boolean isMouseDown(int button) {
         if (mc == null || mc.getWindow() == null) return false;
-        long handle = mc.getWindow().getHandle();
+        long handle = mc.getWindow().getWindow();
         return glfwGetMouseButton(handle, button) == GLFW_PRESS;
     }
 }

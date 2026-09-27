@@ -1,13 +1,13 @@
 package dev.stardust.modules;
 
 import dev.stardust.Stardust;
-import net.minecraft.util.Hand;
-import net.minecraft.item.Items;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.Items;
 import dev.stardust.util.MsgUtil;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import meteordevelopment.orbit.EventHandler;
 import meteordevelopment.meteorclient.utils.Utils;
-import net.minecraft.component.DataComponentTypes;
+import net.minecraft.core.component.DataComponents;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.BoolSetting;
@@ -16,7 +16,7 @@ import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
-import meteordevelopment.meteorclient.events.meteor.KeyEvent;
+import net.minecraft.client.input.KeyEvent;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
@@ -88,14 +88,14 @@ public class Updraft extends Module {
     private State currentState = State.Idle;
 
     private void useWindCharge() {
-        if (mc.interactionManager == null || mc.player == null || mc.player.isGliding()) {
+        if (mc.gameMode == null || mc.player == null || mc.player.isFallFlying()) {
             currentState = State.Idle;
             return;
         }
-        if (offhand || mc.player.getMainHandStack().getItem() == Items.WIND_CHARGE) {
+        if (offhand || mc.player.getMainHandItem().getItem() == Items.WIND_CHARGE) {
             Rotations.rotate(
-                mc.player.getYaw(), pitchSpoofSetting.get(), rotPriority, false,
-                () -> mc.interactionManager.interactItem(mc.player, offhand ? Hand.OFF_HAND : Hand.MAIN_HAND)
+                mc.player.getYRot(), pitchSpoofSetting.get(), rotPriority, false,
+                () -> mc.gameMode.useItem(mc.player, offhand ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND)
             );
             ++rotPriority;
             if (swapSetting.get() && swapBackSetting.get()) {
@@ -114,8 +114,8 @@ public class Updraft extends Module {
     }
 
     private void swapToWindCharge() {
-        ItemStack current = mc.player.getMainHandStack();
-        ItemStack offhandStack = mc.player.getOffHandStack();
+        ItemStack current = mc.player.getMainHandItem();
+        ItemStack offhandStack = mc.player.getOffhandItem();
         if (current.getItem() == Items.WIND_CHARGE || offhandStack.getItem() == Items.WIND_CHARGE) {
             if (offhandStack.getItem() == Items.WIND_CHARGE) offhand = true;
             currentState = State.Using;
@@ -123,14 +123,14 @@ public class Updraft extends Module {
             return;
         }
 
-        for (int n = 0; n < (hotBarSetting.get() ? 9 : mc.player.getInventory().main.size()); n++) {
-            ItemStack stack = mc.player.getInventory().getStack(n);
+        for (int n = 0; n < (hotBarSetting.get() ? 9 : mc.player.getInventory().getNonEquipmentItems().size()); n++) {
+            ItemStack stack = mc.player.getInventory().getItem(n);
             if (stack.getItem() == Items.WIND_CHARGE) {
                 if (n < 9) {
                     InvUtils.swap(n, true);
                 } else if (!hotBarSetting.get()) {
                     returnSlot = n;
-                    InvUtils.move().from(n).to(mc.player.getInventory().selectedSlot);
+                    InvUtils.move().from(n).to(mc.player.getInventory().getSelectedSlot());
                 }
                 break;
             }
@@ -145,7 +145,7 @@ public class Updraft extends Module {
 
     private void swapFromWindCharge() {
         if (returnSlot == -1) InvUtils.swapBack();
-        else InvUtils.move().from(mc.player.getInventory().selectedSlot).to(returnSlot);
+        else InvUtils.move().from(mc.player.getInventory().getSelectedSlot()).to(returnSlot);
 
         returnSlot = -1;
         offhand = false;
@@ -165,8 +165,8 @@ public class Updraft extends Module {
 
     @EventHandler
     private void onKey(KeyEvent event) {
-        if (mc.world == null || mc.player == null) return;
-        if (mc.options.jumpKey.matchesKey(event.key, 0)) {
+        if (mc.level == null || mc.player == null) return;
+        if (mc.options.keyJump.matches(event.key, 0)) {
             if (currentState == State.Idle) {
                 if (swapSetting.get()) currentState = State.SwappingTo;
                 else currentState = State.Using;
@@ -180,12 +180,12 @@ public class Updraft extends Module {
 
         --timer;
         --notify;
-        if (mc.player.isGliding()) return;
-        ItemStack current = mc.player.getMainHandStack();
-        if ((current.contains(DataComponentTypes.FOOD) || Utils.isThrowable(current.getItem())) && mc.player.getItemUseTime() > 0) return;
+        if (mc.player.isFallFlying()) return;
+        ItemStack current = mc.player.getMainHandItem();
+        if ((current.has(DataComponents.FOOD) || Utils.isThrowable(current.getItem())) && mc.player.getTicksUsingItem() > 0) return;
         else if (current.isEmpty()) {
-            ItemStack offhand = mc.player.getOffHandStack();
-            if ((offhand.contains(DataComponentTypes.FOOD) || Utils.isThrowable(offhand.getItem())) && mc.player.getItemUseTime() > 0) return;
+            ItemStack offhand = mc.player.getOffhandItem();
+            if ((offhand.has(DataComponents.FOOD) || Utils.isThrowable(offhand.getItem())) && mc.player.getTicksUsingItem() > 0) return;
         }
         if (timer <= 0) {
             switch (currentState) {

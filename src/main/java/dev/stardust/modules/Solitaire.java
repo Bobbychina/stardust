@@ -11,7 +11,6 @@ import dev.stardust.util.MsgUtil;
 import com.google.gson.GsonBuilder;
 import dev.stardust.util.StardustUtil;
 import java.nio.file.StandardOpenOption;
-import org.jetbrains.annotations.Nullable;
 import net.fabricmc.loader.api.FabricLoader;
 import dev.stardust.gui.screens.SolitaireScreen;
 import meteordevelopment.meteorclient.gui.GuiTheme;
@@ -83,7 +82,7 @@ public class Solitaire extends Module {
             .build()
     );
 
-    public @Nullable SaveState saveData = null;
+    public SaveState saveData = null;
 
     public void saveGame(SaveState data) {
         saveData = data;
@@ -139,7 +138,7 @@ public class Solitaire extends Module {
 
     @Override
     public void onDeactivate() {
-        if (mc.currentScreen instanceof SolitaireScreen) {
+        if (mc.screen instanceof SolitaireScreen) {
             try {
                 mc.setScreen(null);
             } catch (Exception err) {

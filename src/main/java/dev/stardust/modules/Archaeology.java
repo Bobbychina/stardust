@@ -6,31 +6,30 @@ import java.util.HashSet;
 import java.util.Optional;
 import dev.stardust.util.*;
 import dev.stardust.Stardust;
-import net.minecraft.item.Item;
-import net.minecraft.util.Hand;
-import net.minecraft.item.Items;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ShovelItem;
-import net.minecraft.block.BlockState;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.block.FallingBlock;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ShovelItem;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.level.block.FallingBlock;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.util.Mth;
 import meteordevelopment.orbit.EventHandler;
 import meteordevelopment.orbit.EventPriority;
-import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.world.phys.BlockHitResult;
 import java.util.concurrent.ThreadLocalRandom;
-import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import meteordevelopment.meteorclient.settings.*;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceSet;
 import meteordevelopment.meteorclient.utils.Utils;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.block.entity.BrushableBlockEntity;
+import net.minecraft.world.level.block.entity.BrushableBlockEntity;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
@@ -223,11 +222,11 @@ public class Archaeology extends Module {
     private long lastPing = 0L;
     private int ticksBrushing = 0;
     private long lastNotified = 0L;
-    private @Nullable BlockPos lastFoundPos = null;
+    private BlockPos lastFoundPos = null;
     private final List<Long> toIgnore = new LongArrayList();
     private final Set<BlockPos> goodBlocks = new HashSet<>();
-    private final BlockPos.Mutable testPos = new BlockPos.Mutable();
-    private final BlockPos.Mutable testPos2 = new BlockPos.Mutable();
+    private final BlockPos.MutableBlockPos testPos = new BlockPos.MutableBlockPos();
+    private final BlockPos.MutableBlockPos testPos2 = new BlockPos.MutableBlockPos();
     private final Set<BlockPos> safeBlocksToBreak = new HashSet<>();
     private final Set<BlockPos> safeBlocksToBrush = new HashSet<>();
     private final Set<BlockPos> preventingBreakageBlocks = new HashSet<>();
@@ -237,26 +236,26 @@ public class Archaeology extends Module {
     private boolean isOutOfRange(BlockPos pos1, BlockPos pos2, int range) {
         if (pos1 == null || pos2 == null) return true;
         testPos2.set(pos2.getX(), pos1.getY(), pos2.getZ());
-        return !pos1.isWithinDistance(testPos2, range);
+        return !pos1.closerThan(testPos2, range);
     }
 
     private boolean isSafeToBrush(BlockPos pos) {
-        if (mc.world == null) return false;
+        if (mc.level == null) return false;
         if (safeBlocksToBrush.contains(pos)) return true;
 
-        if (mc.world.getBlockState(pos.down()).isAir() || mc.world.getBlockState(pos.down()).isReplaceable()) {
-            preventingBreakageBlocks.add(pos.down());
+        if (mc.level.getBlockState(pos.below()).isAir() || mc.level.getBlockState(pos.below()).canBeReplaced()) {
+            preventingBreakageBlocks.add(pos.below());
             MsgUtil.updateModuleMsg("It is not yet safe to brush this suspicious block, because it is §cfloating..! §8[§aTry placing a solid block underneath it§8]", this.name, "directBrushPrevent".hashCode());
             return false;
         }
-        BlockPos.Mutable pos2 = new BlockPos.Mutable();
+        BlockPos.MutableBlockPos pos2 = new BlockPos.MutableBlockPos();
         for (Direction dir : Direction.values()) {
-            pos2.set(pos.offset(dir));
+            pos2.set(pos.relative(dir));
             if (!toIgnore.contains(pos2.asLong())
-                && (mc.world.getBlockState(pos2).isOf(Blocks.SUSPICIOUS_SAND)
-                || mc.world.getBlockState(pos2).isOf(Blocks.SUSPICIOUS_GRAVEL)))
+                && (mc.level.getBlockState(pos2).is(Blocks.SUSPICIOUS_SAND)
+                || mc.level.getBlockState(pos2).is(Blocks.SUSPICIOUS_GRAVEL)))
             {
-                if (mc.world.getBlockState(pos2.down()).isAir() || mc.world.getBlockState(pos2.down()).isReplaceable()) {
+                if (mc.level.getBlockState(pos2.below()).isAir() || mc.level.getBlockState(pos2.below()).isReplaceable()) {
                     preventingBreakageBlocks.add(pos2);
                     MsgUtil.updateModuleMsg("It is not yet safe to brush this suspicious block, as doing so will update an adjacent floating one§e..!", this.name, "preventBreakageBrush".hashCode());
                     return false;
@@ -269,19 +268,19 @@ public class Archaeology extends Module {
     }
 
     private boolean isSafeToBreak(BlockPos pos) {
-        if (mc.world == null) return false;
+        if (mc.level == null) return false;
         if (safeBlocksToBreak.contains(pos)) return true;
         if (!toIgnore.contains(pos.asLong())
-            && (mc.world.getBlockState(pos).isOf(Blocks.SUSPICIOUS_SAND)
-            || mc.world.getBlockState(pos).isOf(Blocks.SUSPICIOUS_GRAVEL))) return false;
+            && (mc.level.getBlockState(pos).is(Blocks.SUSPICIOUS_SAND)
+            || mc.level.getBlockState(pos).is(Blocks.SUSPICIOUS_GRAVEL))) return false;
 
-        BlockPos.Mutable checkPos = new BlockPos.Mutable();
+        BlockPos.MutableBlockPos checkPos = new BlockPos.MutableBlockPos();
 
         // Indirect block update check
         for (Direction dir : Direction.values()) {
-            checkPos.set(pos.offset(dir));
-            if (!toIgnore.contains(checkPos.asLong()) && mc.world.getBlockState(checkPos).isOf(Blocks.SUSPICIOUS_SAND) || mc.world.getBlockState(checkPos).isOf(Blocks.SUSPICIOUS_GRAVEL)) {
-                if (mc.world.getBlockState(checkPos.down()).isAir() || mc.world.getBlockState(checkPos.down()).isReplaceable()) {
+            checkPos.set(pos.relative(dir));
+            if (!toIgnore.contains(checkPos.asLong()) && mc.level.getBlockState(checkPos).is(Blocks.SUSPICIOUS_SAND) || mc.level.getBlockState(checkPos).is(Blocks.SUSPICIOUS_GRAVEL)) {
+                if (mc.level.getBlockState(checkPos.below()).isAir() || mc.level.getBlockState(checkPos.below()).isReplaceable()) {
                     preventingBreakageBlocks.add(new BlockPos(checkPos));
                     MsgUtil.updateModuleMsg("§aPreventing accidental breakage from indirect block update for floating suspicious block§c..!", this.name, "indirectBreakPrevent".hashCode());
                     return false;
@@ -289,12 +288,12 @@ public class Archaeology extends Module {
             }
         }
 
-        checkPos.set(pos.up());
-        while (checkPos.getY() < mc.world.getHeight()) {
-            BlockState checkState = mc.world.getBlockState(checkPos);
+        checkPos.set(pos.above());
+        while (checkPos.getY() < mc.level.getHeight()) {
+            BlockState checkState = mc.level.getBlockState(checkPos);
             if (!toIgnore.contains(checkPos.asLong())
-                && (checkState.isOf(Blocks.SUSPICIOUS_GRAVEL)
-                || checkState.isOf(Blocks.SUSPICIOUS_SAND)))
+                && (checkState.is(Blocks.SUSPICIOUS_GRAVEL)
+                || checkState.is(Blocks.SUSPICIOUS_SAND)))
             {
                 preventingBreakageBlocks.add(new BlockPos(checkPos));
                 return false;
@@ -306,20 +305,20 @@ public class Archaeology extends Module {
                 for (Direction dir : Direction.values()) {
                     // Skip up & down since we're already scanning the column
                     if (dir.equals(Direction.UP) || dir.equals(Direction.DOWN)) continue;
-                    BlockPos.Mutable indirectPos = new BlockPos.Mutable();
-                    indirectPos.set(checkPos.offset(dir));
+                    BlockPos.MutableBlockPos indirectPos = new BlockPos.MutableBlockPos();
+                    indirectPos.set(checkPos.relative(dir));
                     if (!toIgnore.contains(indirectPos.asLong())
-                        && (mc.world.getBlockState(indirectPos).isOf(Blocks.SUSPICIOUS_GRAVEL)
-                        || mc.world.getBlockState(indirectPos).isOf(Blocks.SUSPICIOUS_SAND)))
+                        && (mc.level.getBlockState(indirectPos).is(Blocks.SUSPICIOUS_GRAVEL)
+                        || mc.level.getBlockState(indirectPos).is(Blocks.SUSPICIOUS_SAND)))
                     {
-                        if (mc.world.getBlockState(indirectPos.down()).isAir() || mc.world.getBlockState(indirectPos.down()).isReplaceable()) {
+                        if (mc.level.getBlockState(indirectPos.below()).isAir() || mc.level.getBlockState(indirectPos.below()).isReplaceable()) {
                             preventingBreakageBlocks.add(new BlockPos(indirectPos));
                             MsgUtil.updateModuleMsg("§ePreventing accidental breakage from indirect block update for floating suspicious block§c..!", this.name, "indirectBreakPrevent".hashCode());
                             return false;
                         }
                     }
                 }
-                checkPos.set(checkPos.up());
+                checkPos.set(checkPos.above());
             }
         }
 
@@ -352,72 +351,72 @@ public class Archaeology extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Pre event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
 
         ++timer;
         if (timer >= 5) {
             timer = 0;
             synchronized (suspiciousSandBlocks) {
                 suspiciousSandBlocks
-                    .removeIf(pos -> isOutOfRange(pos, mc.player.getBlockPos(), 256) || !(mc.world.getBlockEntity(pos) instanceof BrushableBlockEntity));
+                    .removeIf(pos -> isOutOfRange(pos, mc.player.blockPosition(), 256) || !(mc.level.getBlockEntity(pos) instanceof BrushableBlockEntity));
             }
             synchronized (suspiciousGravelBlocks) {
                 suspiciousGravelBlocks
-                    .removeIf(pos -> isOutOfRange(pos, mc.player.getBlockPos(), 256) || !(mc.world.getBlockEntity(pos) instanceof BrushableBlockEntity));
+                    .removeIf(pos -> isOutOfRange(pos, mc.player.blockPosition(), 256) || !(mc.level.getBlockEntity(pos) instanceof BrushableBlockEntity));
             }
             synchronized (preventingBreakageBlocks) {
-                preventingBreakageBlocks.removeIf(pos -> !(mc.world.getBlockEntity(pos) instanceof BrushableBlockEntity));
+                preventingBreakageBlocks.removeIf(pos -> !(mc.level.getBlockEntity(pos) instanceof BrushableBlockEntity));
             }
             safeBlocksToBreak
-                .removeIf(pos -> !(mc.world.getBlockEntity(pos) instanceof BrushableBlockEntity) || isOutOfRange(pos, mc.player.getBlockPos(), 256));
+                .removeIf(pos -> !(mc.level.getBlockEntity(pos) instanceof BrushableBlockEntity) || isOutOfRange(pos, mc.player.blockPosition(), 256));
             safeBlocksToBrush
-                .removeIf(pos -> !(mc.world.getBlockEntity(pos) instanceof BrushableBlockEntity) || isOutOfRange(pos, mc.player.getBlockPos(), 256));
+                .removeIf(pos -> !(mc.level.getBlockEntity(pos) instanceof BrushableBlockEntity) || isOutOfRange(pos, mc.player.blockPosition(), 256));
 
             for (BlockEntity be : Utils.blockEntities()) {
-                if (suspiciousSandBlocks.contains(be.getPos()) || suspiciousGravelBlocks.contains(be.getPos()))
+                if (suspiciousSandBlocks.contains(be.getBlockPos()) || suspiciousGravelBlocks.contains(be.getBlockPos()))
                     continue;
-                if (be instanceof BrushableBlockEntity && !toIgnore.contains(be.getPos().asLong())) {
-                    if (mc.world.getBlockState(be.getPos()).isOf(Blocks.SUSPICIOUS_GRAVEL)) {
-                        suspiciousGravelBlocks.add(be.getPos());
+                if (be instanceof BrushableBlockEntity && !toIgnore.contains(be.getBlockPos().asLong())) {
+                    if (mc.level.getBlockState(be.getBlockPos()).is(Blocks.SUSPICIOUS_GRAVEL)) {
+                        suspiciousGravelBlocks.add(be.getBlockPos());
                     } else {
-                        suspiciousSandBlocks.add(be.getPos());
+                        suspiciousSandBlocks.add(be.getBlockPos());
                     }
 
                     // Ignore Y value for distance checks
-                    testPos.set(be.getPos().getX(), lastFoundPos == null ? be.getPos().getY() : lastFoundPos.getY(), be.getPos().getZ());
+                    testPos.set(be.getBlockPos().getX(), lastFoundPos == null ? be.getBlockPos().getY() : lastFoundPos.getY(), be.getBlockPos().getZ());
                     if (lastFoundPos == null || isOutOfRange(lastFoundPos, testPos, 69)) {
-                        lastFoundPos = be.getPos();
+                        lastFoundPos = be.getBlockPos();
                         if (StardustUtil.XAERO_AVAILABLE && waypoints.get()) switch (waypointsFor.get()) {
                             case SuspiciousSand -> {
-                                if (mc.world.getBlockState(be.getPos()).isOf(Blocks.SUSPICIOUS_SAND)) {
+                                if (mc.level.getBlockState(be.getBlockPos()).is(Blocks.SUSPICIOUS_SAND)) {
                                     MapUtil.addWaypoint(
-                                        be.getPos(), "Archaeology Dig Site", "ᛩ",
+                                        be.getBlockPos(), "Archaeology Dig Site", "ᛩ",
                                         MapUtil.Purpose.Normal, MapUtil.WpColor.Random, tempWaypoints.get()
                                     );
                                 }
                             }
                             case SuspiciousGravel -> {
-                                if (mc.world.getBlockState(be.getPos()).isOf(Blocks.SUSPICIOUS_GRAVEL)) {
+                                if (mc.level.getBlockState(be.getBlockPos()).is(Blocks.SUSPICIOUS_GRAVEL)) {
                                     MapUtil.addWaypoint(
-                                        be.getPos(), "Archaeology Dig Site", "ᛩ",
+                                        be.getBlockPos(), "Archaeology Dig Site", "ᛩ",
                                         MapUtil.Purpose.Normal, MapUtil.WpColor.Random, tempWaypoints.get()
                                     );
                                 }
                             }
                             default -> MapUtil.addWaypoint(
-                                be.getPos(), "Archaeology Dig Site", "ᛩ",
+                                be.getBlockPos(), "Archaeology Dig Site", "ᛩ",
                                 MapUtil.Purpose.Normal, MapUtil.WpColor.Random, tempWaypoints.get()
                             );
                         }
 
                         if (soundPing.get()) switch (soundFor.get()) {
                             case SuspiciousSand -> {
-                                if (mc.world.getBlockState(be.getPos()).isOf(Blocks.SUSPICIOUS_SAND)) {
+                                if (mc.level.getBlockState(be.getBlockPos()).is(Blocks.SUSPICIOUS_SAND)) {
                                     long now = System.currentTimeMillis();
                                     if (now - lastPing >= 1337) {
                                         lastPing = now;
                                         mc.player.playSound(
-                                            ThreadLocalRandom.current().nextInt(2) == 0 ? SoundEvents.ITEM_BRUSH_BRUSHING_SAND : SoundEvents.ITEM_BRUSH_BRUSHING_SAND_COMPLETE,
+                                            ThreadLocalRandom.current().nextInt(2) == 0 ? SoundEvents.BRUSH_SAND : SoundEvents.BRUSH_SAND_COMPLETED,
                                             pingVolume.get().floatValue(),
                                             ThreadLocalRandom.current().nextFloat(0.42f, 1.337f)
                                         );
@@ -425,12 +424,12 @@ public class Archaeology extends Module {
                                 }
                             }
                             case SuspiciousGravel -> {
-                                if (mc.world.getBlockState(be.getPos()).isOf(Blocks.SUSPICIOUS_GRAVEL)) {
+                                if (mc.level.getBlockState(be.getBlockPos()).is(Blocks.SUSPICIOUS_GRAVEL)) {
                                     long now = System.currentTimeMillis();
                                     if (now - lastPing >= 1337) {
                                         lastPing = now;
                                         mc.player.playSound(
-                                            ThreadLocalRandom.current().nextInt(2) == 0 ? SoundEvents.ITEM_BRUSH_BRUSHING_GRAVEL : SoundEvents.ITEM_BRUSH_BRUSHING_GRAVEL_COMPLETE,
+                                            ThreadLocalRandom.current().nextInt(2) == 0 ? SoundEvents.BRUSH_GRAVEL : SoundEvents.BRUSH_GRAVEL_COMPLETED,
                                             pingVolume.get().floatValue(),
                                             ThreadLocalRandom.current().nextFloat(0.42f, 1.337f)
                                         );
@@ -442,9 +441,9 @@ public class Archaeology extends Module {
                                 if (now - lastPing >= 1337) {
                                     lastPing = now;
                                     mc.player.playSound(
-                                        mc.world.getBlockState(be.getPos()).isOf(Blocks.SUSPICIOUS_SAND) ?
-                                            ThreadLocalRandom.current().nextInt(2) == 0 ? SoundEvents.ITEM_BRUSH_BRUSHING_SAND : SoundEvents.ITEM_BRUSH_BRUSHING_SAND_COMPLETE :
-                                            ThreadLocalRandom.current().nextInt(2) == 0 ? SoundEvents.ITEM_BRUSH_BRUSHING_GRAVEL : SoundEvents.ITEM_BRUSH_BRUSHING_GRAVEL_COMPLETE,
+                                        mc.level.getBlockState(be.getBlockPos()).is(Blocks.SUSPICIOUS_SAND) ?
+                                            ThreadLocalRandom.current().nextInt(2) == 0 ? SoundEvents.BRUSH_SAND : SoundEvents.BRUSH_SAND_COMPLETED :
+                                            ThreadLocalRandom.current().nextInt(2) == 0 ? SoundEvents.BRUSH_GRAVEL : SoundEvents.BRUSH_GRAVEL_COMPLETED,
                                         pingVolume.get().floatValue(),
                                         ThreadLocalRandom.current().nextFloat(0.42f, 1.337f)
                                     );
@@ -455,10 +454,10 @@ public class Archaeology extends Module {
                         if (chatNotify.get()) {
                             switch (chatFor.get()) {
                                 case SuspiciousSand -> {
-                                    if (mc.world.getBlockState(be.getPos()).isOf(Blocks.SUSPICIOUS_GRAVEL)) continue;
+                                    if (mc.level.getBlockState(be.getBlockPos()).is(Blocks.SUSPICIOUS_GRAVEL)) continue;
                                 }
                                 case SuspiciousGravel -> {
-                                    if (mc.world.getBlockState(be.getPos()).isOf(Blocks.SUSPICIOUS_SAND)) continue;
+                                    if (mc.level.getBlockState(be.getBlockPos()).is(Blocks.SUSPICIOUS_SAND)) continue;
                                 }
                                 default -> {
                                 }
@@ -467,8 +466,8 @@ public class Archaeology extends Module {
 
                             sb.append("Located an Archaeological Dig Site");
                             if (chatCoords.get()) {
-                                sb.append(" at §8[§5").append(be.getPos().getX()).append("§8, §5")
-                                    .append(be.getPos().getY()).append("§8, §5").append(be.getPos().getZ()).append("§8]");
+                                sb.append(" at §8[§5").append(be.getBlockPos().getX()).append("§8, §5")
+                                    .append(be.getBlockPos().getY()).append("§8, §5").append(be.getBlockPos().getZ()).append("§8]");
                             }
                             sb.append(StardustUtil.rCC()).append("..!");
                             MsgUtil.sendModuleMsg(sb.toString(), this.name);
@@ -478,17 +477,17 @@ public class Archaeology extends Module {
             }
         }
 
-        HitResult target = mc.crosshairTarget;
+        HitResult target = mc.hitResult;
         if (!(target instanceof BlockHitResult blockHit)) return;
 
         BlockPos hitPos = blockHit.getBlockPos();
-        if (mc.world.getBlockEntity(hitPos) instanceof BrushableBlockEntity) {
+        if (mc.level.getBlockEntity(hitPos) instanceof BrushableBlockEntity) {
             if (toIgnore.contains(hitPos.asLong())) {
-                mc.options.useKey.setPressed(false);
+                mc.options.keyUse.setDown(false);
 
                 if (breakBad.get()) {
                     FindItemResult result = InvUtils.findInHotbar(stack -> stack.getItem() instanceof ShovelItem);
-                    if (result.found() && result.slot() != mc.player.getInventory().selectedSlot && !(mc.player.getOffHandStack().getItem() instanceof ShovelItem)) {
+                    if (result.found() && result.slot() != mc.player.getInventory().getSelectedSlot() && !(mc.player.getOffhandItem().getItem() instanceof ShovelItem)) {
                         InvUtils.swap(result.slot(), false);
                     }
                     if (isSafeToBreak(hitPos)) BlockUtils.breakBlock(hitPos, true);
@@ -501,21 +500,21 @@ public class Archaeology extends Module {
 
             FindItemResult result = InvUtils.findInHotbar(Items.BRUSH);
             if (result.found()) {
-                boolean offHand = mc.player.getOffHandStack().isOf(Items.BRUSH);
-                if (mc.player.getInventory().selectedSlot == result.slot() || offHand) {
+                boolean offHand = mc.player.getOffhandItem().is(Items.BRUSH);
+                if (mc.player.getInventory().getSelectedSlot() == result.slot() || offHand) {
                     if (isSafeToBrush(hitPos)) {
-                        if (!mc.player.isUsingItem() && mc.interactionManager != null) {
-                            mc.interactionManager.interactItem(mc.player, offHand ? Hand.OFF_HAND : Hand.MAIN_HAND);
+                        if (!mc.player.isUsingItem() && mc.gameMode != null) {
+                            mc.gameMode.useItem(mc.player, offHand ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
                         }
-                        mc.options.useKey.setPressed(true);
+                        mc.options.keyUse.setDown(true);
                     }
                 } else {
                     InvUtils.swap(result.slot(),false);
                     if (isSafeToBrush(hitPos)) {
-                        if (!mc.player.isUsingItem() && mc.interactionManager != null) {
-                            mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
+                        if (!mc.player.isUsingItem() && mc.gameMode != null) {
+                            mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
                         }
-                        mc.options.useKey.setPressed(true);
+                        mc.options.keyUse.setDown(true);
                     }
                 }
             } else {
@@ -525,25 +524,25 @@ public class Archaeology extends Module {
                     MsgUtil.sendModuleMsg("§4No brush found in hotbar§7..!", this.name);
                 }
             }
-        } else if (mc.player.getMainHandStack().isOf(Items.BRUSH) || mc.player.getOffHandStack().isOf(Items.BRUSH)) {
-            mc.options.useKey.setPressed(false);
+        } else if (mc.player.getMainHandItem().is(Items.BRUSH) || mc.player.getOffhandItem().is(Items.BRUSH)) {
+            mc.options.keyUse.setDown(false);
         }
     }
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.player == null || mc.world == null || mc.interactionManager == null) return;
+        if (mc.player == null || mc.level == null || mc.gameMode == null) return;
 
-        HitResult target = mc.crosshairTarget;
+        HitResult target = mc.hitResult;
         if (!(target instanceof BlockHitResult blockHit)) return;
 
         BlockPos hitPos = blockHit.getBlockPos();
         if (toIgnore.contains(hitPos.asLong())) return;
-        if (mc.world.getBlockEntity(hitPos) instanceof BrushableBlockEntity brushableBlock) {
+        if (mc.level.getBlockEntity(hitPos) instanceof BrushableBlockEntity brushableBlock) {
             if (StardustUtil.XAERO_AVAILABLE && waypoints.get() && (suspiciousGravelBlocks.contains(hitPos) || suspiciousSandBlocks.contains(hitPos))) {
                 MapUtil.removeWaypoints(
                     "Archaeology",
-                    pos -> pos.isWithinDistance(hitPos, 64),
+                    pos -> pos.closerThan(hitPos, 64),
                     Optional.of(hitPos.getY())
                 );
             }
@@ -557,7 +556,7 @@ public class Archaeology extends Module {
                     ticksBrushing = 0;
                     LogUtil.warn("Retrying brush packet after response timeout...", this.name);
                     mc.player.stopUsingItem();
-                    mc.options.useKey.setPressed(false);
+                    mc.options.keyUse.setDown(false);
                 }
                 return;
             } else {
@@ -567,7 +566,7 @@ public class Archaeology extends Module {
             if (!targetItems.get().contains(stack.getItem())) {
                 toIgnore.add(hitPos.asLong());
                 if (chat.get() && breakBad.get()) {
-                    MsgUtil.sendModuleMsg("Breaking suspicious block containing §c" + stack.getName().getString() + "§8.", this.name);
+                    MsgUtil.sendModuleMsg("Breaking suspicious block containing §c" + stack.getHoverName().getString() + "§8.", this.name);
                 }
                 preventingBreakageBlocks.add(hitPos);
             } else {
@@ -580,7 +579,7 @@ public class Archaeology extends Module {
     @EventHandler
     private void onRender3D(Render3DEvent event) {
         if (!render.get()) return;
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
 
         for (BlockPos pos : preventingBreakageBlocks) {
             if (toIgnore.contains(pos.asLong())) {
@@ -612,9 +611,9 @@ public class Archaeology extends Module {
         for (BlockPos pos : suspiciousSandBlocks) {
             if (preventingBreakageBlocks.contains(pos)) continue;
             if (RenderUtil.shouldRenderBox(sand)) {
-                int distance = pos.getManhattanDistance(mc.player.getBlockPos());
+                int distance = pos.distManhattan(mc.player.blockPosition());
                 if (distance <= 128) {
-                    Color sideColor = new Color(sand.sideColor.r, sand.sideColor.g, sand.sideColor.b, MathHelper.clamp((int) Math.floor(sand.sideColor.a * ((128 - distance) * 0.333)), sand.sideColor.a, Math.max(sand.sideColor.a, 69)));
+                    Color sideColor = new Color(sand.sideColor.r, sand.sideColor.g, sand.sideColor.b, Mth.clamp((int) Math.floor(sand.sideColor.a * ((128 - distance) * 0.333)), sand.sideColor.a, Math.max(sand.sideColor.a, 69)));
                     RenderUtil.renderBlock(event, pos, sand.lineColor, sideColor, sand.shapeMode);
                 } else {
                     RenderUtil.renderBlock(event, pos, sand.lineColor, sand.sideColor, sand.shapeMode);
@@ -627,9 +626,9 @@ public class Archaeology extends Module {
         for (BlockPos pos : suspiciousGravelBlocks) {
             if (preventingBreakageBlocks.contains(pos)) continue;
             if (RenderUtil.shouldRenderBox(gravel)) {
-                int distance = pos.getManhattanDistance(mc.player.getBlockPos());
+                int distance = pos.distManhattan(mc.player.blockPosition());
                 if (distance <= 128) {
-                    Color sideColor = new Color(gravel.sideColor.r, gravel.sideColor.g, gravel.sideColor.b, MathHelper.clamp((int) Math.floor(gravel.sideColor.a * ((128 - distance) * 0.333)), gravel.sideColor.a, Math.max(gravel.sideColor.a, 69)));
+                    Color sideColor = new Color(gravel.sideColor.r, gravel.sideColor.g, gravel.sideColor.b, Mth.clamp((int) Math.floor(gravel.sideColor.a * ((128 - distance) * 0.333)), gravel.sideColor.a, Math.max(gravel.sideColor.a, 69)));
                     RenderUtil.renderBlock(event, pos, gravel.lineColor, sideColor, gravel.shapeMode);
                 } else {
                     RenderUtil.renderBlock(event, pos, gravel.lineColor, gravel.sideColor, gravel.shapeMode);

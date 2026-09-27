@@ -9,27 +9,27 @@ import java.nio.file.Files;
 import dev.stardust.Stardust;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import dev.stardust.util.MsgUtil;
 import dev.stardust.util.LogUtil;
-import net.minecraft.util.DyeColor;
+import net.minecraft.world.item.DyeColor;
 import com.mojang.authlib.GameProfile;
 import dev.stardust.util.StardustUtil;
-import net.minecraft.block.entity.SignText;
+import net.minecraft.world.level.block.entity.SignText;
 import meteordevelopment.orbit.EventHandler;
 import net.fabricmc.loader.api.FabricLoader;
 import meteordevelopment.orbit.EventPriority;
-import net.minecraft.entity.data.DataTracker;
-import net.minecraft.entity.data.TrackedData;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.network.syncher.EntityDataAccessor;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.utils.Utils;
 import dev.stardust.mixin.accessor.GameProfileAccessor;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import dev.stardust.mixin.accessor.PlayerListS2CPacketAccessor;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
-import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import dev.stardust.mixin.accessor.EntityTrackerUpdateS2CPacketAccessor;
-import net.minecraft.network.packet.s2c.play.EntityTrackerUpdateS2CPacket;
+import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
@@ -163,19 +163,19 @@ public class AntiToS extends Module {
 
     public SignText familyFriendlySignText(SignText original) {
         if (signMode.get() == SignMode.Censor) {
-            Text[] lines = {
-                Text.of(censorText(original.getMessage(0, false).getString())),
-                Text.of(censorText(original.getMessage(1, false).getString())),
-                Text.of(censorText(original.getMessage(2, false).getString())),
-                Text.of(censorText(original.getMessage(3, false).getString()))
+            Component[] lines = {
+                Component.literal(censorText(original.getMessage(0, false).getString())),
+                Component.literal(censorText(original.getMessage(1, false).getString())),
+                Component.literal(censorText(original.getMessage(2, false).getString())),
+                Component.literal(censorText(original.getMessage(3, false).getString()))
             };
-            return new SignText(lines, lines, original.getColor(), original.isGlowing());
+            return new SignText(lines, lines, original.getColor(), original.hasGlowingText());
         } else {
-            Text[] lines = {
-                Text.of(familyFriendlyLine1.get()),
-                Text.of(familyFriendlyLine2.get()),
-                Text.of(familyFriendlyLine3.get()),
-                Text.of(familyFriendlyLine4.get())
+            Component[] lines = {
+                Component.literal(familyFriendlyLine1.get()),
+                Component.literal(familyFriendlyLine2.get()),
+                Component.literal(familyFriendlyLine3.get()),
+                Component.literal(familyFriendlyLine4.get())
             };
             return new SignText(lines, lines, familyFriendlyColor.get(), familyFriendlyGlowing.get());
         }
@@ -197,24 +197,24 @@ public class AntiToS extends Module {
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onReceivePacket(PacketEvent.Receive event) {
         if (!Utils.canUpdate()) return;
-        if ((event.packet instanceof EntityTrackerUpdateS2CPacket packet)) {
+        if ((event.packet instanceof ClientboundSetEntityDataPacket packet)) {
             boolean modified = false;
-            List<DataTracker.SerializedEntry<?>> entries = new ArrayList<>();
-            for (DataTracker.SerializedEntry<?> entry : packet.trackedValues()) {
+            List<SynchedEntityData.DataValue<?>> entries = new ArrayList<>();
+            for (SynchedEntityData.DataValue<?> entry : packet.packedItems()) {
                 // https://minecraft.wiki/w/Java_Edition_protocol/Entity_metadata#Entity_Metadata
                 if (entry.id() == 2) { // Optional text component used for the entity's custom name
                     @SuppressWarnings("unchecked")
-                    DataTracker.Entry<Optional<Text>> e = new DataTracker.Entry<>(
-                        (TrackedData<Optional<Text>>) entry.handler().create(entry.id()),
-                        (Optional<Text>) entry.value()
+                    SynchedEntityData.DataItem<Optional<Component>> e = new SynchedEntityData.DataItem<>(
+                        (EntityDataAccessor<Optional<Component>>) entry.handler().create(entry.id()),
+                        (Optional<Component>) entry.value()
                     );
 
                     if (e.get().isPresent()) {
-                        Text data = e.get().get();
+                        Component data = e.get().get();
                         if (containsBlacklistedText(data.getString())) {
                             e.set(
                                 Optional.of(
-                                    Text.literal(censorText(data.getString())).setStyle(data.getStyle())
+                                    Component.literal(censorText(data.getString())).setStyle(data.getStyle())
                                 )
                             );
 
@@ -229,8 +229,8 @@ public class AntiToS extends Module {
 
             if (modified) ((EntityTrackerUpdateS2CPacketAccessor)(Object) packet).setTrackedValues(entries);
         }
-        else if ((event.packet instanceof PlayerListS2CPacket packet)) {
-            for (PlayerListS2CPacket.Entry entry : packet.getEntries()) {
+        else if ((event.packet instanceof ClientboundPlayerInfoUpdatePacket packet)) {
+            for (ClientboundPlayerInfoUpdatePacket.Entry entry : packet.entries()) {
                 if (entry.profile() == null) continue;
 
                 GameProfile profile = entry.profile();

@@ -1,8 +1,8 @@
 package dev.stardust.mixin;
 
-import net.minecraft.item.Item;
+import net.minecraft.world.item.Item;
 import dev.stardust.modules.Honker;
-import net.minecraft.item.GoatHornItem;
+import net.minecraft.world.item.InstrumentItem;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
-@Mixin(GoatHornItem.class)
+@Mixin(InstrumentItem.class)
 public class GoatHornItemMixin extends Item {
     // See Honker.java
     public GoatHornItemMixin(Settings settings) {

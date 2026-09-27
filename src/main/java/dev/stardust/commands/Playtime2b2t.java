@@ -1,16 +1,16 @@
 package dev.stardust.commands;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import dev.stardust.util.LogUtil;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonElement;
 import java.util.concurrent.TimeUnit;
 import dev.stardust.util.StardustUtil;
-import net.minecraft.command.CommandSource;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.client.Minecraft;
 import dev.stardust.util.commands.ApiHandler;
 import meteordevelopment.meteorclient.commands.Command;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.player.LocalPlayer;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.utils.network.MeteorExecutor;
@@ -27,11 +27,11 @@ public class Playtime2b2t extends Command {
 
 
     @Override
-    public void build(LiteralArgumentBuilder<CommandSource> builder) {
+    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
         builder.then(
             argument("player", StringArgumentType.word()).executes(ctx -> {
                 MeteorExecutor.execute(() -> {
-                    ClientPlayerEntity player = MinecraftClient.getInstance().player;
+                    LocalPlayer player = Minecraft.getInstance().player;
 
                     String playerString = ctx.getArgument("player", String.class);
                     String requestString = ApiHandler.API_2B2T_URL + API_ENDPOINT + playerString.trim();
@@ -41,8 +41,8 @@ public class Playtime2b2t extends Command {
 
                     if (response.equals("204 Undocumented")) {
                         if (player == null) return;
-                        player.sendMessage(
-                            Text.of(
+                        player.sendSystemMessage(
+                            Component.literal(
                                 "§8<"+StardustUtil.rCC()+"§o✨"+"§r§8> §4§oPlayer not found§7."
                             ), false
                         );
@@ -72,7 +72,7 @@ public class Playtime2b2t extends Command {
                             if (minutes != 0) sb.append(minutes).append(" §7Minutes, ").append(cc);
                             if (seconds != 0) sb.append(seconds).append(" §7Seconds§7.");
 
-                            if (player != null) player.sendMessage(Text.of(sb.toString()), false);
+                            if (player != null) player.sendSystemMessage(Component.literal(sb.toString()), false);
                         } else {
                             ApiHandler.sendErrorResponse();
                             LogUtil.warn("Received unexpected output from api.2b2t.vc : \"" + ptJson + "\"", this.getName());

@@ -1,8 +1,7 @@
 package dev.stardust.util;
 
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.BlockPos;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.BlockPos;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.utils.render.RenderUtils;
 import meteordevelopment.meteorclient.utils.render.color.Color;
@@ -25,8 +24,8 @@ public class RenderUtil {
         return esp.tracer && esp.tracerColor.a > 0;
     }
 
-    public static void renderTracerTo(Render3DEvent event, @NotNull BlockPos pos, Color tracerColor) {
-        Vec3d tracerPos = pos.toCenterPos();
+    public static void renderTracerTo(Render3DEvent event, BlockPos pos, Color tracerColor) {
+        Vec3 tracerPos = pos.getCenter();
         event.renderer.line(
             RenderUtils.center.x, RenderUtils.center.y, RenderUtils.center.z,
             tracerPos.x, tracerPos.y, tracerPos.z, tracerColor

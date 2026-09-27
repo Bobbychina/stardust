@@ -3,13 +3,12 @@ package dev.stardust.util.commands;
 import java.net.URI;
 import java.net.http.*;
 import java.time.Duration;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import dev.stardust.util.LogUtil;
-import javax.annotation.Nullable;
 import java.net.URISyntaxException;
 import dev.stardust.util.StardustUtil;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
@@ -20,10 +19,10 @@ public class ApiHandler {
     public static final String API_2B2T_URL = "https://api.2b2t.vc";
 
     public static void sendErrorResponse() {
-        ClientPlayerEntity player = MinecraftClient.getInstance().player;
+        LocalPlayer player = Minecraft.getInstance().player;
         if (player != null) {
-            player.sendMessage(
-                Text.of(
+            player.sendSystemMessage(
+                Component.literal(
                     "§8<"+StardustUtil.rCC()
                         +"§o✨"+"§r§8> §4An error occurred§7, §4please try again later or check §7latest.log §4for more info§7.."
                 ), false
@@ -31,7 +30,6 @@ public class ApiHandler {
         }
     }
 
-    @Nullable
     public String fetchResponse(String requestString) {
         HttpClient client = HttpClient.newHttpClient();
 

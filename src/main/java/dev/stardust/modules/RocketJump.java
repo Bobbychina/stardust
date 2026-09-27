@@ -1,26 +1,25 @@
 package dev.stardust.modules;
 
 import dev.stardust.Stardust;
-import net.minecraft.item.Item;
-import net.minecraft.util.Hand;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.Items;
 import dev.stardust.util.MsgUtil;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import org.jetbrains.annotations.Nullable;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.registry.tag.ItemTags;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.tags.ItemTags;
 import meteordevelopment.orbit.EventHandler;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.BoolSetting;
-import net.minecraft.entity.projectile.FireworkRocketEntity;
+import net.minecraft.world.entity.projectile.FireworkRocketEntity;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
@@ -48,13 +47,13 @@ public class RocketJump extends Module {
     private int swapSlot = -1;
     private boolean jumped = false;
     private boolean jumping = false;
-    private @Nullable Item chestplate = null;
+    private Item chestplate = null;
 
     private void starFlying() {
-        if (mc.player == null || mc.getNetworkHandler() == null) return;
-        mc.player.startGliding();
-        mc.options.jumpKey.setPressed(true);
-        mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+        if (mc.player == null || mc.getConnection() == null) return;
+        mc.player.startFallFlying();
+        mc.options.keyJump.setDown(true);
+        mc.getConnection().send(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Action.START_FALL_FLYING));
     }
 
     private void useRocket() {
@@ -66,15 +65,15 @@ public class RocketJump extends Module {
             sendToggledMsg();
             return;
         }
-        if (rocketSlot != mc.player.getInventory().selectedSlot) {
+        if (rocketSlot != mc.player.getInventory().getSelectedSlot()) {
             if (rocketSlot < 9) InvUtils.swap(rocketSlot, true);
             else {
-                InvUtils.move().from(rocketSlot).to(mc.player.getInventory().selectedSlot);
+                InvUtils.move().from(rocketSlot).to(mc.player.getInventory().getSelectedSlot());
             }
         }
-        if (mc.interactionManager != null) mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
+        if (mc.gameMode != null) mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
         if (rocketSlot < 9) InvUtils.swapBack();
-        else InvUtils.move().from(mc.player.getInventory().selectedSlot).to(rocketSlot);
+        else InvUtils.move().from(mc.player.getInventory().getSelectedSlot()).to(rocketSlot);
     }
 
     private int getRocketSlot() {
@@ -90,8 +89,8 @@ public class RocketJump extends Module {
     }
 
     private boolean hasActiveRocket() {
-        if (mc.world == null) return false;
-        for (Entity e : mc.world.getEntities()) {
+        if (mc.level == null) return false;
+        for (Entity e : mc.level.entitiesForRendering()) {
             if (e instanceof FireworkRocketEntity r && r.getOwner() != null && r.getOwner().equals(mc.player)) {
                 return true;
             }
@@ -127,28 +126,28 @@ public class RocketJump extends Module {
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null || !jumping) return;
-        boolean wearingSomething = !mc.player.getEquippedStack(EquipmentSlot.CHEST).isEmpty();
+        boolean wearingSomething = !mc.player.getItemBySlot(EquipmentSlot.CHEST).isEmpty();
 
         if (!jumped && wearingSomething) {
-            boolean wearingElytra = mc.player.getEquippedStack(EquipmentSlot.CHEST).isOf(Items.ELYTRA)
-                && mc.player.getEquippedStack(EquipmentSlot.CHEST).getDamage() < Items.ELYTRA.getDefaultStack().getMaxDamage();
+            boolean wearingElytra = mc.player.getItemBySlot(EquipmentSlot.CHEST).is(Items.ELYTRA)
+                && mc.player.getItemBySlot(EquipmentSlot.CHEST).getDamageValue() < Items.ELYTRA.getDefaultInstance().getMaxDamage();
 
             if (wearingElytra) {
-                if (mc.player.isGliding()) {
+                if (mc.player.isFallFlying()) {
                     jumped = true;
                     swapSlot = -69;
-                    mc.options.jumpKey.setPressed(false);
+                    mc.options.keyJump.setDown(false);
                     if (!hasActiveRocket()) useRocket();
                     if (timer == -1) {
                         timer = swapBackTicks.get();
                     }
-                } else if (mc.player.isOnGround()) {
-                    mc.options.jumpKey.setPressed(true);
+                } else if (mc.player.onGround()) {
+                    mc.options.keyJump.setDown(true);
                     return;
                 } else {
                     ++jumpTimer;
                     if (jumpTimer == 0) {
-                        mc.options.jumpKey.setPressed(false);
+                        mc.options.keyJump.setDown(false);
                     }else if (jumpTimer > 0) {
                         jumpTimer = -1;
                         starFlying();
@@ -157,8 +156,8 @@ public class RocketJump extends Module {
                     return;
                 }
             } else {
-                chestplate = mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem();
-                FindItemResult elytra = InvUtils.find(stack -> stack.isOf(Items.ELYTRA) && stack.getDamage() < stack.getMaxDamage());
+                chestplate = mc.player.getItemBySlot(EquipmentSlot.CHEST).getItem();
+                FindItemResult elytra = InvUtils.find(stack -> stack.is(Items.ELYTRA) && stack.getDamageValue() < stack.getMaxDamage());
                 if (!elytra.found()) {
                     MsgUtil.sendModuleMsg("No good elytra found§c..!", this.name);
                     toggle();
@@ -171,7 +170,7 @@ public class RocketJump extends Module {
                 return;
             }
         } else if (!jumped) {
-            FindItemResult elytra = InvUtils.find(stack -> stack.isOf(Items.ELYTRA) && stack.getDamage() < stack.getMaxDamage());
+            FindItemResult elytra = InvUtils.find(stack -> stack.is(Items.ELYTRA) && stack.getDamageValue() < stack.getMaxDamage());
             if (!elytra.found()) {
                 MsgUtil.sendModuleMsg("No good elytra found§c..!", this.name);
                 toggle();
@@ -181,17 +180,17 @@ public class RocketJump extends Module {
 
             if (preferChestplate.get()) {
                 boolean found = false;
-                if (chestplate != null) for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
-                    ItemStack stack = mc.player.getInventory().getStack(n);
-                    if (stack.isOf(chestplate)) {
+                if (chestplate != null) for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
+                    ItemStack stack = mc.player.getInventory().getItem(n);
+                    if (stack.is(chestplate)) {
                         swapSlot = n;
                         found = true;
                         break;
                     }
                 }
-                if (!found) for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
-                    ItemStack stack = mc.player.getInventory().getStack(n);
-                    if (stack.isIn(ItemTags.CHEST_ARMOR)) {
+                if (!found) for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
+                    ItemStack stack = mc.player.getInventory().getItem(n);
+                    if (stack.is(ItemTags.CHEST_ARMOR)) {
                         swapSlot = n;
                         found = true;
                         break;
@@ -210,18 +209,18 @@ public class RocketJump extends Module {
             if (timer <= 0) {
                 if (swapSlot == -69) {
                     if (preferChestplate.get()) {
-                        if (chestplate != null) for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
-                            ItemStack stack = mc.player.getInventory().getStack(n);
-                            if (stack.isOf(chestplate)) {
+                        if (chestplate != null) for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
+                            ItemStack stack = mc.player.getInventory().getItem(n);
+                            if (stack.is(chestplate)) {
                                 InvUtils.move().fromArmor(2).to(n);
                                 toggle();
                                 sendToggledMsg();
                                 return;
                             }
                         }
-                        for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
-                            ItemStack stack = mc.player.getInventory().getStack(n);
-                            if (stack.isIn(ItemTags.CHEST_ARMOR)) {
+                        for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
+                            ItemStack stack = mc.player.getInventory().getItem(n);
+                            if (stack.is(ItemTags.CHEST_ARMOR)) {
                                 InvUtils.move().fromArmor(2).to(n);
                                 toggle();
                                 sendToggledMsg();

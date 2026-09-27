@@ -3,31 +3,30 @@ package dev.stardust.modules;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.ArrayDeque;
-import net.minecraft.item.*;
+import net.minecraft.world.item.*;
 import dev.stardust.Stardust;
 import dev.stardust.util.LogUtil;
 import dev.stardust.util.MsgUtil;
 import dev.stardust.util.StardustUtil;
-import net.minecraft.sound.SoundEvents;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.sounds.SoundEvents;
 import meteordevelopment.orbit.EventHandler;
 import java.util.concurrent.ThreadLocalRandom;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.world.inventory.ContainerInput;
 import meteordevelopment.meteorclient.settings.*;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.item.equipment.ArmorMaterial;
-import net.minecraft.item.equipment.EquipmentType;
-import net.minecraft.screen.SmithingScreenHandler;
-import net.minecraft.item.equipment.trim.ArmorTrim;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.equipment.ArmorMaterial;
+import net.minecraft.world.item.equipment.ArmorType;
+import net.minecraft.world.inventory.SmithingMenu;
+import net.minecraft.world.item.equipment.trim.ArmorTrim;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import dev.stardust.mixin.accessor.ClientConnectionAccessor;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
-import net.minecraft.client.gui.screen.ingame.SmithingScreen;
+import net.minecraft.client.gui.screens.inventory.SmithingScreen;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.events.world.TickEvent;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
 import meteordevelopment.meteorclient.events.game.OpenScreenEvent;
 
 /**
@@ -49,13 +48,13 @@ public class AutoSmith extends Module {
         Iron, Gold, Chain, Turtle, Leather, Diamond, Netherite;
         public boolean materialEquals(ArmorMaterial material) {
             return switch (this) {
-                case Iron -> material == net.minecraft.item.equipment.ArmorMaterials.IRON;
-                case Gold -> material == net.minecraft.item.equipment.ArmorMaterials.GOLD;
-                case Chain -> material == net.minecraft.item.equipment.ArmorMaterials.CHAIN;
-                case Turtle -> material == net.minecraft.item.equipment.ArmorMaterials.TURTLE_SCUTE;
-                case Leather -> material == net.minecraft.item.equipment.ArmorMaterials.LEATHER;
-                case Diamond -> material == net.minecraft.item.equipment.ArmorMaterials.DIAMOND;
-                case Netherite -> material == net.minecraft.item.equipment.ArmorMaterials.NETHERITE;
+                case Iron -> material == net.minecraft.world.item.equipment.ArmorMaterials.IRON;
+                case Gold -> material == net.minecraft.world.item.equipment.ArmorMaterials.GOLD;
+                case Chain -> material == net.minecraft.world.item.equipment.ArmorMaterials.CHAINMAIL;
+                case Turtle -> material == net.minecraft.world.item.equipment.ArmorMaterials.TURTLE_SCUTE;
+                case Leather -> material == net.minecraft.world.item.equipment.ArmorMaterials.LEATHER;
+                case Diamond -> material == net.minecraft.world.item.equipment.ArmorMaterials.DIAMOND;
+                case Netherite -> material == net.minecraft.world.item.equipment.ArmorMaterials.NETHERITE;
             };
         }
     }
@@ -296,85 +295,85 @@ public class AutoSmith extends Module {
     private boolean foundTemplates = false;
     private boolean resettingTemplates = false;
     private boolean resettingMaterials = false;
-    private @Nullable ItemStack trimStack = null;
-    private @Nullable ItemStack materialStack = null;
-    private @Nullable ItemStack equipmentStack = null;
-    private @Nullable EquipmentType currentlyLookingFor = null;
+    private ItemStack trimStack = null;
+    private ItemStack materialStack = null;
+    private ItemStack equipmentStack = null;
+    private ArmorType currentlyLookingFor = null;
     private final IntArrayList projectedEmpty = new IntArrayList();
     private final IntArrayList processedSlots = new IntArrayList();
-    private final List<EquipmentType> exhaustedArmorTypes = new ArrayList<>();
+    private final List<ArmorType> exhaustedArmorTypes = new ArrayList<>();
 
     private ArmorMaterial getArmorMaterial(ItemStack armor) {
-        if (!(armor.getItem() instanceof ArmorItem)) return net.minecraft.item.equipment.ArmorMaterials.ARMADILLO_SCUTE;
+        if (!(armor.getItem() instanceof ArmorItem)) return net.minecraft.world.item.equipment.ArmorMaterials.ARMADILLO_SCUTE;
 
         switch (getItemSlotId(armor)) {
             case 0 -> {
-                if (armor.isOf(Items.LEATHER_BOOTS)) return net.minecraft.item.equipment.ArmorMaterials.LEATHER;
-                if (armor.isOf(Items.IRON_BOOTS)) return net.minecraft.item.equipment.ArmorMaterials.IRON;
-                if (armor.isOf(Items.CHAINMAIL_BOOTS)) return net.minecraft.item.equipment.ArmorMaterials.CHAIN;
-                if (armor.isOf(Items.GOLDEN_BOOTS)) return net.minecraft.item.equipment.ArmorMaterials.GOLD;
-                if (armor.isOf(Items.DIAMOND_BOOTS)) return net.minecraft.item.equipment.ArmorMaterials.DIAMOND;
-                if (armor.isOf(Items.NETHERITE_BOOTS)) return net.minecraft.item.equipment.ArmorMaterials.NETHERITE;
-                else return net.minecraft.item.equipment.ArmorMaterials.ARMADILLO_SCUTE;
+                if (armor.is(Items.LEATHER_BOOTS)) return net.minecraft.world.item.equipment.ArmorMaterials.LEATHER;
+                if (armor.is(Items.IRON_BOOTS)) return net.minecraft.world.item.equipment.ArmorMaterials.IRON;
+                if (armor.is(Items.CHAINMAIL_BOOTS)) return net.minecraft.world.item.equipment.ArmorMaterials.CHAINMAIL;
+                if (armor.is(Items.GOLDEN_BOOTS)) return net.minecraft.world.item.equipment.ArmorMaterials.GOLD;
+                if (armor.is(Items.DIAMOND_BOOTS)) return net.minecraft.world.item.equipment.ArmorMaterials.DIAMOND;
+                if (armor.is(Items.NETHERITE_BOOTS)) return net.minecraft.world.item.equipment.ArmorMaterials.NETHERITE;
+                else return net.minecraft.world.item.equipment.ArmorMaterials.ARMADILLO_SCUTE;
             }
             case 1 -> {
-                if (armor.isOf(Items.LEATHER_LEGGINGS)) return net.minecraft.item.equipment.ArmorMaterials.LEATHER;
-                if (armor.isOf(Items.IRON_LEGGINGS)) return net.minecraft.item.equipment.ArmorMaterials.IRON;
-                if (armor.isOf(Items.CHAINMAIL_LEGGINGS)) return net.minecraft.item.equipment.ArmorMaterials.CHAIN;
-                if (armor.isOf(Items.GOLDEN_LEGGINGS)) return net.minecraft.item.equipment.ArmorMaterials.GOLD;
-                if (armor.isOf(Items.DIAMOND_LEGGINGS)) return net.minecraft.item.equipment.ArmorMaterials.DIAMOND;
-                if (armor.isOf(Items.NETHERITE_LEGGINGS)) return net.minecraft.item.equipment.ArmorMaterials.NETHERITE;
-                else return net.minecraft.item.equipment.ArmorMaterials.ARMADILLO_SCUTE;
+                if (armor.is(Items.LEATHER_LEGGINGS)) return net.minecraft.world.item.equipment.ArmorMaterials.LEATHER;
+                if (armor.is(Items.IRON_LEGGINGS)) return net.minecraft.world.item.equipment.ArmorMaterials.IRON;
+                if (armor.is(Items.CHAINMAIL_LEGGINGS)) return net.minecraft.world.item.equipment.ArmorMaterials.CHAINMAIL;
+                if (armor.is(Items.GOLDEN_LEGGINGS)) return net.minecraft.world.item.equipment.ArmorMaterials.GOLD;
+                if (armor.is(Items.DIAMOND_LEGGINGS)) return net.minecraft.world.item.equipment.ArmorMaterials.DIAMOND;
+                if (armor.is(Items.NETHERITE_LEGGINGS)) return net.minecraft.world.item.equipment.ArmorMaterials.NETHERITE;
+                else return net.minecraft.world.item.equipment.ArmorMaterials.ARMADILLO_SCUTE;
             }
             case 2 -> {
-                if (armor.isOf(Items.LEATHER_CHESTPLATE)) return net.minecraft.item.equipment.ArmorMaterials.LEATHER;
-                if (armor.isOf(Items.IRON_CHESTPLATE)) return net.minecraft.item.equipment.ArmorMaterials.IRON;
-                if (armor.isOf(Items.CHAINMAIL_CHESTPLATE)) return net.minecraft.item.equipment.ArmorMaterials.CHAIN;
-                if (armor.isOf(Items.GOLDEN_CHESTPLATE)) return net.minecraft.item.equipment.ArmorMaterials.GOLD;
-                if (armor.isOf(Items.DIAMOND_CHESTPLATE)) return net.minecraft.item.equipment.ArmorMaterials.DIAMOND;
-                if (armor.isOf(Items.NETHERITE_CHESTPLATE)) return net.minecraft.item.equipment.ArmorMaterials.NETHERITE;
-                else return net.minecraft.item.equipment.ArmorMaterials.ARMADILLO_SCUTE;
+                if (armor.is(Items.LEATHER_CHESTPLATE)) return net.minecraft.world.item.equipment.ArmorMaterials.LEATHER;
+                if (armor.is(Items.IRON_CHESTPLATE)) return net.minecraft.world.item.equipment.ArmorMaterials.IRON;
+                if (armor.is(Items.CHAINMAIL_CHESTPLATE)) return net.minecraft.world.item.equipment.ArmorMaterials.CHAINMAIL;
+                if (armor.is(Items.GOLDEN_CHESTPLATE)) return net.minecraft.world.item.equipment.ArmorMaterials.GOLD;
+                if (armor.is(Items.DIAMOND_CHESTPLATE)) return net.minecraft.world.item.equipment.ArmorMaterials.DIAMOND;
+                if (armor.is(Items.NETHERITE_CHESTPLATE)) return net.minecraft.world.item.equipment.ArmorMaterials.NETHERITE;
+                else return net.minecraft.world.item.equipment.ArmorMaterials.ARMADILLO_SCUTE;
             }
             case 3 -> {
-                if (armor.isOf(Items.LEATHER_HELMET)) return net.minecraft.item.equipment.ArmorMaterials.LEATHER;
-                if (armor.isOf(Items.IRON_HELMET)) return net.minecraft.item.equipment.ArmorMaterials.IRON;
-                if (armor.isOf(Items.CHAINMAIL_HELMET)) return net.minecraft.item.equipment.ArmorMaterials.CHAIN;
-                if (armor.isOf(Items.GOLDEN_HELMET)) return net.minecraft.item.equipment.ArmorMaterials.GOLD;
-                if (armor.isOf(Items.DIAMOND_HELMET)) return net.minecraft.item.equipment.ArmorMaterials.DIAMOND;
-                if (armor.isOf(Items.NETHERITE_HELMET)) return net.minecraft.item.equipment.ArmorMaterials.NETHERITE;
-                if (armor.isOf(Items.TURTLE_HELMET)) return net.minecraft.item.equipment.ArmorMaterials.TURTLE_SCUTE;
-                else return net.minecraft.item.equipment.ArmorMaterials.ARMADILLO_SCUTE;
+                if (armor.is(Items.LEATHER_HELMET)) return net.minecraft.world.item.equipment.ArmorMaterials.LEATHER;
+                if (armor.is(Items.IRON_HELMET)) return net.minecraft.world.item.equipment.ArmorMaterials.IRON;
+                if (armor.is(Items.CHAINMAIL_HELMET)) return net.minecraft.world.item.equipment.ArmorMaterials.CHAINMAIL;
+                if (armor.is(Items.GOLDEN_HELMET)) return net.minecraft.world.item.equipment.ArmorMaterials.GOLD;
+                if (armor.is(Items.DIAMOND_HELMET)) return net.minecraft.world.item.equipment.ArmorMaterials.DIAMOND;
+                if (armor.is(Items.NETHERITE_HELMET)) return net.minecraft.world.item.equipment.ArmorMaterials.NETHERITE;
+                if (armor.is(Items.TURTLE_HELMET)) return net.minecraft.world.item.equipment.ArmorMaterials.TURTLE_SCUTE;
+                else return net.minecraft.world.item.equipment.ArmorMaterials.ARMADILLO_SCUTE;
             }
             default -> {
-                return net.minecraft.item.equipment.ArmorMaterials.ARMADILLO_SCUTE;
+                return net.minecraft.world.item.equipment.ArmorMaterials.ARMADILLO_SCUTE;
             }
         }
     }
 
-    private EquipmentType getEquipmentType(ArmorItem armor) {
+    private ArmorType getEquipmentType(ArmorItem armor) {
         return switch (getItemSlotId(armor.getDefaultStack())) {
-            case 0 -> EquipmentType.BOOTS;
-            case 1 -> EquipmentType.LEGGINGS;
-            case 2 -> EquipmentType.CHESTPLATE;
-            case 3 -> EquipmentType.HELMET;
-            default -> EquipmentType.BODY;
+            case 0 -> ArmorType.BOOTS;
+            case 1 -> ArmorType.LEGGINGS;
+            case 2 -> ArmorType.CHESTPLATE;
+            case 3 -> ArmorType.HELMET;
+            default -> ArmorType.BODY;
         };
     }
 
     private int getItemSlotId(ItemStack itemStack) {
-        return itemStack.get(DataComponentTypes.EQUIPPABLE).slot().getEntitySlotId();
+        return itemStack.get(DataComponents.EQUIPPABLE).slot().getIndex();
     }
 
     private boolean isValidEquipmentForUpgrading(ItemStack stack) {
-        return stack.isOf(Items.DIAMOND_HOE) || stack.isOf(Items.DIAMOND_PICKAXE) || stack.isOf(Items.DIAMOND_AXE)
-            || stack.isOf(Items.DIAMOND_SHOVEL) || stack.isOf(Items.DIAMOND_SWORD)  || stack.isOf(Items.DIAMOND_HELMET)
-            || stack.isOf(Items.DIAMOND_CHESTPLATE) || stack.isOf(Items.DIAMOND_LEGGINGS) || stack.isOf(Items.DIAMOND_BOOTS);
+        return stack.is(Items.DIAMOND_HOE) || stack.is(Items.DIAMOND_PICKAXE) || stack.is(Items.DIAMOND_AXE)
+            || stack.is(Items.DIAMOND_SHOVEL) || stack.is(Items.DIAMOND_SWORD)  || stack.is(Items.DIAMOND_HELMET)
+            || stack.is(Items.DIAMOND_CHESTPLATE) || stack.is(Items.DIAMOND_LEGGINGS) || stack.is(Items.DIAMOND_BOOTS);
     }
 
     private boolean isValidEquipmentForTrimming(ItemStack stack) {
         if (stack.getItem() instanceof ArmorItem armor) {
             boolean correctMaterial = false;
-            EquipmentType equipmentType = getEquipmentType(armor);
+            ArmorType equipmentType = getEquipmentType(armor);
             ArmorMaterial armorMaterial = getArmorMaterial(stack);
             if (exhaustedArmorTypes.contains(equipmentType)) return false;
             if (currentlyLookingFor != null && !equipmentType.equals(currentlyLookingFor)) return false;
@@ -387,10 +386,10 @@ public class AutoSmith extends Module {
             }
 
             if (!correctMaterial) return false;
-            if (stack.contains(DataComponentTypes.TRIM)) {
+            if (stack.has(DataComponents.TRIM)) {
                 if (!overwriteTrims.get()) return false;
-                String pattern = stack.get(DataComponentTypes.TRIM).pattern().getIdAsString();
-                String material = stack.get(DataComponentTypes.TRIM).material().getIdAsString();
+                String pattern = stack.get(DataComponents.TRIM).pattern().getRegisteredName();
+                String material = stack.get(DataComponents.TRIM).material().getRegisteredName();
 
                 switch (equipmentType) {
                     case BOOTS -> {
@@ -419,7 +418,7 @@ public class AutoSmith extends Module {
         return false;
     }
 
-    private boolean hasRequiredMaterialsForTrimming(EquipmentType type) {
+    private boolean hasRequiredMaterialsForTrimming(ArmorType type) {
         boolean hasTemplate = false;
         boolean hasMaterial = false;
         switch (type) {
@@ -574,10 +573,10 @@ public class AutoSmith extends Module {
 
     private boolean hasItem(Item needed) {
         if (mc.player == null) return false;
-        if (!(mc.player.currentScreenHandler instanceof SmithingScreenHandler ss)) return false;
+        if (!(mc.player.containerMenu instanceof SmithingMenu ss)) return false;
 
-        for (int n = 0; n < mc.player.getInventory().main.size() + 4; n++) {
-            ItemStack stack = ss.getSlot(n).getStack();
+        for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size() + 4; n++) {
+            ItemStack stack = ss.getSlot(n).getItem();
             if (stack.getItem() == needed) return true;
         }
         return false;
@@ -611,18 +610,18 @@ public class AutoSmith extends Module {
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null) return;
-        if (mc.getNetworkHandler() == null) return;
-        if (mc.currentScreen == null) onDeactivate();
-        if (!(mc.player.currentScreenHandler instanceof SmithingScreenHandler ss)) return;
+        if (mc.getConnection() == null) return;
+        if (mc.screen == null) onDeactivate();
+        if (!(mc.player.containerMenu instanceof SmithingMenu ss)) return;
 
         switch (moduleMode.get()) {
             case Packet -> {
                 if (notified) return;
-                ArrayDeque<ClickSlotC2SPacket> packetQueue = new ArrayDeque<>();
+                ArrayDeque<ServerboundContainerClickPacket> packetQueue = new ArrayDeque<>();
 
                 boolean exhausted = false;
                 while (!exhausted) {
-                    ClickSlotC2SPacket packet = generateSmithingPacket(ss);
+                    ServerboundContainerClickPacket packet = generateSmithingPacket(ss);
 
                     if (packet == null) {
                         exhausted = true;
@@ -640,7 +639,7 @@ public class AutoSmith extends Module {
                     );
                 }
                 while (!packetQueue.isEmpty()) {
-                    ((ClientConnectionAccessor) mc.getNetworkHandler().getConnection()).invokeSendImmediately(
+                    ((ClientConnectionAccessor) mc.getConnection().getConnection()).invokeSendImmediately(
                         packetQueue.removeFirst(), null, true
                     );
                 }
@@ -656,100 +655,100 @@ public class AutoSmith extends Module {
                 }
 
                 if (resettingTemplates) {
-                    InvUtils.shiftClick().slotId(SmithingScreenHandler.TEMPLATE_ID);
+                    InvUtils.shiftClick().slotId(SmithingMenu.TEMPLATE_SLOT);
                     timer = tickRate.get() - 1;
                     resettingTemplates = false;
                     return;
                 } else if (resettingMaterials) {
-                    InvUtils.shiftClick().slotId(SmithingScreenHandler.MATERIAL_ID);
+                    InvUtils.shiftClick().slotId(SmithingMenu.ADDITIONAL_SLOT);
                     timer = tickRate.get() - 1;
                     resettingMaterials = false;
                     return;
                 }
                 switch (operatingMode.get()) {
                     case Trim -> {
-                        ItemStack output = ss.getSlot(SmithingScreenHandler.OUTPUT_ID).getStack();
+                        ItemStack output = ss.getSlot(SmithingMenu.RESULT_SLOT).getItem();
 
                         if (!output.isEmpty()) {
                             if (!(output.getItem() instanceof ArmorItem armor)) return;
-                            EquipmentType armorType = getEquipmentType(armor);
-                            if (output.contains(DataComponentTypes.TRIM)) {
-                                ArmorTrim trimData = output.get(DataComponentTypes.TRIM);
-                                String pattern = trimData.pattern().getIdAsString();
-                                String material = trimData.material().getIdAsString();
+                            ArmorType armorType = getEquipmentType(armor);
+                            if (output.has(DataComponents.TRIM)) {
+                                ArmorTrim trimData = output.get(DataComponents.TRIM);
+                                String pattern = trimData.pattern().getRegisteredName();
+                                String material = trimData.material().getRegisteredName();
                                 switch (armorType) {
                                     case BOOTS -> {
                                         if (!bootsTrim.get().label.equals(pattern)) {
                                             foundTemplates = false;
-                                            InvUtils.shiftClick().slotId(SmithingScreenHandler.TEMPLATE_ID);
+                                            InvUtils.shiftClick().slotId(SmithingMenu.TEMPLATE_SLOT);
                                         } else if (!bootsTrimMaterial.get().label.equals(material)) {
                                             foundIngots = false;
-                                            InvUtils.shiftClick().slotId(SmithingScreenHandler.MATERIAL_ID);
+                                            InvUtils.shiftClick().slotId(SmithingMenu.ADDITIONAL_SLOT);
                                         } else {
-                                            InvUtils.shiftClick().slotId(SmithingScreenHandler.OUTPUT_ID);
+                                            InvUtils.shiftClick().slotId(SmithingMenu.RESULT_SLOT);
 
                                             foundEquip = false;
                                             foundIngots = false;
                                             foundTemplates = false;
-                                            if (ss.getSlot(SmithingScreenHandler.TEMPLATE_ID).getStack().getCount() >= 1) resettingTemplates = true;
-                                            if (ss.getSlot(SmithingScreenHandler.MATERIAL_ID).getStack().getCount() >= 1) resettingMaterials = true;
+                                            if (ss.getSlot(SmithingMenu.TEMPLATE_SLOT).getItem().getCount() >= 1) resettingTemplates = true;
+                                            if (ss.getSlot(SmithingMenu.ADDITIONAL_SLOT).getItem().getCount() >= 1) resettingMaterials = true;
                                         }
                                     }
                                     case HELMET -> {
                                         if (!helmetTrim.get().label.equals(pattern)) {
                                             foundTemplates = false;
-                                            InvUtils.shiftClick().slotId(SmithingScreenHandler.TEMPLATE_ID);
+                                            InvUtils.shiftClick().slotId(SmithingMenu.TEMPLATE_SLOT);
                                         } else if (!helmetTrimMaterial.get().label.equals(material)) {
                                             foundIngots = false;
-                                            InvUtils.shiftClick().slotId(SmithingScreenHandler.MATERIAL_ID);
+                                            InvUtils.shiftClick().slotId(SmithingMenu.ADDITIONAL_SLOT);
                                         } else {
-                                            InvUtils.shiftClick().slotId(SmithingScreenHandler.OUTPUT_ID);
+                                            InvUtils.shiftClick().slotId(SmithingMenu.RESULT_SLOT);
 
                                             foundEquip = false;
                                             foundIngots = false;
                                             foundTemplates = false;
-                                            if (ss.getSlot(SmithingScreenHandler.TEMPLATE_ID).getStack().getCount() >= 1) resettingTemplates = true;
-                                            if (ss.getSlot(SmithingScreenHandler.MATERIAL_ID).getStack().getCount() >= 1) resettingMaterials = true;
+                                            if (ss.getSlot(SmithingMenu.TEMPLATE_SLOT).getItem().getCount() >= 1) resettingTemplates = true;
+                                            if (ss.getSlot(SmithingMenu.ADDITIONAL_SLOT).getItem().getCount() >= 1) resettingMaterials = true;
                                         }
                                     }
                                     case LEGGINGS -> {
                                         if (!leggingsTrim.get().label.equals(pattern)) {
                                             foundTemplates = false;
-                                            InvUtils.shiftClick().slotId(SmithingScreenHandler.TEMPLATE_ID);
+                                            InvUtils.shiftClick().slotId(SmithingMenu.TEMPLATE_SLOT);
                                         } else if (!leggingsTrimMaterial.get().label.equals(material)) {
                                             foundIngots = false;
-                                            InvUtils.shiftClick().slotId(SmithingScreenHandler.MATERIAL_ID);
+                                            InvUtils.shiftClick().slotId(SmithingMenu.ADDITIONAL_SLOT);
                                         } else {
-                                            InvUtils.shiftClick().slotId(SmithingScreenHandler.OUTPUT_ID);
+                                            InvUtils.shiftClick().slotId(SmithingMenu.RESULT_SLOT);
 
                                             foundEquip = false;
                                             foundIngots = false;
                                             foundTemplates = false;
-                                            if (ss.getSlot(SmithingScreenHandler.TEMPLATE_ID).getStack().getCount() >= 1) resettingTemplates = true;
-                                            if (ss.getSlot(SmithingScreenHandler.MATERIAL_ID).getStack().getCount() >= 1) resettingMaterials = true;
+                                            if (ss.getSlot(SmithingMenu.TEMPLATE_SLOT).getItem().getCount() >= 1) resettingTemplates = true;
+                                            if (ss.getSlot(SmithingMenu.ADDITIONAL_SLOT).getItem().getCount() >= 1) resettingMaterials = true;
                                         }
                                     }
                                     case CHESTPLATE -> {
                                         if (!chestplateTrim.get().label.equals(pattern)) {
                                             foundTemplates = false;
-                                            InvUtils.shiftClick().slotId(SmithingScreenHandler.TEMPLATE_ID);
+                                            InvUtils.shiftClick().slotId(SmithingMenu.TEMPLATE_SLOT);
                                         } else if (!chestplateTrimMaterial.get().label.equals(material)) {
                                             foundIngots = false;
-                                            InvUtils.shiftClick().slotId(SmithingScreenHandler.MATERIAL_ID);
+                                            InvUtils.shiftClick().slotId(SmithingMenu.ADDITIONAL_SLOT);
                                         } else {
-                                            InvUtils.shiftClick().slotId(SmithingScreenHandler.OUTPUT_ID);
+                                            InvUtils.shiftClick().slotId(SmithingMenu.RESULT_SLOT);
 
                                             foundEquip = false;
                                             foundIngots = false;
                                             foundTemplates = false;
-                                            if (ss.getSlot(SmithingScreenHandler.TEMPLATE_ID).getStack().getCount() >= 1) resettingTemplates = true;
-                                            if (ss.getSlot(SmithingScreenHandler.MATERIAL_ID).getStack().getCount() >= 1) resettingMaterials = true;
+                                            if (ss.getSlot(SmithingMenu.TEMPLATE_SLOT).getItem().getCount() >= 1) resettingTemplates = true;
+                                            if (ss.getSlot(SmithingMenu.ADDITIONAL_SLOT).getItem().getCount() >= 1) resettingMaterials = true;
                                         }
                                     }
                                 }
                             } else {
                                 foundEquip = false;
-                                InvUtils.shiftClick().slotId(SmithingScreenHandler.EQUIPMENT_ID);
+                                InvUtils.shiftClick().slotId(SmithingMenu.BASE_SLOT);
 
                                 foundIngots = false;
                                 foundTemplates = false;
@@ -757,8 +756,8 @@ public class AutoSmith extends Module {
                                 resettingMaterials = false;
                             }
                         } else if (!foundEquip) {
-                            for (int n = 4; n < mc.player.getInventory().main.size() + 4; n++) {
-                                ItemStack stack = ss.getSlot(n).getStack();
+                            for (int n = 4; n < mc.player.getInventory().getNonEquipmentItems().size() + 4; n++) {
+                                ItemStack stack = ss.getSlot(n).getItem();
                                 if (isValidEquipmentForTrimming(stack)) {
                                     foundEquip = true;
                                     InvUtils.shiftClick().slotId(n);
@@ -770,25 +769,25 @@ public class AutoSmith extends Module {
                                 finished();
                             }
                         } else if (!foundIngots) {
-                            ItemStack armorToTrim = ss.getSlot(SmithingScreenHandler.EQUIPMENT_ID).getStack();
+                            ItemStack armorToTrim = ss.getSlot(SmithingMenu.BASE_SLOT).getItem();
                             if (!(armorToTrim.getItem() instanceof ArmorItem armor)) {
                                 foundEquip = false;
                                 resettingTemplates = true;
                                 resettingMaterials = true;
-                                InvUtils.shiftClick().slotId(SmithingScreenHandler.EQUIPMENT_ID);
+                                InvUtils.shiftClick().slotId(SmithingMenu.BASE_SLOT);
                                 LogUtil.error("Item in equipment slot was not armor..!", this.name);
                                 return;
                             }
-                            EquipmentType armorType = getEquipmentType(armor);
+                            ArmorType armorType = getEquipmentType(armor);
                             Item neededMaterial = getNeededMaterialItem(armorToTrim);
 
                             if (neededMaterial == null) {
                                 LogUtil.error("neededMaterial was somehow null!");
                                 return;
                             }
-                            for (int n = 4; n < mc.player.getInventory().main.size() + 4; n++) {
-                                ItemStack stack = ss.getSlot(n).getStack();
-                                if (stack.isOf(neededMaterial)) {
+                            for (int n = 4; n < mc.player.getInventory().getNonEquipmentItems().size() + 4; n++) {
+                                ItemStack stack = ss.getSlot(n).getItem();
+                                if (stack.is(neededMaterial)) {
                                     foundIngots = true;
                                     InvUtils.shiftClick().slotId(n);
                                     break;
@@ -803,24 +802,24 @@ public class AutoSmith extends Module {
                                 finished();
                             }
                         } else if (!foundTemplates) {
-                            ItemStack armorToTrim = ss.getSlot(SmithingScreenHandler.EQUIPMENT_ID).getStack();
+                            ItemStack armorToTrim = ss.getSlot(SmithingMenu.BASE_SLOT).getItem();
                             if (!(armorToTrim.getItem() instanceof ArmorItem armor)) {
                                 foundEquip = false;
                                 resettingTemplates = true;
                                 resettingMaterials = true;
-                                InvUtils.shiftClick().slotId(SmithingScreenHandler.EQUIPMENT_ID);
+                                InvUtils.shiftClick().slotId(SmithingMenu.BASE_SLOT);
                                 LogUtil.error("Item in equipment slot was not armor!", this.name);
                                 return;
                             }
 
-                            EquipmentType armorType = getEquipmentType(armor);
+                            ArmorType armorType = getEquipmentType(armor);
                             Item neededPattern = getNeededPatternItem(armorToTrim);
                             if (neededPattern == null) {
                                 LogUtil.error("neededPattern was somehow null!", this.name);
                                 return;
                             }
-                            for (int n = 4; n < mc.player.getInventory().main.size() + 4; n++) {
-                                ItemStack stack = ss.getSlot(n).getStack();
+                            for (int n = 4; n < mc.player.getInventory().getNonEquipmentItems().size() + 4; n++) {
+                                ItemStack stack = ss.getSlot(n).getItem();
                                 if (stack.getItem() == neededPattern) {
                                     foundTemplates = true;
                                     InvUtils.shiftClick().slotId(n);
@@ -840,19 +839,19 @@ public class AutoSmith extends Module {
                         }
                     }
                     case Upgrade -> {
-                        ItemStack output = ss.getSlot(SmithingScreenHandler.OUTPUT_ID).getStack();
+                        ItemStack output = ss.getSlot(SmithingMenu.RESULT_SLOT).getItem();
                         if (!output.isEmpty()) {
-                            InvUtils.shiftClick().slotId(SmithingScreenHandler.OUTPUT_ID);
+                            InvUtils.shiftClick().slotId(SmithingMenu.RESULT_SLOT);
 
                             foundEquip = false;
-                            int ingotsRemaining = ss.getSlot(SmithingScreenHandler.MATERIAL_ID).getStack().getCount();
-                            int templatesRemaining = ss.getSlot(SmithingScreenHandler.TEMPLATE_ID).getStack().getCount();
+                            int ingotsRemaining = ss.getSlot(SmithingMenu.ADDITIONAL_SLOT).getItem().getCount();
+                            int templatesRemaining = ss.getSlot(SmithingMenu.TEMPLATE_SLOT).getItem().getCount();
 
                             if (ingotsRemaining == 0) foundIngots = false;
                             if (templatesRemaining == 0) foundTemplates = false;
                         } else if (!foundEquip) {
-                            for (int n = 4; n < mc.player.getInventory().main.size() + 4; n++) {
-                                ItemStack stack = ss.getSlot(n).getStack();
+                            for (int n = 4; n < mc.player.getInventory().getNonEquipmentItems().size() + 4; n++) {
+                                ItemStack stack = ss.getSlot(n).getItem();
                                 if (isValidEquipmentForUpgrading(stack)) {
                                     foundEquip = true;
                                     InvUtils.shiftClick().slotId(n);
@@ -864,8 +863,8 @@ public class AutoSmith extends Module {
                                 finished();
                             }
                         }else if (!foundIngots) {
-                            for (int n = 4; n < mc.player.getInventory().main.size() + 4; n++) {
-                                ItemStack stack = ss.getSlot(n).getStack();
+                            for (int n = 4; n < mc.player.getInventory().getNonEquipmentItems().size() + 4; n++) {
+                                ItemStack stack = ss.getSlot(n).getItem();
                                 if (stack.getItem() == Items.NETHERITE_INGOT) {
                                     foundIngots = true;
                                     InvUtils.shiftClick().slotId(n);
@@ -877,8 +876,8 @@ public class AutoSmith extends Module {
                                 finished();
                             }
                         } else if (!foundTemplates) {
-                            for (int n = 4; n < mc.player.getInventory().main.size() + 4; n++) {
-                                ItemStack stack = ss.getSlot(n).getStack();
+                            for (int n = 4; n < mc.player.getInventory().getNonEquipmentItems().size() + 4; n++) {
+                                ItemStack stack = ss.getSlot(n).getItem();
                                 if (stack.getItem() == Items.NETHERITE_UPGRADE_SMITHING_TEMPLATE) {
                                     foundTemplates = true;
                                     InvUtils.shiftClick().slotId(n);
@@ -909,19 +908,19 @@ public class AutoSmith extends Module {
             }
             if (pingOnDone.get()) {
                 mc.player.playSound(
-                    SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
+                    SoundEvents.EXPERIENCE_ORB_PICKUP,
                     pingVolume.get().floatValue(),
                     ThreadLocalRandom.current().nextFloat(0.69f, 1.337f)
                 );
             }
         }
         notified = true;
-        if (closeOnDone.get()) mc.player.closeHandledScreen();
+        if (closeOnDone.get()) mc.player.closeContainer();
         if (disableOnDone.get()) toggle();
     }
 
     @SuppressWarnings("deprecation")
-    private @Nullable ClickSlotC2SPacket generateSmithingPacket(SmithingScreenHandler handler) {
+    private ServerboundContainerClickPacket generateSmithingPacket(SmithingMenu handler) {
         if (mc.player == null) return null;
         Int2ObjectMap<ItemStack> changedSlots = new Int2ObjectOpenHashMap<>();
         if (trimStack != null && materialStack != null && equipmentStack != null) {
@@ -943,14 +942,14 @@ public class AutoSmith extends Module {
                 neededPattern = Items.NETHERITE_UPGRADE_SMITHING_TEMPLATE;
             }
 
-            if (operatingMode.get().equals(SmithingMode.Trim) && !trimStack.isOf(neededPattern)) {
+            if (operatingMode.get().equals(SmithingMode.Trim) && !trimStack.is(neededPattern)) {
                 if (debug.get()) {
                     MsgUtil.sendModuleMsg(
                         "Wrong trim stack for armor of type "
                             + getEquipmentType((ArmorItem) armorToTrim.getItem()).name() + "§e..!", this.name
                     );
                 }
-                changedSlots.put(SmithingScreenHandler.TEMPLATE_ID, ItemStack.EMPTY);
+                changedSlots.put(SmithingMenu.TEMPLATE_SLOT, ItemStack.EMPTY);
 
                 int shiftClickTargetSlot = predictEmptySlot(handler);
                 if (shiftClickTargetSlot == -1) {
@@ -964,19 +963,19 @@ public class AutoSmith extends Module {
                 if (debug.get()) {
                     MsgUtil.sendModuleMsg("Moving incorrect template item back to inventory§e..!", this.name);
                 }
-                return new ClickSlotC2SPacket(
-                    handler.syncId, handler.getRevision(), SmithingScreenHandler.TEMPLATE_ID, 0,
-                    SlotActionType.QUICK_MOVE, ItemStack.EMPTY, changedSlots
+                return new ServerboundContainerClickPacket(
+                    handler.containerId, handler.getStateId(), SmithingMenu.TEMPLATE_SLOT, 0,
+                    ContainerInput.QUICK_MOVE, ItemStack.EMPTY, changedSlots
                 );
             }
-            if (operatingMode.get().equals(SmithingMode.Trim) && !materialStack.isOf(neededMaterial)) {
+            if (operatingMode.get().equals(SmithingMode.Trim) && !materialStack.is(neededMaterial)) {
                 if (debug.get()) {
                     MsgUtil.sendModuleMsg(
                         "Wrong material stack for armor of type "
                             + getEquipmentType((ArmorItem) armorToTrim.getItem()).name() + "§e..!", this.name
                     );
                 }
-                changedSlots.put(SmithingScreenHandler.MATERIAL_ID, ItemStack.EMPTY);
+                changedSlots.put(SmithingMenu.ADDITIONAL_SLOT, ItemStack.EMPTY);
 
                 int shiftClickTargetSlot = predictEmptySlot(handler);
                 if (shiftClickTargetSlot == -1) {
@@ -990,33 +989,33 @@ public class AutoSmith extends Module {
                 if (debug.get()) {
                     MsgUtil.sendModuleMsg("Moving incorrect material item back to inventory§e..!", this.name);
                 }
-                return new ClickSlotC2SPacket(
-                    handler.syncId, handler.getRevision(), SmithingScreenHandler.MATERIAL_ID, 0,
-                    SlotActionType.QUICK_MOVE, ItemStack.EMPTY, changedSlots
+                return new ServerboundContainerClickPacket(
+                    handler.containerId, handler.getStateId(), SmithingMenu.ADDITIONAL_SLOT, 0,
+                    ContainerInput.QUICK_MOVE, ItemStack.EMPTY, changedSlots
                 );
             }
 
             // take output
             int trimCount = trimStack.getCount();
             int materialCount = materialStack.getCount();
-            changedSlots.put(SmithingScreenHandler.OUTPUT_ID, ItemStack.EMPTY);
-            changedSlots.put(SmithingScreenHandler.EQUIPMENT_ID, ItemStack.EMPTY);
+            changedSlots.put(SmithingMenu.RESULT_SLOT, ItemStack.EMPTY);
+            changedSlots.put(SmithingMenu.BASE_SLOT, ItemStack.EMPTY);
 
             if (trimCount - 1 > 0) {
                 ItemStack newTrimStack = trimStack.copyWithCount(trimCount - 1);
-                changedSlots.put(SmithingScreenHandler.TEMPLATE_ID, newTrimStack);
+                changedSlots.put(SmithingMenu.TEMPLATE_SLOT, newTrimStack);
                 trimStack = newTrimStack;
             } else {
-                changedSlots.put(SmithingScreenHandler.TEMPLATE_ID, ItemStack.EMPTY);
+                changedSlots.put(SmithingMenu.TEMPLATE_SLOT, ItemStack.EMPTY);
                 trimStack = null;
             }
 
             if (materialCount - 1 > 0) {
                 ItemStack newMaterialStack = materialStack.copyWithCount(materialCount - 1);
-                changedSlots.put(SmithingScreenHandler.MATERIAL_ID, newMaterialStack);
+                changedSlots.put(SmithingMenu.ADDITIONAL_SLOT, newMaterialStack);
                 materialStack = newMaterialStack;
             } else {
-                changedSlots.put(SmithingScreenHandler.MATERIAL_ID, ItemStack.EMPTY);
+                changedSlots.put(SmithingMenu.ADDITIONAL_SLOT, ItemStack.EMPTY);
                 materialStack = null;
             }
 
@@ -1030,8 +1029,8 @@ public class AutoSmith extends Module {
                 // todo: fabricate trim components for output stack if needed (currently not needed)
 
                 ItemStack output = new ItemStack(
-                    armorToTrim.getItem().getRegistryEntry(),
-                    armorToTrim.getCount(), armorToTrim.getComponentChanges()
+                    armorToTrim.getItem().builtInRegistryHolder(),
+                    armorToTrim.getCount(), armorToTrim.getComponentsPatch()
                 );
 
                 changedSlots.put(shiftClickTargetSlot, output);
@@ -1042,9 +1041,9 @@ public class AutoSmith extends Module {
 
             if (debug.get()) MsgUtil.sendModuleMsg("Generated output packet§a..!", this.name);
             equipmentStack = null;
-            return new ClickSlotC2SPacket(
-                handler.syncId, handler.getRevision(), 3, 0,
-                SlotActionType.QUICK_MOVE, ItemStack.EMPTY, changedSlots
+            return new ServerboundContainerClickPacket(
+                handler.containerId, handler.getStateId(), 3, 0,
+                ContainerInput.QUICK_MOVE, ItemStack.EMPTY, changedSlots
             );
         } else if (equipmentStack == null) {
             // look for valid equipment stack
@@ -1055,33 +1054,33 @@ public class AutoSmith extends Module {
                     MsgUtil.sendModuleMsg("Currently looking for equipment of type: §e" + currentlyLookingFor.name(), this.name);
                 }
             }
-            for (int n = 4; n < mc.player.getInventory().main.size() + 4; n++) {
+            for (int n = 4; n < mc.player.getInventory().getNonEquipmentItems().size() + 4; n++) {
                 if (processedSlots.contains(n)) continue;
-                ItemStack stack = handler.getSlot(n).getStack();
+                ItemStack stack = handler.getSlot(n).getItem();
                 if ((operatingMode.get().equals(SmithingMode.Trim) && isValidEquipmentForTrimming(stack)) || (operatingMode.get().equals(SmithingMode.Upgrade) && isValidEquipmentForUpgrading(stack))) {
                     equipmentStack = stack;
                     processedSlots.add(n);
                     projectedEmpty.add(n);
-                    processedSlots.add(SmithingScreenHandler.EQUIPMENT_ID);
+                    processedSlots.add(SmithingMenu.BASE_SLOT);
 
-                    changedSlots.put(SmithingScreenHandler.EQUIPMENT_ID, stack);
+                    changedSlots.put(SmithingMenu.BASE_SLOT, stack);
                     changedSlots.put(n, ItemStack.EMPTY);
 
                     if (trimStack != null && materialStack != null) {
                         if (operatingMode.get().equals(SmithingMode.Trim)) {
                             ItemStack output = new ItemStack(
-                                stack.getItem().getRegistryEntry(),
-                                stack.getCount(), stack.getComponentChanges()
+                                stack.getItem().builtInRegistryHolder(),
+                                stack.getCount(), stack.getComponentsPatch()
                             );
 
                             // todo: fabricate trim components for output stack if needed (currently not needed)
 //                            ComponentChanges.Builder cb = new ComponentChanges.Builder()
-//                                .add(DataComponentTypes.TRIM, )
+//                                .add(DataComponents.TRIM, )
 
-                            changedSlots.put(SmithingScreenHandler.OUTPUT_ID, output);
+                            changedSlots.put(SmithingMenu.RESULT_SLOT, output);
                         } else {
                             ItemStack output = getUpgradedItem(equipmentStack);
-                            changedSlots.put(SmithingScreenHandler.OUTPUT_ID, output);
+                            changedSlots.put(SmithingMenu.RESULT_SLOT, output);
                         }
                     }
 
@@ -1091,9 +1090,9 @@ public class AutoSmith extends Module {
                                 + currentlyLookingFor.getName() + "§a..!", this.name
                         );
                     }
-                    return new ClickSlotC2SPacket(
-                        handler.syncId, handler.getRevision(), n, 0,
-                        SlotActionType.QUICK_MOVE, ItemStack.EMPTY, changedSlots
+                    return new ServerboundContainerClickPacket(
+                        handler.containerId, handler.getStateId(), n, 0,
+                        ContainerInput.QUICK_MOVE, ItemStack.EMPTY, changedSlots
                     );
                 }
             }
@@ -1130,16 +1129,16 @@ public class AutoSmith extends Module {
             } else {
                 needed = Items.NETHERITE_INGOT;
             }
-            for (int n = 4; n < mc.player.getInventory().main.size() + 4; n++) {
+            for (int n = 4; n < mc.player.getInventory().getNonEquipmentItems().size() + 4; n++) {
                 if (processedSlots.contains(n)) continue;
-                ItemStack stack = handler.getSlot(n).getStack();
-                if (stack.isOf(needed)) {
+                ItemStack stack = handler.getSlot(n).getItem();
+                if (stack.is(needed)) {
                     materialStack = stack;
                     processedSlots.add(n);
                     projectedEmpty.add(n);
-                    processedSlots.add(SmithingScreenHandler.MATERIAL_ID);
+                    processedSlots.add(SmithingMenu.ADDITIONAL_SLOT);
 
-                    changedSlots.put(SmithingScreenHandler.MATERIAL_ID, stack);
+                    changedSlots.put(SmithingMenu.ADDITIONAL_SLOT, stack);
                     changedSlots.put(n, ItemStack.EMPTY);
 
                     if (trimStack != null) {
@@ -1147,20 +1146,20 @@ public class AutoSmith extends Module {
                             // todo: fabricate trim components for output stack if needed (currently not needed)
 
                             ItemStack output = new ItemStack(
-                                stack.getItem().getRegistryEntry(),
-                                stack.getCount(), stack.getComponentChanges()
+                                stack.getItem().builtInRegistryHolder(),
+                                stack.getCount(), stack.getComponentsPatch()
                             );
 
-                            changedSlots.put(SmithingScreenHandler.OUTPUT_ID, output);
+                            changedSlots.put(SmithingMenu.RESULT_SLOT, output);
                         } else {
                             ItemStack output = getUpgradedItem(equipmentStack);
-                            changedSlots.put(SmithingScreenHandler.OUTPUT_ID, output);
+                            changedSlots.put(SmithingMenu.RESULT_SLOT, output);
                         }
                     }
 
-                    return new ClickSlotC2SPacket(
-                        handler.syncId, handler.getRevision(), n, 0,
-                        SlotActionType.QUICK_MOVE, ItemStack.EMPTY, changedSlots
+                    return new ServerboundContainerClickPacket(
+                        handler.containerId, handler.getStateId(), n, 0,
+                        ContainerInput.QUICK_MOVE, ItemStack.EMPTY, changedSlots
                     );
                 }
             }
@@ -1176,34 +1175,34 @@ public class AutoSmith extends Module {
             } else {
                 needed = Items.NETHERITE_UPGRADE_SMITHING_TEMPLATE;
             }
-            for (int n = 4; n < mc.player.getInventory().main.size() + 4; n++) {
+            for (int n = 4; n < mc.player.getInventory().getNonEquipmentItems().size() + 4; n++) {
                 if (processedSlots.contains(n)) continue;
-                ItemStack stack = handler.getSlot(n).getStack();
-                if (stack.isOf(needed)) {
+                ItemStack stack = handler.getSlot(n).getItem();
+                if (stack.is(needed)) {
                     trimStack = stack;
                     processedSlots.add(n);
                     projectedEmpty.add(n);
-                    processedSlots.add(SmithingScreenHandler.TEMPLATE_ID);
-                    changedSlots.put(SmithingScreenHandler.TEMPLATE_ID, stack);
+                    processedSlots.add(SmithingMenu.TEMPLATE_SLOT);
+                    changedSlots.put(SmithingMenu.TEMPLATE_SLOT, stack);
                     changedSlots.put(n, ItemStack.EMPTY);
 
                     if (operatingMode.get().equals(SmithingMode.Trim)) {
                         // todo: fabricate trim components for output stack if needed (currently not)
 
                         ItemStack output = new ItemStack(
-                            stack.getItem().getRegistryEntry(),
-                            stack.getCount(), stack.getComponentChanges()
+                            stack.getItem().builtInRegistryHolder(),
+                            stack.getCount(), stack.getComponentsPatch()
                         );
 
-                        changedSlots.put(SmithingScreenHandler.OUTPUT_ID, output);
+                        changedSlots.put(SmithingMenu.RESULT_SLOT, output);
                     } else if (equipmentStack != null) {
                         ItemStack output = getUpgradedItem(equipmentStack);
-                        changedSlots.put(SmithingScreenHandler.OUTPUT_ID, output);
+                        changedSlots.put(SmithingMenu.RESULT_SLOT, output);
                     }
 
-                    return new ClickSlotC2SPacket(
-                        handler.syncId, handler.getRevision(), n, 0,
-                        SlotActionType.QUICK_MOVE, ItemStack.EMPTY, changedSlots
+                    return new ServerboundContainerClickPacket(
+                        handler.containerId, handler.getStateId(), n, 0,
+                        ContainerInput.QUICK_MOVE, ItemStack.EMPTY, changedSlots
                     );
                 }
             }
@@ -1214,71 +1213,71 @@ public class AutoSmith extends Module {
 
     @SuppressWarnings("deprecation")
     private ItemStack getUpgradedItem(ItemStack original) {
-        if (original.isOf(Items.DIAMOND_HELMET)) {
+        if (original.is(Items.DIAMOND_HELMET)) {
             return new ItemStack(
-                Items.NETHERITE_HELMET.getRegistryEntry(),
-                original.getCount(), original.getComponentChanges()
+                Items.NETHERITE_HELMET.builtInRegistryHolder(),
+                original.getCount(), original.getComponentsPatch()
             );
-        } else if (original.isOf(Items.DIAMOND_CHESTPLATE)) {
+        } else if (original.is(Items.DIAMOND_CHESTPLATE)) {
             return new ItemStack(
-                Items.NETHERITE_CHESTPLATE.getRegistryEntry(),
-                original.getCount(), original.getComponentChanges()
+                Items.NETHERITE_CHESTPLATE.builtInRegistryHolder(),
+                original.getCount(), original.getComponentsPatch()
             );
-        } else if (original.isOf(Items.DIAMOND_LEGGINGS)) {
+        } else if (original.is(Items.DIAMOND_LEGGINGS)) {
             return new ItemStack(
-                Items.NETHERITE_LEGGINGS.getRegistryEntry(),
-                original.getCount(), original.getComponentChanges()
+                Items.NETHERITE_LEGGINGS.builtInRegistryHolder(),
+                original.getCount(), original.getComponentsPatch()
             );
-        } else if (original.isOf(Items.DIAMOND_BOOTS)) {
+        } else if (original.is(Items.DIAMOND_BOOTS)) {
             return new ItemStack(
-                Items.NETHERITE_BOOTS.getRegistryEntry(),
-                original.getCount(), original.getComponentChanges()
+                Items.NETHERITE_BOOTS.builtInRegistryHolder(),
+                original.getCount(), original.getComponentsPatch()
             );
-        } else if (original.isOf(Items.DIAMOND_SWORD)) {
+        } else if (original.is(Items.DIAMOND_SWORD)) {
             return new ItemStack(
-                Items.NETHERITE_SWORD.getRegistryEntry(),
-                original.getCount(), original.getComponentChanges()
+                Items.NETHERITE_SWORD.builtInRegistryHolder(),
+                original.getCount(), original.getComponentsPatch()
             );
-        } else if (original.isOf(Items.DIAMOND_PICKAXE)) {
+        } else if (original.is(Items.DIAMOND_PICKAXE)) {
             return new ItemStack(
-                Items.NETHERITE_PICKAXE.getRegistryEntry(),
-                original.getCount(), original.getComponentChanges()
+                Items.NETHERITE_PICKAXE.builtInRegistryHolder(),
+                original.getCount(), original.getComponentsPatch()
             );
-        } else if (original.isOf(Items.DIAMOND_AXE)) {
+        } else if (original.is(Items.DIAMOND_AXE)) {
             return new ItemStack(
-                Items.NETHERITE_AXE.getRegistryEntry(),
-                original.getCount(), original.getComponentChanges()
+                Items.NETHERITE_AXE.builtInRegistryHolder(),
+                original.getCount(), original.getComponentsPatch()
             );
-        } else if (original.isOf(Items.DIAMOND_SHOVEL)) {
+        } else if (original.is(Items.DIAMOND_SHOVEL)) {
             return new ItemStack(
-                Items.NETHERITE_SHOVEL.getRegistryEntry(),
-                original.getCount(), original.getComponentChanges()
+                Items.NETHERITE_SHOVEL.builtInRegistryHolder(),
+                original.getCount(), original.getComponentsPatch()
             );
-        } else if (original.isOf(Items.DIAMOND_HOE)) {
+        } else if (original.is(Items.DIAMOND_HOE)) {
             return new ItemStack(
-                Items.NETHERITE_HOE.getRegistryEntry(),
-                original.getCount(), original.getComponentChanges()
+                Items.NETHERITE_HOE.builtInRegistryHolder(),
+                original.getCount(), original.getComponentsPatch()
             );
         } else {
             return original;
         }
     }
 
-    private EquipmentType computeLookingFor() {
-        if (!exhaustedArmorTypes.contains(EquipmentType.HELMET)) return EquipmentType.HELMET;
-        else if (!exhaustedArmorTypes.contains(EquipmentType.CHESTPLATE)) return EquipmentType.CHESTPLATE;
-        else if (!exhaustedArmorTypes.contains(EquipmentType.LEGGINGS)) return EquipmentType.LEGGINGS;
-        else return EquipmentType.BOOTS;
+    private ArmorType computeLookingFor() {
+        if (!exhaustedArmorTypes.contains(ArmorType.HELMET)) return ArmorType.HELMET;
+        else if (!exhaustedArmorTypes.contains(ArmorType.CHESTPLATE)) return ArmorType.CHESTPLATE;
+        else if (!exhaustedArmorTypes.contains(ArmorType.LEGGINGS)) return ArmorType.LEGGINGS;
+        else return ArmorType.BOOTS;
     }
 
-    private int predictEmptySlot(SmithingScreenHandler handler) {
+    private int predictEmptySlot(SmithingMenu handler) {
         if (mc.player == null) return -1;
-        for (int n = mc.player.getInventory().main.size() + 3; n >= 4; n--) {
+        for (int n = mc.player.getInventory().getNonEquipmentItems().size() + 3; n >= 4; n--) {
             if (processedSlots.contains(n) && !projectedEmpty.contains(n)) continue;
             if (projectedEmpty.contains(n)) {
                 projectedEmpty.rem(n);
                 return n;
-            } else if (handler.getSlot(n).getStack().isEmpty()) {
+            } else if (handler.getSlot(n).getItem().isEmpty()) {
                 processedSlots.add(n);
                 return n;
             }
@@ -1286,7 +1285,7 @@ public class AutoSmith extends Module {
         return -1;
     }
 
-    private @Nullable Item getNeededPatternItem(ItemStack armorToTrim) {
+    private Item getNeededPatternItem(ItemStack armorToTrim) {
         Item neededPattern = null;
         switch (getEquipmentType((ArmorItem) armorToTrim.getItem())) {
             case BOOTS -> {
@@ -1382,7 +1381,7 @@ public class AutoSmith extends Module {
         return neededPattern;
     }
 
-    private @Nullable Item getNeededMaterialItem(ItemStack armorToTrim) {
+    private Item getNeededMaterialItem(ItemStack armorToTrim) {
         Item neededMaterial = null;
         switch (getEquipmentType((ArmorItem) armorToTrim.getItem())) {
             case BOOTS -> {

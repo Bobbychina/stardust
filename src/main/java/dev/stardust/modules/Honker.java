@@ -2,22 +2,22 @@ package dev.stardust.modules;
 
 import java.util.Collection;
 import dev.stardust.Stardust;
-import net.minecraft.util.Hand;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Instrument;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.item.GoatHornItem;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Instrument;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.world.item.InstrumentItem;
+import net.minecraft.sounds.SoundEvents;
 import meteordevelopment.orbit.EventHandler;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.component.DataComponentTypes;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import meteordevelopment.meteorclient.utils.Utils;
-import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.client.multiplayer.PlayerInfo;
 import meteordevelopment.meteorclient.settings.Setting;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.player.LocalPlayer;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.systems.modules.Module;
@@ -25,7 +25,7 @@ import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.entity.EntityAddedEvent;
 import meteordevelopment.meteorclient.settings.ProvidedStringSetting;
-import net.minecraft.network.packet.s2c.play.PlaySoundFromEntityS2CPacket;
+import net.minecraft.network.protocol.game.ClientboundSoundEntityPacket;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
@@ -94,11 +94,11 @@ public class Honker extends Module {
     private boolean needsMuting = false;
 
     private void honkHorn(int hornSlot, int activeSlot) {
-        if (mc.interactionManager == null) return;
+        if (mc.gameMode == null) return;
 
         needsMuting = true;
         InvUtils.move().from(hornSlot).to(activeSlot);
-        mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
+        mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
         InvUtils.move().from(activeSlot).to(hornSlot);
     }
 
@@ -106,27 +106,27 @@ public class Honker extends Module {
         if (mc.player == null) return;
         if ("Random".equals(desiredCall.get())) {
             IntArrayList hornSlots = new IntArrayList();
-            for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
-                ItemStack stack = mc.player.getInventory().getStack(n);
-                if (stack.getItem() instanceof GoatHornItem) hornSlots.add(n);
+            for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
+                ItemStack stack = mc.player.getInventory().getItem(n);
+                if (stack.getItem() instanceof InstrumentItem) hornSlots.add(n);
             }
             if (hornSlots.isEmpty()) return;
             if (hornSlots.size() == 1) {
-                honkHorn(hornSlots.getInt(0), mc.player.getInventory().selectedSlot);
+                honkHorn(hornSlots.getInt(0), mc.player.getInventory().getSelectedSlot());
             } else {
                 int luckyIndex = (int) (Math.random() * hornSlots.size());
-                honkHorn(hornSlots.getInt(luckyIndex), mc.player.getInventory().selectedSlot);
+                honkHorn(hornSlots.getInt(luckyIndex), mc.player.getInventory().getSelectedSlot());
             }
         } else {
             String desiredCallId = desiredCall.get().toLowerCase() + "_goat_horn";
 
             int hornIndex = -1;
-            for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
-                ItemStack stack = mc.player.getInventory().getStack(n);
-                if (!(stack.getItem() instanceof GoatHornItem)) continue;
-                if (!stack.contains(DataComponentTypes.INSTRUMENT)) continue;
-                RegistryEntry<Instrument> instrument = stack.get(DataComponentTypes.INSTRUMENT);
-                String id = instrument.value().soundEvent().value().id().toUnderscoreSeparatedString();
+            for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
+                ItemStack stack = mc.player.getInventory().getItem(n);
+                if (!(stack.getItem() instanceof InstrumentItem)) continue;
+                if (!stack.has(DataComponents.INSTRUMENT)) continue;
+                Holder<Instrument> instrument = stack.get(DataComponents.INSTRUMENT);
+                String id = instrument.value().soundEvent().value().location().toUnderscoreSeparatedString();
                 if (id == null) continue;
 
                 hornIndex = n;
@@ -134,7 +134,7 @@ public class Honker extends Module {
             }
 
             if (hornIndex != -1) {
-                honkHorn(hornIndex, mc.player.getInventory().selectedSlot);
+                honkHorn(hornIndex, mc.player.getInventory().getSelectedSlot());
             }
         }
     }
@@ -146,17 +146,17 @@ public class Honker extends Module {
 
     @Override
     public void onActivate() {
-        if (mc.world == null) return;
+        if (mc.level == null) return;
         if (hornSpam.get()) {
             ticksSinceUsedHorn = 0;
             return;
         }
 
-        for (Entity entity : mc.world.getEntities()) {
-            if (entity instanceof PlayerEntity && !(entity instanceof ClientPlayerEntity)) {
+        for (Entity entity : mc.level.entitiesForRendering()) {
+            if (entity instanceof Player && !(entity instanceof LocalPlayer)) {
                 if (ignoreFakes.get()) {
-                    Collection<PlayerListEntry> players = mc.player.networkHandler.getPlayerList();
-                    if (players.stream().noneMatch(entry -> entry.getProfile().getId().equals(entity.getUuid()))) continue;
+                    Collection<PlayerInfo> players = mc.player.connection.getOnlinePlayers();
+                    if (players.stream().noneMatch(entry -> entry.getProfile().getId().equals(entity.getUUID()))) continue;
                 }
                 honkDesiredHorn();
                 break;
@@ -169,12 +169,12 @@ public class Honker extends Module {
     @EventHandler
     private void onEntityAdd(EntityAddedEvent event) {
         if (hornSpam.get() || mc.player == null) return;
-        if (!(event.entity instanceof PlayerEntity player)) return;
-        if (player instanceof ClientPlayerEntity) return;
+        if (!(event.entity instanceof Player player)) return;
+        if (player instanceof LocalPlayer) return;
 
         if (ignoreFakes.get()) {
-            Collection<PlayerListEntry> players = mc.player.networkHandler.getPlayerList();
-            if (players.stream().noneMatch(entry -> entry.getProfile().getId().equals(player.getUuid()))) return;
+            Collection<PlayerInfo> players = mc.player.connection.getOnlinePlayers();
+            if (players.stream().noneMatch(entry -> entry.getProfile().getId().equals(player.getUUID()))) return;
         }
 
         if (!hornSpam.get()) {
@@ -185,14 +185,14 @@ public class Honker extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (!hornSpam.get() || mc.player == null || mc.world == null) return;
+        if (!hornSpam.get() || mc.player == null || mc.level == null) return;
 
         boolean playerNearby = false;
-        for (Entity entity : mc.world.getEntities()) {
-            if (entity instanceof PlayerEntity && !(entity instanceof ClientPlayerEntity)) {
+        for (Entity entity : mc.level.entitiesForRendering()) {
+            if (entity instanceof Player && !(entity instanceof LocalPlayer)) {
                 if (ignoreFakes.get()) {
-                    Collection<PlayerListEntry> players = mc.player.networkHandler.getPlayerList();
-                    if (players.stream().noneMatch(entry -> entry.getProfile().getId().equals(entity.getUuid()))) continue;
+                    Collection<PlayerInfo> players = mc.player.connection.getOnlinePlayers();
+                    if (players.stream().noneMatch(entry -> entry.getProfile().getId().equals(entity.getUUID()))) continue;
                 }
                 playerNearby = true;
                 break;
@@ -201,7 +201,7 @@ public class Honker extends Module {
 
         if (!playerNearby && !hornSpamAlone.get()) return;
         ItemStack activeItem = mc.player.getActiveItem();
-        if (activeItem.contains(DataComponentTypes.FOOD) || Utils.isThrowable(activeItem.getItem()) && mc.player.getItemUseTime() > 0) return;
+        if (activeItem.has(DataComponents.FOOD) || Utils.isThrowable(activeItem.getItem()) && mc.player.getTicksUsingItem() > 0) return;
 
         ++ticksSinceUsedHorn;
         if (ticksSinceUsedHorn > 150) {
@@ -213,12 +213,12 @@ public class Honker extends Module {
 
     @EventHandler
     private void onPacketReceive(PacketEvent.Receive event) {
-        if (!(event.packet instanceof PlaySoundFromEntityS2CPacket) || !shouldMuteHorns()) return;
+        if (!(event.packet instanceof ClientboundSoundEntityPacket) || !shouldMuteHorns()) return;
 
-        SoundEvent soundEvent = ((PlaySoundFromEntityS2CPacket) event.packet).getSound().value();
+        SoundEvent soundEvent = ((ClientboundSoundEntityPacket) event.packet).getSound().value();
 
-        for (int n = 0; n < SoundEvents.GOAT_HORN_SOUND_COUNT; n++) {
-            if (soundEvent == SoundEvents.GOAT_HORN_SOUNDS.get(n).value()) {
+        for (int n = 0; n < SoundEvents.GOAT_HORN_VARIANT_COUNT; n++) {
+            if (soundEvent == SoundEvents.GOAT_HORN_SOUND_VARIANTS.get(n).value()) {
                 event.cancel();
                 break;
             }

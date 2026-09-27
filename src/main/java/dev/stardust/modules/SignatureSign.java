@@ -6,31 +6,31 @@ import java.util.List;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.nio.file.Files;
-import net.minecraft.item.*;
-import net.minecraft.text.*;
+import net.minecraft.world.item.*;
+import net.minecraft.network.chat.*;
 import dev.stardust.Stardust;
 import java.util.stream.Stream;
-import net.minecraft.util.Hand;
+import net.minecraft.world.InteractionHand;
 import dev.stardust.util.MsgUtil;
 import dev.stardust.util.LogUtil;
 import java.security.MessageDigest;
-import net.minecraft.util.DyeColor;
+import net.minecraft.world.item.DyeColor;
 import java.util.stream.Collectors;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.phys.Vec3;
 import dev.stardust.util.StardustUtil;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.core.BlockPos;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
-import net.minecraft.block.entity.SignText;
+import net.minecraft.world.level.block.entity.SignText;
 import org.apache.commons.codec.binary.Hex;
 import net.fabricmc.loader.api.FabricLoader;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.client.font.TextRenderer;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.client.gui.Font;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.utils.Utils;
-import net.minecraft.block.entity.SignBlockEntity;
+import net.minecraft.world.level.block.entity.SignBlockEntity;
 import meteordevelopment.meteorclient.MeteorClient;
 import dev.stardust.mixin.accessor.ClientConnectionAccessor;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
@@ -38,10 +38,10 @@ import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import net.minecraft.network.packet.c2s.play.UpdateSignC2SPacket;
+import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket;
 import dev.stardust.mixin.accessor.AbstractSignEditScreenAccessor;
 import meteordevelopment.meteorclient.events.game.OpenScreenEvent;
-import net.minecraft.client.gui.screen.ingame.AbstractSignEditScreen;
+import net.minecraft.client.gui.screens.inventory.AbstractSignEditScreen;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
@@ -404,7 +404,7 @@ public class SignatureSign extends Module {
     private final HashSet<SignBlockEntity> signsToWax = new HashSet<>();
     private final HashSet<SignBlockEntity> signsToColor = new HashSet<>();
     private final HashSet<SignBlockEntity> signsToGlowInk = new HashSet<>();
-    private final ArrayDeque<UpdateSignC2SPacket> packetQueue = new ArrayDeque<>();
+    private final ArrayDeque<ServerboundSignUpdatePacket> packetQueue = new ArrayDeque<>();
 
 
     @Override
@@ -439,17 +439,17 @@ public class SignatureSign extends Module {
 
     // See AbstractSignEditScreenMixin.java
     public SignText getSignature(SignBlockEntity sign) {
-        Text[] signature = new Text[4];
+        Component[] signature = new Component[4];
         List<String> lines = getSignText();
         for (int i = 0; i < lines.size(); i++) {
-            signature[i] = Text.of(lines.get(i));
+            signature[i] = Component.literal(lines.get(i));
         }
 
         if (protectSigns.get() && !sign.isWaxed()) {
             signsToWax.add(sign);
         }
         if (signColor.get() != sign.getFrontText().getColor()) signsToColor.add(sign);
-        if (glowSigns.get() && !sign.getFrontText().isGlowing()) signsToGlowInk.add(sign);
+        if (glowSigns.get() && !sign.getFrontText().hasGlowingText()) signsToGlowInk.add(sign);
 
         return new SignText(signature, signature, DyeColor.BLACK, false);
     }
@@ -481,7 +481,7 @@ public class SignatureSign extends Module {
     }
 
     private boolean inputTooLong(String input) {
-        return mc.textRenderer.getWidth(input) > 90;
+        return mc.font.width(input) > 90;
     }
 
     private void restoreValidInput(int line) {
@@ -496,7 +496,7 @@ public class SignatureSign extends Module {
     private String getUuid(boolean player, boolean hash) {
         String id;
         if (player && mc.player != null) {
-            id = mc.player.getUuidAsString();
+            id = mc.player.getStringUUID();
         } else {
             id = UUID.randomUUID().toString();
         }
@@ -516,7 +516,7 @@ public class SignatureSign extends Module {
             return sb.substring(0, Math.min(8, sb.length()));
         } catch (Exception err) {
             LogUtil.error("SHA-1 algorithm not available - Why: " + err, this.name);
-            return mc.player.getUuidAsString().substring(0, mc.player.getUuidAsString().indexOf("-"));
+            return mc.player.getStringUUID().substring(0, mc.player.getStringUUID().indexOf("-"));
         }
     }
 
@@ -703,7 +703,7 @@ public class SignatureSign extends Module {
     private List<String> getNextLinesOfStory() {
         List<String> storyLines = new ArrayList<>();
 
-        TextRenderer textRenderer = mc.textRenderer;
+        Font textRenderer = mc.font;
         if (redo.get()) {
             storyIndex -= lastIndexAmount;
             redo.set(false);
@@ -719,9 +719,9 @@ public class SignatureSign extends Module {
                     ++lastIndexAmount;
                     continue;
                 }
-                if (textRenderer.getWidth(line.toString()) >= 87) break;
+                if (textRenderer.width(line.toString()) >= 87) break;
 
-                if (textRenderer.getWidth(storyText.get(i).trim()) > 87) {
+                if (textRenderer.width(storyText.get(i).trim()) > 87) {
                     if (!line.isEmpty()) break;
                     line.append(textRenderer.trimToWidth(storyText.get(i).trim(), 85));
 
@@ -730,7 +730,7 @@ public class SignatureSign extends Module {
                     break;
                 }
 
-                if (textRenderer.getWidth(line + storyText.get(i).trim()) > 87) break;
+                if (textRenderer.width(line + storyText.get(i).trim()) > 87) break;
 
                 if (line.isEmpty()) line.append(storyText.get(i).trim());
                 else line.append(" ").append(storyText.get(i).trim());
@@ -748,7 +748,7 @@ public class SignatureSign extends Module {
             lastLines.addAll(storyLines);
             if (mc.player != null) {
                 MsgUtil.sendModuleMsg("§oSign story complete§a§o..!", this.name);
-                mc.player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.77f, 0.77f);
+                mc.player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, 0.77f, 0.77f);
             }
         }
 
@@ -891,20 +891,20 @@ public class SignatureSign extends Module {
     }
 
     private void interactSign(SignBlockEntity sbe, Item dye) {
-        if (mc.player == null || mc.interactionManager == null) return;
+        if (mc.player == null || mc.gameMode == null) return;
 
-        BlockPos pos = sbe.getPos();
-        Vec3d hitVec = Vec3d.ofCenter(pos);
-        BlockHitResult hit = new BlockHitResult(hitVec, mc.player.getHorizontalFacing().getOpposite(), pos, false);
+        BlockPos pos = sbe.getBlockPos();
+        Vec3 hitVec = Vec3.atCenterOf(pos);
+        BlockHitResult hit = new BlockHitResult(hitVec, mc.player.getDirection().getOpposite(), pos, false);
 
-        ItemStack current = mc.player.getInventory().getMainHandStack();
+        ItemStack current = mc.player.getInventory().getSelectedItem();
         if (current.getItem() != dye) {
-            for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
-                ItemStack stack = mc.player.getInventory().getStack(n);
+            for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
+                ItemStack stack = mc.player.getInventory().getItem(n);
                 if (stack.getItem() == dye) {
                     if (current.getItem() instanceof SignItem && current.getCount() > 1) dyeSlot = n;
                     if (n < 9) InvUtils.swap(n, true);
-                    else InvUtils.move().from(n).to(mc.player.getInventory().selectedSlot);
+                    else InvUtils.move().from(n).to(mc.player.getInventory().getSelectedSlot());
 
                     timer = 3;
                     return;
@@ -914,7 +914,7 @@ public class SignatureSign extends Module {
             Rotations.rotate(
                 Rotations.getYaw(pos),
                 Rotations.getPitch(pos), rotationPriority,
-                () -> mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hit)
+                () -> mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, hit)
             );
             ++rotationPriority;
         }
@@ -944,13 +944,13 @@ public class SignatureSign extends Module {
         if (autoConfirm.get()) {
             event.cancel();
             SignText signature = getSignature(sign);
-            List<String> msgs = Arrays.stream(signature.getMessages(false)).map(Text::getString).toList();
+            List<String> msgs = Arrays.stream(signature.getMessages(false)).map(Component::getString).toList();
             String[] messages = new String[msgs.size()];
             messages = msgs.toArray(messages);
 
             if (packetQueue.isEmpty()) packetTimer = 0;
-            packetQueue.addLast(new UpdateSignC2SPacket(
-                sign.getPos(), true, messages[0], messages[1], messages[2], messages[3]
+            packetQueue.addLast(new ServerboundSignUpdatePacket(
+                sign.getBlockPos(), true, messages[0], messages[1], messages[2], messages[3]
             ));
             if (autoDisable.get()) {
                 toggle();
@@ -963,13 +963,13 @@ public class SignatureSign extends Module {
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null) return;
         if (!Utils.canUpdate()) return;
-        if (mc.getNetworkHandler() == null) return;
+        if (mc.getConnection() == null) return;
 
         if (!packetQueue.isEmpty()) {
             ++packetTimer;
             if (packetTimer >= packetDelay.get()) {
                 packetTimer = 0;
-                ((ClientConnectionAccessor) mc.getNetworkHandler().getConnection()).invokeSendImmediately(
+                ((ClientConnectionAccessor) mc.getConnection().getConnection()).invokeSendImmediately(
                     packetQueue.removeFirst(), null, true
                 );
             }
@@ -978,12 +978,12 @@ public class SignatureSign extends Module {
             return;
         }
 
-        if (mc.currentScreen != null) return;
+        if (mc.screen != null) return;
 
         if (timer == -1) {
             if (dyeSlot != -1) {
                 if (dyeSlot < 9) InvUtils.swapBack();
-                else InvUtils.move().from(mc.player.getInventory().selectedSlot).to(dyeSlot);
+                else InvUtils.move().from(mc.player.getInventory().getSelectedSlot()).to(dyeSlot);
                 dyeSlot = -1;
                 timer = 3;
             }
@@ -1001,13 +1001,13 @@ public class SignatureSign extends Module {
         if (timer >= 5) {
             timer = 0;
 
-            signsToWax.removeIf(sbe -> !sbe.getPos().isWithinDistance(mc.player.getBlockPos(), 6));
-            signsToColor.removeIf(sbe -> !sbe.getPos().isWithinDistance(mc.player.getBlockPos(), 6));
-            signsToGlowInk.removeIf(sbe -> !sbe.getPos().isWithinDistance(mc.player.getBlockPos(), 6));
+            signsToWax.removeIf(sbe -> !sbe.getBlockPos().closerThan(mc.player.blockPosition(), 6));
+            signsToColor.removeIf(sbe -> !sbe.getBlockPos().closerThan(mc.player.blockPosition(), 6));
+            signsToGlowInk.removeIf(sbe -> !sbe.getBlockPos().closerThan(mc.player.blockPosition(), 6));
             if (!signsToColor.isEmpty()) {
                 List<SignBlockEntity> signs = signsToColor
                     .stream()
-                    .filter(sbe -> sbe.getPos().isWithinDistance(mc.player.getBlockPos(), 5))
+                    .filter(sbe -> sbe.getBlockPos().closerThan(mc.player.blockPosition(), 5))
                     .filter(sbe -> Arrays.stream(sbe.getFrontText().getMessages(false)).anyMatch(msg -> !msg.getString().isEmpty())
                         || Arrays.stream(sbe.getBackText().getMessages(false)).anyMatch(msg -> !msg.getString().isEmpty()))
                     .toList();
@@ -1021,7 +1021,7 @@ public class SignatureSign extends Module {
             if (!signsToGlowInk.isEmpty()) {
                 List<SignBlockEntity> signs = signsToGlowInk
                     .stream()
-                    .filter(sbe -> sbe.getPos().isWithinDistance(mc.player.getBlockPos(), 5))
+                    .filter(sbe -> sbe.getBlockPos().closerThan(mc.player.blockPosition(), 5))
                     .filter(sbe -> Arrays.stream(sbe.getFrontText().getMessages(false)).anyMatch(msg -> !msg.getString().isEmpty())
                         || Arrays.stream(sbe.getBackText().getMessages(false)).anyMatch(msg -> !msg.getString().isEmpty()))
                     .toList();
@@ -1035,7 +1035,7 @@ public class SignatureSign extends Module {
             if (!signsToWax.isEmpty()) {
                 List<SignBlockEntity> signs = signsToWax
                     .stream()
-                    .filter(sbe -> sbe.getPos().isWithinDistance(mc.player.getBlockPos(), 5))
+                    .filter(sbe -> sbe.getBlockPos().closerThan(mc.player.blockPosition(), 5))
                     .filter(sbe -> Arrays.stream(sbe.getFrontText().getMessages(false)).anyMatch(msg -> !msg.getString().isEmpty())
                         || Arrays.stream(sbe.getBackText().getMessages(false)).anyMatch(msg -> !msg.getString().isEmpty()))
                     .toList();

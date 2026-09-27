@@ -1,7 +1,7 @@
 package dev.stardust.mixin.accessor;
 
-import net.minecraft.text.Style;
-import net.minecraft.text.HoverEvent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.HoverEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;

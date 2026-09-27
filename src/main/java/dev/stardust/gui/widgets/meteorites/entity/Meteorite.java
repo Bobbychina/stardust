@@ -1,7 +1,7 @@
 package dev.stardust.gui.widgets.meteorites.entity;
 
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
 import java.util.concurrent.ThreadLocalRandom;
 import dev.stardust.gui.widgets.meteorites.WMeteorites;
 import meteordevelopment.meteorclient.gui.renderer.GuiRenderer;
@@ -191,11 +191,11 @@ public class Meteorite extends Entity {
                 // visual damage feedback
                 if (this.isBoss && (this.hitFlashTimer > 0 || this.hitPulseTimer > 0)) {
                     double flashProgress = hitFlashTimer / HIT_FLASH_DURATION;
-                    flashProgress = MathHelper.clamp((float) flashProgress, 0f, 1f);
+                    flashProgress = Mth.clamp((float) flashProgress, 0f, 1f);
 
                     double fade = Math.pow(flashProgress, 0.6);
                     double pulseProgress = hitPulseTimer / HIT_PULSE_DURATION;
-                    pulseProgress = MathHelper.clamp((float)pulseProgress, 0f, 1f);
+                    pulseProgress = Mth.clamp((float)pulseProgress, 0f, 1f);
 
                     double p = 1.0 - pulseProgress;
                     double pulseEase = Math.sin(p * Math.PI);
@@ -435,7 +435,7 @@ public class Meteorite extends Entity {
 
                 if (player.iFrames <= 0) {
                     widget.playSound(
-                        SoundEvents.ENTITY_PLAYER_SMALL_FALL,
+                        SoundEvents.PLAYER_SMALL_FALL,
                         ThreadLocalRandom.current().nextFloat(0.666f, 1.1337f)
                     );
                 }
@@ -463,10 +463,10 @@ public class Meteorite extends Entity {
 
             if (player.iFrames <= 0) {
                 player.damageHull(damage);
-                widget.playSound(SoundEvents.ENTITY_PLAYER_HURT, 0.9f);
+                widget.playSound(SoundEvents.PLAYER_HURT, 0.9f);
             } else {
                 widget.playSound(
-                    SoundEvents.ENTITY_PLAYER_BIG_FALL, 0.7f,
+                    SoundEvents.PLAYER_BIG_FALL, 0.7f,
                     widget.module.soundVolume.get().floatValue() * 0.66f
                 );
             }
@@ -516,13 +516,13 @@ public class Meteorite extends Entity {
 
         this.hp -= damageAmount;
         widget.playSound(
-            widget.rng.nextBoolean() ? SoundEvents.BLOCK_ANCIENT_DEBRIS_BREAK : SoundEvents.BLOCK_DEEPSLATE_BREAK,
+            widget.rng.nextBoolean() ? SoundEvents.ANCIENT_DEBRIS_BREAK : SoundEvents.DEEPSLATE_BREAK,
             widget.rng.nextFloat(1.137f, 2.1f),
             widget.module.soundVolume.get().floatValue() * 0.42f
         );
         if (widget.rng.nextDouble() <= 0.1337) {
             widget.playSound(
-                SoundEvents.BLOCK_ANVIL_LAND,
+                SoundEvents.ANVIL_LAND,
                 widget.rng.nextFloat(3.333f, 4.420f),
                 widget.module.soundVolume.get().floatValue() * 0.1337f
             );
@@ -539,7 +539,7 @@ public class Meteorite extends Entity {
             }
             stage = newStage;
             widget.playSound(
-                SoundEvents.ENTITY_GENERIC_EXPLODE.value(),
+                SoundEvents.GENERIC_EXPLODE.value(),
                 widget.rng.nextFloat(0.8f, 1.1f),
                 widget.module.soundVolume.get().floatValue() * 0.420f
             );
@@ -583,7 +583,7 @@ public class Meteorite extends Entity {
 
     private void explode(WMeteorites widget) {
         widget.playSound(
-            SoundEvents.ENTITY_GENERIC_EXPLODE.value(),
+            SoundEvents.GENERIC_EXPLODE.value(),
             widget.rng.nextFloat(0.8f, 1.15f)
         );
         int finalCount = widget.rng.nextInt(BOSS_MIN_FINAL_FRAGMENTS, BOSS_MAX_FINAL_FRAGMENTS + 1) * (widget.wave / 10);
@@ -631,6 +631,6 @@ public class Meteorite extends Entity {
     }
 
     public static double lerp(double a, double b, double t) {
-        return a + (b - a) * MathHelper.clamp((float)t, 0f, 1f);
+        return a + (b - a) * Mth.clamp((float)t, 0f, 1f);
     }
 }

@@ -1,7 +1,7 @@
 package dev.stardust.util;
 
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import it.unimi.dsi.fastutil.objects.ReferenceSet;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 
@@ -245,7 +245,7 @@ public class StonecutterUtil {
                 Items.SANDSTONE_WALL,
                 Items.CHISELED_SANDSTONE,
                 Items.CUT_SANDSTONE,
-                Items.CUT_SANDSTONE_SLAB
+                Items.CUT_STANDSTONE_SLAB
             )
         );
         STONECUTTER_BLOCKS.put(
@@ -258,7 +258,7 @@ public class StonecutterUtil {
         STONECUTTER_BLOCKS.put(
             Items.CUT_SANDSTONE,
             ReferenceSet.of(
-                Items.CUT_SANDSTONE_SLAB
+                Items.CUT_STANDSTONE_SLAB
             )
         );
         STONECUTTER_BLOCKS.put(

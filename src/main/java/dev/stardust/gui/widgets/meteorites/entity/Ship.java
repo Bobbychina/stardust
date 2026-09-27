@@ -1,8 +1,7 @@
 package dev.stardust.gui.widgets.meteorites.entity;
 
 import java.util.*;
-import net.minecraft.sound.SoundEvents;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.sounds.SoundEvents;
 import dev.stardust.gui.widgets.meteorites.WMeteorites;
 import meteordevelopment.meteorclient.gui.renderer.GuiRenderer;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
@@ -225,7 +224,7 @@ public class Ship extends Entity {
                     this.gravityWellDeployed = false;
                     this.gravityWellCdTimer = this.gravityWellCooldown;
                     widget.playSound(
-                        SoundEvents.BLOCK_BUBBLE_COLUMN_BUBBLE_POP,
+                        SoundEvents.BUBBLE_COLUMN_BUBBLE_POP,
                         widget.rng.nextFloat(0.77f, 1.1337f)
                     );
                 }
@@ -234,7 +233,7 @@ public class Ship extends Entity {
                 if (this.gravityWellCdTimer <= 0) {
                     this.gravityWellCdTimer = 0;
                     widget.playSound(
-                        SoundEvents.BLOCK_VAULT_INSERT_ITEM,
+                        SoundEvents.VAULT_INSERT_ITEM,
                         widget.rng.nextFloat(0.77f, 1.1337f)
                     );
                 }
@@ -249,13 +248,13 @@ public class Ship extends Entity {
                     this.phaseActive = false;
                     this.iFrames = Ship.IFRAMES_ON_EXIT_PHASE;
                     this.phaseCooldownTimer = this.phaseCooldown;
-                    widget.playSound(SoundEvents.ENTITY_PLAYER_TELEPORT, 0.69f);
+                    widget.playSound(SoundEvents.PLAYER_TELEPORT, 0.69f);
                 }
             } else if (this.phaseCooldownTimer >= 0) {
                 this.phaseCooldownTimer -= dt;
                 if (this.phaseCooldownTimer <= 0) {
                     widget.playSound(
-                        SoundEvents.BLOCK_VAULT_INSERT_ITEM,
+                        SoundEvents.VAULT_INSERT_ITEM,
                         widget.rng.nextFloat(0.77f, 1.1337f)
                     );
                 }
@@ -279,7 +278,7 @@ public class Ship extends Entity {
             }
             if (!this.jumpCooling) {
                 widget.playSound(
-                    SoundEvents.BLOCK_VAULT_INSERT_ITEM,
+                    SoundEvents.VAULT_INSERT_ITEM,
                     widget.rng.nextFloat(0.77f, 1.1337f)
                 );
             }
@@ -346,13 +345,13 @@ public class Ship extends Entity {
             if (!getPowerup().equals(Powerups.CALIBRATED_FSD) && (!getPowerup().equals(Powerups.STARDUST) || !isSniper)) {
                 this.lastHyperJump = System.currentTimeMillis();
             }
-            widget.playSound(SoundEvents.ENTITY_PLAYER_HURT, widget.rng.nextFloat(0.77f, 1.1337f));
+            widget.playSound(SoundEvents.PLAYER_HURT, widget.rng.nextFloat(0.77f, 1.1337f));
         } else {
             this.vx = this.vy = 0;
             widget.gameOver = true;
-            widget.playSound(SoundEvents.ENTITY_PLAYER_DEATH, widget.rng.nextFloat(0.77f, 1.1337f));
+            widget.playSound(SoundEvents.PLAYER_DEATH, widget.rng.nextFloat(0.77f, 1.1337f));
             widget.playSound(
-                SoundEvents.ENTITY_GENERIC_EXPLODE.value(),
+                SoundEvents.GENERIC_EXPLODE.value(),
                 widget.rng.nextFloat(0.77f, 1.1337f)
             );
 
@@ -368,7 +367,7 @@ public class Ship extends Entity {
                 if (now - this.lastMidasRejectSound >= 1337) {
                     this.lastMidasRejectSound = now;
                     widget.playSound(
-                        SoundEvents.ENTITY_VILLAGER_NO,
+                        SoundEvents.VILLAGER_NO,
                         widget.rng.nextFloat(0.969f, 1.1337f)
                     );
                 }
@@ -421,7 +420,7 @@ public class Ship extends Entity {
                 : sniper ? Ship.SHOOT_COOLDOWN * 4.2 : Ship.SHOOT_COOLDOWN;
 
             widget.playSound(
-                SoundEvents.ITEM_CROSSBOW_SHOOT,
+                SoundEvents.CROSSBOW_SHOOT,
                 widget.rng.nextFloat(3.3333f, 4.2f),
                 widget.module.soundVolume.get().floatValue() * (sniper ? 0.69f : 0.333f)
             );
@@ -475,8 +474,8 @@ public class Ship extends Entity {
 
         float pitch = widget.rng.nextFloat(1.666f, 2.1337f);
         float pitch2 = widget.rng.nextFloat(1.666f, 2.1337f);
-        widget.playSound(SoundEvents.ITEM_CROSSBOW_SHOOT, pitch, widget.module.soundVolume.get().floatValue() * 0.42f);
-        widget.playSound(SoundEvents.ITEM_CROSSBOW_SHOOT, pitch2, widget.module.soundVolume.get().floatValue() * 0.69f);
+        widget.playSound(SoundEvents.CROSSBOW_SHOOT, pitch, widget.module.soundVolume.get().floatValue() * 0.42f);
+        widget.playSound(SoundEvents.CROSSBOW_SHOOT, pitch2, widget.module.soundVolume.get().floatValue() * 0.69f);
     }
 
     public void doHyperspaceJump(boolean poweredUp, boolean calibrated, double width, double height, WMeteorites widget) {
@@ -507,7 +506,7 @@ public class Ship extends Entity {
         this.vy = (widget.rng.nextDouble() - 0.5) * 60;
 
         widget.playSound(
-            SoundEvents.ENTITY_PLAYER_TELEPORT,
+            SoundEvents.PLAYER_TELEPORT,
             widget.rng.nextFloat(0.8f, 1.1337f)
         );
 
@@ -611,7 +610,7 @@ public class Ship extends Entity {
         this.setPowerup(nextPower);
     }
 
-    public void gainNewPowerup(@Nullable Powerups excludeLast, WMeteorites widget) {
+    public void gainNewPowerup(Powerups excludeLast, WMeteorites widget) {
         this.resetGun();
         this.resetHull();
         this.resetPhase();

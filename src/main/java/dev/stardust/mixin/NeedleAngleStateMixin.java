@@ -2,40 +2,40 @@ package dev.stardust.mixin;
 
 import java.time.Instant;
 import dev.stardust.Stardust;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.Items;
 import dev.stardust.util.TimeUtil;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import dev.stardust.config.StardustConfig;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.Mth;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
-import net.minecraft.client.world.ClientWorld;
+import net.minecraft.client.multiplayer.ClientLevel;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import net.minecraft.client.render.item.property.numeric.NeedleAngleState;
+import net.minecraft.client.renderer.item.properties.numeric.NeedleDirectionHelper;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
  *     See also: ServerEntryMixin.java && EntryListWidgetMixin.java && stardust.accesswidener && TimeUtil.java
  **/
-@Mixin(NeedleAngleState.class)
+@Mixin(NeedleDirectionHelper.class)
 public abstract class NeedleAngleStateMixin {
 
     @Shadow
-    protected abstract float getAngle(ItemStack stack, ClientWorld world, int seed, Entity user);
+    protected abstract float getAngle(ItemStack stack, ClientLevel world, int seed, Entity user);
 
     @Inject(method = "getValue", at = @At("HEAD"), cancellable = true)
-    private void getCustomClockAngle(ItemStack stack, ClientWorld world, LivingEntity user, int seed, CallbackInfoReturnable<Float> cir) {
+    private void getCustomClockAngle(ItemStack stack, ClientLevel world, LivingEntity user, int seed, CallbackInfoReturnable<Float> cir) {
         if (Stardust.TIME == null) return;
-        if (!stack.isOf(Items.CLOCK)) return;
+        if (!stack.is(Items.CLOCK)) return;
         if (!StardustConfig.serverListWorldTimeClockSetting.get()) return;
 
         cir.cancel();
-        Entity entity = (user != null ? user : stack.getHolder());
+        Entity entity = (user != null ? user : stack.getEntityRepresentation());
 
         if (!(entity instanceof LivingEntity)) {
             TimeUtil.TimeData timeData = Stardust.TIME.getTime();
@@ -44,7 +44,7 @@ public abstract class NeedleAngleStateMixin {
                 cir.setReturnValue(0f);
             } else cir.setReturnValue(getCustomClockAngle(timeData.lastUpdated(), timeData.worldTime()));
         } else {
-            if (world == null && entity.getWorld() instanceof ClientWorld clientWorld) {
+            if (world == null && entity.level() instanceof ClientLevel clientWorld) {
                 world = clientWorld;
             }
 
@@ -73,7 +73,7 @@ public abstract class NeedleAngleStateMixin {
 
     @Unique
     private float getCustomSkyAngle(long time) {
-        double d = MathHelper.fractionalPart(time / 24000.0 - 0.25);
+        double d = Mth.frac(time / 24000.0 - 0.25);
         double e = 0.5 - Math.cos(d * Math.PI) / 2.0;
 
         return (float) ((d * 2.0 + e) / 3.0);

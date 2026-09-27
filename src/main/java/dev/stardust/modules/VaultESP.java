@@ -3,31 +3,30 @@ package dev.stardust.modules;
 import java.util.*;
 import org.lwjgl.glfw.GLFW;
 import dev.stardust.Stardust;
-import net.minecraft.text.Text;
-import net.minecraft.item.Items;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Items;
 import dev.stardust.util.MsgUtil;
 import dev.stardust.util.MapUtil;
 import dev.stardust.util.StardustUtil;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.VaultBlock;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.VaultBlock;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.utils.Utils;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import meteordevelopment.meteorclient.gui.GuiTheme;
-import net.minecraft.block.entity.VaultBlockEntity;
+import net.minecraft.world.level.block.entity.vault.VaultBlockEntity;
 import meteordevelopment.meteorclient.utils.misc.Keybind;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.gui.widgets.WWidget;
 import meteordevelopment.meteorclient.pathing.PathManagers;
 import meteordevelopment.meteorclient.pathing.BaritoneUtils;
-import meteordevelopment.meteorclient.events.meteor.KeyEvent;
+import net.minecraft.client.input.KeyEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.RenderUtils;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
@@ -133,15 +132,15 @@ public class VaultESP extends Module {
             .build()
     );
 
-    private @Nullable BlockPos goal = null;
+    private BlockPos goal = null;
     private final Set<Long> looted = new LongOpenHashSet();
     private final List<BlockPos> notified = new ArrayList<>();
 
     private boolean isOminousVault(BlockEntity be) {
         if (be == null) return false;
-        if (mc.world == null) return false;
+        if (mc.level == null) return false;
         if (!(be instanceof VaultBlockEntity)) return false;
-        BlockState vaultState = mc.world.getBlockState(be.getPos());
+        BlockState vaultState = mc.level.getBlockState(be.getBlockPos());
 
         return vaultState.getBlock() instanceof VaultBlock
             && vaultState.contains(VaultBlock.OMINOUS) && vaultState.get(VaultBlock.OMINOUS);
@@ -159,37 +158,37 @@ public class VaultESP extends Module {
 
     @Override
     public void onActivate() {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
 
         for (BlockEntity be : Utils.blockEntities()) {
-            if (notified.contains(be.getPos())) continue;
-            if (looted.contains(be.getPos().asLong())) continue;
+            if (notified.contains(be.getBlockPos())) continue;
+            if (looted.contains(be.getBlockPos().asLong())) continue;
 
             if (isOminousVault(be)) {
-                notified.add(be.getPos());
+                notified.add(be.getBlockPos());
 
                 if (waypoints.get()) {
                     MapUtil.addWaypoint(
-                        be.getPos(), "VaultESP - Ominous Vault", "⭐",
+                        be.getBlockPos(), "VaultESP - Ominous Vault", "⭐",
                         MapUtil.Purpose.Normal, MapUtil.WpColor.Dark_Green, tempWaypoints.get()
                     );
                 }
                 if (soundSetting.get()) {
-                    mc.player.playSound(SoundEvents.BLOCK_VAULT_OPEN_SHUTTER, volumeSetting.get().floatValue(), 1f);
+                    mc.player.playSound(SoundEvents.VAULT_OPEN_SHUTTER, volumeSetting.get().floatValue(), 1f);
                 }
                 if (chatSetting.get()) {
-                    Text notification;
+                    Component notification;
                     if (coordsSetting.get()) {
-                        notification = Text.of(
+                        notification = Component.literal(
                             "§8<" + StardustUtil.rCC() + "✨§8> §a§oFound an ominous vault at §8[§7§o"
-                                + be.getPos().getX() + "§8, §7§o" + be.getPos().getY() + "§8, §7§o" + be.getPos().getZ() + "§8]"
+                                + be.getBlockPos().getX() + "§8, §7§o" + be.getBlockPos().getY() + "§8, §7§o" + be.getBlockPos().getZ() + "§8]"
                         );
                     } else {
-                        notification = Text.of(
+                        notification = Component.literal(
                             "§8<" + StardustUtil.rCC() + "✨§8> §a§oFound an ominous vault§7§o!"
                         );
                     }
-                    mc.player.sendMessage(notification, false);
+                    mc.player.sendSystemMessage(notification);
                 }
             }
         }
@@ -203,7 +202,7 @@ public class VaultESP extends Module {
 
     @EventHandler
     private void onChunkData(ChunkDataEvent event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         Map<BlockPos, BlockEntity> blockEntities = event.chunk().getBlockEntities();
 
         for (Map.Entry<BlockPos, BlockEntity> entry : blockEntities.entrySet()) {
@@ -219,22 +218,22 @@ public class VaultESP extends Module {
                     );
                 }
                 if (soundSetting.get()) {
-                    mc.player.playSound(SoundEvents.BLOCK_VAULT_OPEN_SHUTTER, volumeSetting.get().floatValue(), 1f);
+                    mc.player.playSound(SoundEvents.VAULT_OPEN_SHUTTER, volumeSetting.get().floatValue(), 1f);
                 }
                 if (chatSetting.get()) {
-                    Text notification;
+                    Component notification;
                     if (coordsSetting.get()) {
 
-                        notification = Text.of(
+                        notification = Component.literal(
                             "§8<" + StardustUtil.rCC() + "✨§8> §a§oFound an ominous vault at §8[§7§o"
                                 + entry.getKey().getX() + "§8, §7§o" + entry.getKey().getY() + "§8, §7§o" + entry.getKey().getZ() + "§8]"
                         );
                     } else {
-                        notification = Text.of(
+                        notification = Component.literal(
                             "§8<" + StardustUtil.rCC() + "✨§8> §a§oFound an ominous vault§7§o!"
                         );
                     }
-                    mc.player.sendMessage(notification, false);
+                    mc.player.sendSystemMessage(notification);
                 }
             }
         }
@@ -245,11 +244,11 @@ public class VaultESP extends Module {
     @EventHandler
     private void onRender(Render3DEvent event) {
         if (!espSetting.get()) return;
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
 
         List<BlockPos> inRange = notified
             .stream()
-            .filter(pos -> pos.isWithinDistance(mc.player.getBlockPos(), mc.options.getViewDistance().getValue() * 16+32))
+            .filter(pos -> pos.closerThan(mc.player.blockPosition(), mc.options.renderDistance().get() * 16+32))
             .toList();
 
         ESPBlockData espSettings = espColorSettings.get();
@@ -277,15 +276,15 @@ public class VaultESP extends Module {
 
     @EventHandler
     private void onInteractBlock(InteractBlockEvent event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
 
         if (notified.contains(event.result.getBlockPos())) {
-            BlockEntity be = mc.world.getBlockEntity(event.result.getBlockPos());
+            BlockEntity be = mc.level.getBlockEntity(event.result.getBlockPos());
             if (event.result.getType() == HitResult.Type.BLOCK&& isOminousVault(be)
-                && mc.player.getMainHandStack().isOf(Items.OMINOUS_TRIAL_KEY)
+                && mc.player.getMainHandItem().is(Items.OMINOUS_TRIAL_KEY)
             ) {
                 goal = null;
-                looted.add(be.getPos().asLong());
+                looted.add(be.getBlockPos().asLong());
                 BlockPos wpPos = event.result.getBlockPos();
                 MapUtil.removeWaypoints(
                     "VaultESP",
@@ -299,13 +298,13 @@ public class VaultESP extends Module {
     @EventHandler
     private void onKeyPress(KeyEvent event) {
         if (goal != null) return;
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         if (!auto.get() || event.key != autoKey.get().getValue()) return;
 
         List<BlockPos> inRange = notified
             .stream()
             .filter(pos -> !looted.contains(pos.asLong()))
-            .filter(pos -> pos.isWithinDistance(mc.player.getBlockPos(), mc.options.getViewDistance().getValue() * 16+32))
+            .filter(pos -> pos.closerThan(mc.player.blockPosition(), mc.options.renderDistance().get() * 16+32))
             .toList();
 
         if (inRange.isEmpty()) return;
@@ -316,7 +315,7 @@ public class VaultESP extends Module {
         for (BlockPos pos : inRange) {
             if (closest == null) closest = pos;
             else {
-                double d = mc.player.getBlockPos().getSquaredDistance(pos);
+                double d = mc.player.blockPosition().distSqr(pos);
                 if (d < distance) {
                     distance = d;
                     closest = pos;
@@ -327,16 +326,16 @@ public class VaultESP extends Module {
         if (closest != null && BaritoneUtils.IS_AVAILABLE) {
             BlockPos bestSpot = null;
             for (Direction dir : Direction.values()) {
-                BlockPos offset = closest.offset(dir);
+                BlockPos offset = closest.relative(dir);
                 if (bestSpot == null) {
-                    if (mc.world.getBlockState(offset).isAir()) {
-                        bestSpot = closest.offset(dir.getOpposite());
+                    if (mc.level.getBlockState(offset).isAir()) {
+                        bestSpot = closest.relative(dir.getOpposite());
                         break;
                     } else {
                         bestSpot = offset;
                     }
-                } else if (mc.world.getBlockState(offset).isAir()) {
-                    bestSpot = closest.offset(dir.getOpposite());
+                } else if (mc.level.getBlockState(offset).isAir()) {
+                    bestSpot = closest.relative(dir.getOpposite());
                     break;
                 }
             }

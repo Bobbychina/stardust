@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class WHeaderMixin extends WContainer {
     @Inject(method = "onMouseClicked", at = @At("HEAD"), cancellable = true)
     private void maybeCancelHeaderClick(double mouseX, double mouseY, int button, boolean used, CallbackInfoReturnable<Boolean> cir) {
-        if (mc.currentScreen instanceof MeteoritesScreen meteorites) {
+        if (mc.screen instanceof MeteoritesScreen meteorites) {
             Cell<? extends WWidget> widget = meteorites.getWidget();
             if (widget != null && widget.widget() instanceof WMeteorites mw) {
                 if (!mw.isPaused && !mw.gameOver && mw.module.mouseAim.get()) {

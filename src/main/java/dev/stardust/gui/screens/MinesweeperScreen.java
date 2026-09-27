@@ -1,7 +1,6 @@
 package dev.stardust.gui.screens;
 
 import dev.stardust.modules.Minesweeper;
-import org.jetbrains.annotations.Nullable;
 import meteordevelopment.meteorclient.gui.GuiTheme;
 import meteordevelopment.meteorclient.gui.utils.Cell;
 import meteordevelopment.meteorclient.gui.WindowScreen;
@@ -14,7 +13,7 @@ import meteordevelopment.meteorclient.gui.widgets.WWidget;
 public class MinesweeperScreen extends WindowScreen {
     private final GuiTheme theme;
     private final Minesweeper module;
-    private @Nullable Cell<? extends WWidget> widget = null;
+    private Cell<? extends WWidget> widget = null;
 
     public MinesweeperScreen(Minesweeper module, GuiTheme theme, String title) {
         super(theme, title);

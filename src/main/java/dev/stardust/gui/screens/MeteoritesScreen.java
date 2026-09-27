@@ -1,7 +1,6 @@
 package dev.stardust.gui.screens;
 
 import dev.stardust.modules.Meteorites;
-import org.jetbrains.annotations.Nullable;
 import meteordevelopment.meteorclient.gui.GuiTheme;
 import meteordevelopment.meteorclient.gui.utils.Cell;
 import dev.stardust.gui.widgets.meteorites.WMeteorites;
@@ -13,14 +12,14 @@ import meteordevelopment.meteorclient.gui.widgets.WWidget;
  **/
 public class MeteoritesScreen extends WindowScreen {
     private final Meteorites module;
-    private @Nullable Cell<? extends WWidget> widget = null;
+    private Cell<? extends WWidget> widget = null;
 
     public MeteoritesScreen(Meteorites module, GuiTheme theme, String title) {
         super(theme, title);
         this.module = module;
     }
 
-    public @Nullable Cell<? extends WWidget> getWidget() {
+    public Cell<? extends WWidget> getWidget() {
         return widget;
     }
 

@@ -2,27 +2,26 @@ package dev.stardust.modules;
 
 import java.util.*;
 import dev.stardust.Stardust;
-import net.minecraft.item.Item;
-import net.minecraft.util.Hand;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.Items;
 import dev.stardust.util.MsgUtil;
-import javax.annotation.Nullable;
-import net.minecraft.fluid.Fluids;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.entity.LivingEntity;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
 import meteordevelopment.meteorclient.settings.*;
-import net.minecraft.entity.passive.AxolotlEntity;
+import net.minecraft.world.entity.animal.axolotl.Axolotl;
 import meteordevelopment.meteorclient.utils.Utils;
-import net.minecraft.component.DataComponentTypes;
+import net.minecraft.core.component.DataComponents;
 import java.util.concurrent.atomic.AtomicReference;
-import net.minecraft.entity.passive.TropicalFishEntity;
+import net.minecraft.world.entity.animal.fish.TropicalFish;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.utils.entity.Target;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
@@ -202,8 +201,8 @@ public class AxolotlTools extends Module {
             .defaultValue(VariantBehavior.Both)
             .onChanged(it -> {
                 if (it == VariantBehavior.Both || it == VariantBehavior.Interact) {
-                    this.interactVariants.add(AxolotlEntity.Variant.LUCY.toString());
-                } else this.interactVariants.remove(AxolotlEntity.Variant.LUCY.toString());
+                    this.interactVariants.add(Axolotl.Variant.LUCY.toString());
+                } else this.interactVariants.remove(Axolotl.Variant.LUCY.toString());
             })
             .build()
     );
@@ -215,8 +214,8 @@ public class AxolotlTools extends Module {
             .defaultValue(VariantBehavior.Both)
             .onChanged(it -> {
                 if (it == VariantBehavior.Both || it == VariantBehavior.Interact) {
-                    this.interactVariants.add(AxolotlEntity.Variant.WILD.toString());
-                } else this.interactVariants.remove(AxolotlEntity.Variant.WILD.toString());
+                    this.interactVariants.add(Axolotl.Variant.WILD.toString());
+                } else this.interactVariants.remove(Axolotl.Variant.WILD.toString());
             })
             .build()
     );
@@ -228,8 +227,8 @@ public class AxolotlTools extends Module {
             .defaultValue(VariantBehavior.Both)
             .onChanged(it -> {
                 if (it == VariantBehavior.Both || it == VariantBehavior.Interact) {
-                    this.interactVariants.add(AxolotlEntity.Variant.GOLD.toString());
-                } else this.interactVariants.remove(AxolotlEntity.Variant.GOLD.toString());
+                    this.interactVariants.add(Axolotl.Variant.GOLD.toString());
+                } else this.interactVariants.remove(Axolotl.Variant.GOLD.toString());
             })
             .build()
     );
@@ -241,8 +240,8 @@ public class AxolotlTools extends Module {
             .defaultValue(VariantBehavior.Both)
             .onChanged(it -> {
                 if (it == VariantBehavior.Both || it == VariantBehavior.Interact) {
-                    this.interactVariants.add(AxolotlEntity.Variant.CYAN.toString());
-                } else this.interactVariants.remove(AxolotlEntity.Variant.CYAN.toString());
+                    this.interactVariants.add(Axolotl.Variant.CYAN.toString());
+                } else this.interactVariants.remove(Axolotl.Variant.CYAN.toString());
             })
             .build()
     );
@@ -254,8 +253,8 @@ public class AxolotlTools extends Module {
             .defaultValue(VariantBehavior.Both)
             .onChanged(it -> {
                 if (it == VariantBehavior.Both || it == VariantBehavior.Interact) {
-                    this.interactVariants.add(AxolotlEntity.Variant.BLUE.toString());
-                } else this.interactVariants.remove(AxolotlEntity.Variant.BLUE.toString());
+                    this.interactVariants.add(Axolotl.Variant.BLUE.toString());
+                } else this.interactVariants.remove(Axolotl.Variant.BLUE.toString());
             })
             .build()
     );
@@ -271,62 +270,61 @@ public class AxolotlTools extends Module {
 
     private boolean hasEmptySlots() {
         if (mc.player == null) return false;
-        for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
-            if (mc.player.getInventory().getStack(n).isEmpty()) return true;
+        for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
+            if (mc.player.getInventory().getItem(n).isEmpty()) return true;
         }
         return false;
     }
 
     private boolean hasNoValidBucket(Item bucketType) {
         if (mc.player == null) return true;
-        for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
-            if (mc.player.getInventory().getStack(n).getItem() == bucketType) return false;
+        for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
+            if (mc.player.getInventory().getItem(n).getItem() == bucketType) return false;
         }
         return true;
     }
 
     private boolean trySwapValidBucket(Item bucketType) {
         if (mc.player == null) return false;
-        for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
-            ItemStack stack = mc.player.getInventory().getStack(n);
+        for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
+            ItemStack stack = mc.player.getInventory().getItem(n);
             if (stack.getItem() == bucketType) {
                 if (n < 9) InvUtils.swap(n, false);
-                else InvUtils.move().from(n).to(mc.player.getInventory().selectedSlot);
+                else InvUtils.move().from(n).to(mc.player.getInventory().getSelectedSlot());
                 return true;
             }
         }
         return false;
     }
 
-    @Nullable
     private BlockPos getNearbyWaterSource(boolean toEmpty) {
-        if (mc.world == null || mc.player == null) return null;
-        for (BlockPos pos : BlockPos.iterateOutwards(mc.player.getBlockPos(), 4, toEmpty ? 1 : 4, 4)) {
-            if (mc.world.getFluidState(pos).getFluid() == Fluids.WATER) return pos;
+        if (mc.level == null || mc.player == null) return null;
+        for (BlockPos pos : BlockPos.withinManhattan(mc.player.blockPosition(), 4, toEmpty ? 1 : 4, 4)) {
+            if (mc.level.getFluidState(pos).getType() == Fluids.WATER) return pos;
         }
         return null;
     }
 
     private <T extends LivingEntity> boolean tryInteractMobFull(T entity, Item bucketType) {
-        if (mc.interactionManager == null) return true;
-        if (mc.player == null || mc.world == null) return true;
+        if (mc.gameMode == null) return true;
+        if (mc.player == null || mc.level == null) return true;
 
-        for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
-            ItemStack stack = mc.player.getInventory().getStack(n);
+        for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
+            ItemStack stack = mc.player.getInventory().getItem(n);
             if (!(stack.getItem() == bucketType)) continue;
 
-            if (n != mc.player.getInventory().selectedSlot) {
+            if (n != mc.player.getInventory().getSelectedSlot()) {
                 if (n < 9) InvUtils.swap(n, false);
-                else InvUtils.move().from(n).to(mc.player.getInventory().selectedSlot);
+                else InvUtils.move().from(n).to(mc.player.getInventory().getSelectedSlot());
             }
-            AtomicReference<ActionResult> result = new AtomicReference<>();
+            AtomicReference<InteractionResult> result = new AtomicReference<>();
             Rotations.rotate(
                 Rotations.getYaw(entity),
                 Rotations.getPitch(entity, Target.Body), rotPriority,
-                () -> result.set(mc.interactionManager.interactEntity(mc.player, entity, Hand.MAIN_HAND))
+                () -> result.set(mc.gameMode.interact(mc.player, entity, InteractionHand.MAIN_HAND))
             );
             ++rotPriority;
-            return result.get() == ActionResult.SUCCESS || result.get() == ActionResult.CONSUME;
+            return result.get() == InteractionResult.SUCCESS || result.get() == InteractionResult.CONSUME;
         }
 
         MsgUtil.updateModuleMsg("No valid bucket types found in inventory§c..!", this.name, "noBucketFound".hashCode());
@@ -335,18 +333,18 @@ public class AxolotlTools extends Module {
     }
 
     private <T extends LivingEntity> boolean tryInteractMobTrigger(T entity, Item bucketType) {
-        if (mc.interactionManager == null) return true;
-        if (mc.player == null || mc.world == null) return true;
+        if (mc.gameMode == null) return true;
+        if (mc.player == null || mc.level == null) return true;
 
-        ItemStack currentStack = mc.player.getMainHandStack();
+        ItemStack currentStack = mc.player.getMainHandItem();
         if (currentStack.getItem() != bucketType) {
             boolean foundBucket = false;
-            for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
-                ItemStack stack = mc.player.getInventory().getStack(n);
+            for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
+                ItemStack stack = mc.player.getInventory().getItem(n);
                 if (stack.getItem() == bucketType) {
                     foundBucket = true;
                     if (n < 9) InvUtils.swap(n, false);
-                    else InvUtils.move().from(n).to(mc.player.getInventory().selectedSlot);
+                    else InvUtils.move().from(n).to(mc.player.getInventory().getSelectedSlot());
                     break;
                 }
             }
@@ -360,27 +358,27 @@ public class AxolotlTools extends Module {
                 return false;
             }
         }
-        ActionResult result = mc.interactionManager.interactEntity(mc.player, entity, Hand.MAIN_HAND);
+        InteractionResult result = mc.gameMode.interact(mc.player, entity, InteractionHand.MAIN_HAND);
 
-        return result == ActionResult.SUCCESS || result == ActionResult.CONSUME;
+        return result == InteractionResult.SUCCESS || result == InteractionResult.CONSUME;
     }
 
     @Override
     public void onActivate() {
         switch (interactPink.get()) {
-            case Both, Interact -> interactVariants.add(AxolotlEntity.Variant.LUCY.toString());
+            case Both, Interact -> interactVariants.add(Axolotl.Variant.LUCY.toString());
         }
         switch (interactWild.get()) {
-            case Both, Interact -> interactVariants.add(AxolotlEntity.Variant.WILD.toString());
+            case Both, Interact -> interactVariants.add(Axolotl.Variant.WILD.toString());
         }
         switch (interactGold.get()) {
-            case Both, Interact -> interactVariants.add(AxolotlEntity.Variant.GOLD.toString());
+            case Both, Interact -> interactVariants.add(Axolotl.Variant.GOLD.toString());
         }
         switch (interactCyan.get()) {
-            case Both, Interact -> interactVariants.add(AxolotlEntity.Variant.CYAN.toString());
+            case Both, Interact -> interactVariants.add(Axolotl.Variant.CYAN.toString());
         }
         switch (interactBlue.get()) {
-            case Both, Interact -> interactVariants.add(AxolotlEntity.Variant.BLUE.toString());
+            case Both, Interact -> interactVariants.add(Axolotl.Variant.BLUE.toString());
         }
     }
 
@@ -392,12 +390,12 @@ public class AxolotlTools extends Module {
     }
 
     @EventHandler private void onTick(TickEvent.Pre event) {
-        if (mc.interactionManager == null) return;
-        if (mc.player == null || mc.world == null) return;
+        if (mc.gameMode == null) return;
+        if (mc.player == null || mc.level == null) return;
         if (axolotlMode.get() == AxolotlMode.None && !catchFish.get()) return;
 
-        ItemStack current = mc.player.getInventory().getMainHandStack();
-        if ((current.contains(DataComponentTypes.FOOD) || Utils.isThrowable(current.getItem())) && mc.player.getItemUseTime() > 0) {
+        ItemStack current = mc.player.getInventory().getSelectedItem();
+        if ((current.has(DataComponents.FOOD) || Utils.isThrowable(current.getItem())) && mc.player.getTicksUsingItem() > 0) {
             ++timer;
             return;
         }
@@ -419,16 +417,16 @@ public class AxolotlTools extends Module {
                                 Rotations.rotate(
                                     Rotations.getYaw(source),
                                     Rotations.getPitch(source), 69420,
-                                    () -> mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND)
+                                    () -> mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND)
                                 );
                                 ++timer;
                                 return;
                             }
                         }
 
-                        List<AxolotlEntity> nearby = mc.world.getEntitiesByClass(
-                            AxolotlEntity.class,
-                            mc.player.getBoundingBox().expand(mc.player.getEntityInteractionRange() * mc.player.getEntityInteractionRange()),
+                        List<Axolotl> nearby = mc.level.getEntitiesOfClass(
+                            Axolotl.class,
+                            mc.player.getBoundingBox().inflate(mc.player.entityInteractionRange() * mc.player.entityInteractionRange()),
                             ax -> interactVariants.contains(ax.getVariant().toString())
                                 && (axolotlMode.get() == AxolotlMode.Catch
                                 && (catchBabies.get() ? !onlyCatchBabies.get() || ax.isBaby() : !ax.isBaby()))
@@ -437,11 +435,11 @@ public class AxolotlTools extends Module {
                         );
 
                         double d = Double.MAX_VALUE;
-                        AxolotlEntity target = null;
-                        for (AxolotlEntity ax : nearby) {
-                            if (mc.player.getEyePos().squaredDistanceTo(ax.getPos()) < d) {
+                        Axolotl target = null;
+                        for (Axolotl ax : nearby) {
+                            if (mc.player.getEyePosition().distanceToSqr(ax.position()) < d) {
                                 target = ax;
-                                d = mc.player.getEyePos().squaredDistanceTo(ax.getPos());
+                                d = mc.player.getEyePosition().distanceToSqr(ax.position());
                             }
                         }
 
@@ -458,7 +456,7 @@ public class AxolotlTools extends Module {
                                         Rotations.rotate(
                                             Rotations.getYaw(source),
                                             Rotations.getPitch(source), 69420,
-                                            () -> mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND)
+                                            () -> mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND)
                                         );
                                         ++timer;
                                         return;
@@ -484,7 +482,7 @@ public class AxolotlTools extends Module {
                                             Rotations.rotate(
                                                 Rotations.getYaw(source),
                                                 Rotations.getPitch(source), 69420,
-                                                () -> mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND)
+                                                () -> mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND)
                                             );
                                             ++timer;
                                             return;
@@ -495,9 +493,9 @@ public class AxolotlTools extends Module {
                         }
                     }
                     case Trigger -> {
-                        if (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.ENTITY) {
-                            EntityHitResult hit = (EntityHitResult) mc.crosshairTarget;
-                            if (hit.getEntity() instanceof AxolotlEntity axolotl) {
+                        if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.ENTITY) {
+                            EntityHitResult hit = (EntityHitResult) mc.hitResult;
+                            if (hit.getEntity() instanceof Axolotl axolotl) {
                                 if (axolotlMode.get() == AxolotlMode.Catch) {
                                     if (!catchBabies.get() && axolotl.isBaby()) return;
                                     else if (catchBabies.get() && onlyCatchBabies.get() && !axolotl.isBaby()) return;
@@ -518,20 +516,20 @@ public class AxolotlTools extends Module {
                                 }
                             }
                         } else if (axolotlMode.get() == AxolotlMode.Release) {
-                            Entity camera = mc.cameraEntity;
+                            Entity camera = mc.getCameraEntity();
 
                             if (camera == null) return;
-                            HitResult result = camera.raycast(3, 0, true);
+                            HitResult result = camera.pick(3, 0, true);
                             if (result.getType() == HitResult.Type.BLOCK) {
                                 BlockHitResult hit = (BlockHitResult) result;
-                                if (mc.world.getFluidState(hit.getBlockPos()).getFluid() == Fluids.WATER) {
+                                if (mc.level.getFluidState(hit.getBlockPos()).getType() == Fluids.WATER) {
                                     if (current.getItem() != Items.AXOLOTL_BUCKET) {
                                         if (trySwapValidBucket(Items.AXOLOTL_BUCKET)) {
                                             timer = tickRate.get() - 1;
                                             return;
                                         }
                                     } else {
-                                        mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
+                                        mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
                                     }
                                 }
                             }
@@ -543,18 +541,18 @@ public class AxolotlTools extends Module {
             if (catchFish.get()) {
                 switch (interactionMode.get()) {
                     case Full -> {
-                        List<TropicalFishEntity> nearby = mc.world.getEntitiesByClass(
-                            TropicalFishEntity.class,
-                            mc.player.getBoundingBox().expand(mc.player.getEntityInteractionRange() * mc.player.getEntityInteractionRange()),
-                            fishy -> fishy.getBlockPos().isWithinDistance(mc.player.getBlockPos(), 3)
+                        List<TropicalFish> nearby = mc.level.getEntitiesOfClass(
+                            TropicalFish.class,
+                            mc.player.getBoundingBox().inflate(mc.player.entityInteractionRange() * mc.player.entityInteractionRange()),
+                            fishy -> fishy.blockPosition().closerThan(mc.player.blockPosition(), 3)
                         );
 
                         double d = Double.MAX_VALUE;
-                        TropicalFishEntity target = null;
-                        for (TropicalFishEntity fish : nearby) {
-                            if (mc.player.getEyePos().squaredDistanceTo(fish.getPos()) < d) {
+                        TropicalFish target = null;
+                        for (TropicalFish fish : nearby) {
+                            if (mc.player.getEyePosition().distanceToSqr(fish.position()) < d) {
                                 target = fish;
-                                d = mc.player.getEyePos().squaredDistanceTo(fish.getPos());
+                                d = mc.player.getEyePosition().distanceToSqr(fish.position());
                             }
                         }
 
@@ -578,7 +576,7 @@ public class AxolotlTools extends Module {
 
                             if (current.getItem() == Items.BUCKET && hasNoValidBucket(Items.WATER_BUCKET)) {
                                 if (hasEmptySlots() || current.getCount() == 1) {
-                                    mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
+                                    mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
                                 } else {
                                     MsgUtil.updateModuleMsg(
                                         "Full inventory prevents auto-filling buckets§c..!",
@@ -590,8 +588,8 @@ public class AxolotlTools extends Module {
                             }
 
                             if (!hasNoValidBucket(Items.TROPICAL_FISH_BUCKET)) {
-                                for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
-                                    if (mc.player.getInventory().getStack(n).getItem() == Items.TROPICAL_FISH_BUCKET) {
+                                for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
+                                    if (mc.player.getInventory().getItem(n).getItem() == Items.TROPICAL_FISH_BUCKET) {
                                         InvUtils.drop().slot(n);
                                         ++timer;
                                         return;
@@ -600,9 +598,9 @@ public class AxolotlTools extends Module {
                             }
                         }
 
-                        if (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.ENTITY) {
-                            EntityHitResult hit = (EntityHitResult) mc.crosshairTarget;
-                            if (hit.getEntity() instanceof TropicalFishEntity fishy) {
+                        if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.ENTITY) {
+                            EntityHitResult hit = (EntityHitResult) mc.hitResult;
+                            if (hit.getEntity() instanceof TropicalFish fishy) {
                                 if (tryInteractMobTrigger(fishy, Items.WATER_BUCKET)) return;
                             }
                         }
@@ -616,23 +614,23 @@ public class AxolotlTools extends Module {
     @EventHandler
     private void onRender(Render3DEvent event) {
         if (!espVariants.get()) return;
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
 
-        List<AxolotlEntity> axolotls = new ArrayList<>();
-        for (Entity entity : mc.world.getEntities()) {
-            if (entity instanceof AxolotlEntity axolotl) axolotls.add(axolotl);
+        List<Axolotl> axolotls = new ArrayList<>();
+        for (Entity entity : mc.level.entitiesForRendering()) {
+            if (entity instanceof Axolotl axolotl) axolotls.add(axolotl);
         }
 
         axolotls = axolotls
             .stream()
-            .filter(ax -> ax.getBlockPos()
-                .isWithinDistance(
-                    mc.player.getBlockPos(),
-                    mc.options.getViewDistance().getValue() * 16
+            .filter(ax -> ax.blockPosition()
+                .closerThan(
+                    mc.player.blockPosition(),
+                    mc.options.renderDistance().get() * 16
                 )
             ).toList();
 
-        for (AxolotlEntity axolotl : axolotls) {
+        for (Axolotl axolotl : axolotls) {
             SettingColor lineColor;
             SettingColor sideColor;
             switch (axolotl.getVariant()) {

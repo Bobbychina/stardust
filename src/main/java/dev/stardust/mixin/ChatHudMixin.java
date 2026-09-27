@@ -1,10 +1,10 @@
 package dev.stardust.mixin;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import dev.stardust.util.TextUtil;
 import dev.stardust.modules.AntiToS;
 import org.spongepowered.asm.mixin.Mixin;
-import net.minecraft.client.gui.hud.ChatHud;
+import net.minecraft.client.gui.components.ChatComponent;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
@@ -14,16 +14,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
-@Mixin(ChatHud.class)
+@Mixin(ChatComponent.class)
 public class ChatHudMixin {
 
     // See AntiToS.java
     @ModifyVariable(
-        method = "addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;Lnet/minecraft/client/gui/hud/MessageIndicator;)V",
+        method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/GuiMessageTag;)V",
         at = @At("HEAD"),
         argsOnly = true
     )
-    private Text censorChatMessage(Text message) {
+    private Component censorChatMessage(Component message) {
         Modules modules = Modules.get();
         if (modules == null) return message;
         AntiToS antiToS = modules.get(AntiToS.class);
@@ -36,8 +36,8 @@ public class ChatHudMixin {
         return message;
     }
 
-    @Inject(method = "addMessage(Lnet/minecraft/text/Text;)V", at = @At("HEAD"), cancellable = true)
-    private void maybeCancelAddMessage(Text message, CallbackInfo ci) {
+    @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;)V", at = @At("HEAD"), cancellable = true)
+    private void maybeCancelAddMessage(Component message, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;
         AntiToS antiToS = modules.get(AntiToS.class);

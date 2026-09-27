@@ -1,7 +1,6 @@
 package dev.stardust.gui.screens;
 
 import dev.stardust.modules.Solitaire;
-import org.jetbrains.annotations.Nullable;
 import meteordevelopment.meteorclient.gui.GuiTheme;
 import meteordevelopment.meteorclient.gui.GuiThemes;
 import dev.stardust.gui.widgets.solitaire.WSolitaire;
@@ -19,9 +18,9 @@ public class SolitaireScreen extends WindowScreen {
     }
 
     private final Solitaire module;
-    private @Nullable Cell<? extends WWidget> widget = null;
+    private Cell<? extends WWidget> widget = null;
 
-    public @Nullable Cell<? extends WWidget> getWidget() {
+    public Cell<? extends WWidget> getWidget() {
         return widget;
     }
 

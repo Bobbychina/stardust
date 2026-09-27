@@ -11,7 +11,6 @@ import dev.stardust.util.MsgUtil;
 import com.google.gson.GsonBuilder;
 import dev.stardust.util.StardustUtil;
 import java.nio.file.StandardOpenOption;
-import org.jetbrains.annotations.Nullable;
 import net.fabricmc.loader.api.FabricLoader;
 import meteordevelopment.meteorclient.settings.*;
 import dev.stardust.gui.screens.MeteoritesScreen;
@@ -188,8 +187,8 @@ public class Meteorites extends Module {
 
     private boolean loaded;
     public boolean enteredCheatCode;
-    public @Nullable SaveData saveData = null;
-    public @Nullable HighScore highScore = null;
+    public SaveData saveData = null;
+    public HighScore highScore = null;
 
     public void saveGame(SaveData data) {
         saveData = data;
@@ -302,7 +301,7 @@ public class Meteorites extends Module {
     @Override
     public void onDeactivate() {
         loaded = false;
-        if (mc.currentScreen instanceof MeteoritesScreen) {
+        if (mc.screen instanceof MeteoritesScreen) {
             try {
                 mc.setScreen(null);
             } catch (Exception err) {

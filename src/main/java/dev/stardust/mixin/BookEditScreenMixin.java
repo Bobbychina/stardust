@@ -1,19 +1,18 @@
 package dev.stardust.mixin;
 
 import java.util.ArrayList;
-import net.minecraft.text.Text;
-import javax.annotation.Nullable;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.*;
 import dev.stardust.util.StardustUtil;
 import dev.stardust.modules.BookTools;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 import io.netty.util.internal.ThreadLocalRandom;
-import net.minecraft.client.gui.tooltip.Tooltip;
+import net.minecraft.client.gui.components.Tooltip;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.components.Button;
 import dev.stardust.mixin.accessor.BookEditScreenAccessor;
-import net.minecraft.client.gui.screen.ingame.BookEditScreen;
+import net.minecraft.client.gui.screens.inventory.BookEditScreen;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -29,7 +28,7 @@ public abstract class BookEditScreenMixin extends Screen {
     private boolean signing;
 
     // See BookTools.java
-    protected BookEditScreenMixin(Text title) { super(title); }
+    protected BookEditScreenMixin(Component title) { super(title); }
 
     @Unique
     private boolean rainbowMode = false;
@@ -38,12 +37,12 @@ public abstract class BookEditScreenMixin extends Screen {
     @Unique
     private String activeFormatting = "";
     @Unique
-    private @Nullable StardustUtil.RainbowColor lastCC = null;
+    private StardustUtil.RainbowColor lastCC = null;
     @Unique
-    private final ArrayList<ButtonWidget> buttons = new ArrayList<>();
+    private final ArrayList<Button> buttons = new ArrayList<>();
 
     @Unique
-    private void onClickColorButton(ButtonWidget btn) {
+    private void onClickColorButton(Button btn) {
         String color = btn.getMessage().getString().substring(0, 2);
 
         if (this.signing) {
@@ -55,7 +54,7 @@ public abstract class BookEditScreenMixin extends Screen {
     }
 
     @Unique
-    private void onClickFormatButton(ButtonWidget btn) {
+    private void onClickFormatButton(Button btn) {
         String format = btn.getMessage().getString().substring(0, 2);
 
         if (rainbowMode) {
@@ -69,14 +68,14 @@ public abstract class BookEditScreenMixin extends Screen {
     }
 
     @Unique
-    private void onClickRainbowButton(ButtonWidget btn) {
+    private void onClickRainbowButton(Button btn) {
         rainbowMode = !rainbowMode;
         if (rainbowMode) {
-            btn.setMessage(Text.of(uCC()+"🌈"));
-            btn.setTooltip(Tooltip.of(Text.of(uCC()+"R"+uCC()+"a"+uCC()+"i"+uCC()+"n"+uCC()+"b"+uCC()+"o"+uCC()+"w "+uCC()+"M"+uCC()+"o"+uCC()+"d"+uCC()+"e"+" §2On")));
+            btn.setMessage(Component.literal(uCC()+"🌈"));
+            btn.setTooltip(Tooltip.create(Component.literal(uCC()+"R"+uCC()+"a"+uCC()+"i"+uCC()+"n"+uCC()+"b"+uCC()+"o"+uCC()+"w "+uCC()+"M"+uCC()+"o"+uCC()+"d"+uCC()+"e"+" §2On")));
         } else {
-            btn.setMessage(Text.of("🌈"));
-            btn.setTooltip(Tooltip.of(Text.of(uCC()+"R"+uCC()+"a"+uCC()+"i"+uCC()+"n"+uCC()+"b"+uCC()+"o"+uCC()+"w "+uCC()+"M"+uCC()+"o"+uCC()+"d"+uCC()+"e"+" §4Off")));
+            btn.setMessage(Component.literal("🌈"));
+            btn.setTooltip(Tooltip.create(Component.literal(uCC()+"R"+uCC()+"a"+uCC()+"i"+uCC()+"n"+uCC()+"b"+uCC()+"o"+uCC()+"w "+uCC()+"M"+uCC()+"o"+uCC()+"d"+uCC()+"e"+" §4Off")));
         }
     }
 
@@ -106,12 +105,12 @@ public abstract class BookEditScreenMixin extends Screen {
 
             this.buttons.add(
                 this.addDrawableChild(
-                    ButtonWidget.builder(
-                            Text.of(color.label+"§l◼"),
+                    Button.builder(
+                            Component.literal(color.label+"§l◼"),
                             this::onClickColorButton
                         )
-                        .dimensions(odd ? this.width / 2 - 100 : this.width / 2 - 112, 47+offset, 10, 10)
-                        .tooltip(Tooltip.of(Text.of("§7"+color.name().replace("_", " "))))
+                        .bounds(odd ? this.width / 2 - 100 : this.width / 2 - 112, 47+offset, 10, 10)
+                        .tooltip(Tooltip.create(Component.literal("§7"+color.name().replace("_", " "))))
                         .build())
             );
 
@@ -124,12 +123,12 @@ public abstract class BookEditScreenMixin extends Screen {
 
             this.buttons.add(
                 this.addDrawableChild(
-                    ButtonWidget.builder(
-                            Text.of(format.label+"A"),
+                    Button.builder(
+                            Component.literal(format.label+"A"),
                             this::onClickFormatButton
                         )
-                        .dimensions(odd ? this.width / 2 - 100 : this.width / 2 - 112, 47+offset, 10, 10)
-                        .tooltip(Tooltip.of(Text.of("§7"+format.name())))
+                        .bounds(odd ? this.width / 2 - 100 : this.width / 2 - 112, 47+offset, 10, 10)
+                        .tooltip(Tooltip.create(Component.literal("§7"+format.name())))
                         .build())
             );
 
@@ -139,12 +138,12 @@ public abstract class BookEditScreenMixin extends Screen {
 
         this.buttons.add(
             this.addDrawableChild(
-                ButtonWidget.builder(
-                        Text.of("§rA"),
+                Button.builder(
+                        Component.literal("§rA"),
                         this::onClickFormatButton
                     )
-                    .dimensions(odd ? this.width / 2 - 100 : this.width / 2 - 112, 47+offset, 10, 10)
-                    .tooltip(Tooltip.of(Text.of("§7Reset Formatting")))
+                    .bounds(odd ? this.width / 2 - 100 : this.width / 2 - 112, 47+offset, 10, 10)
+                    .tooltip(Tooltip.create(Component.literal("§7Reset Formatting")))
                     .build()
             )
         );
@@ -153,18 +152,18 @@ public abstract class BookEditScreenMixin extends Screen {
         odd = !odd;
         this.buttons.add(
             this.addDrawableChild(
-                ButtonWidget.builder(
-                        Text.of("🌈"),
+                Button.builder(
+                        Component.literal("🌈"),
                         this::onClickRainbowButton
                     )
-                    .dimensions(odd ? this.width / 2 - 100 : this.width / 2 - 112, 47+offset, 22, 10)
-                    .tooltip(Tooltip.of(Text.of(uCC()+"R"+uCC()+"a"+uCC()+"i"+uCC()+"n"+uCC()+"b"+uCC()+"o"+uCC()+"w "+uCC()+"M"+uCC()+"o"+uCC()+"d"+uCC()+"e"+" §4Off")))
+                    .bounds(odd ? this.width / 2 - 100 : this.width / 2 - 112, 47+offset, 22, 10)
+                    .tooltip(Tooltip.create(Component.literal(uCC()+"R"+uCC()+"a"+uCC()+"i"+uCC()+"n"+uCC()+"b"+uCC()+"o"+uCC()+"w "+uCC()+"M"+uCC()+"o"+uCC()+"d"+uCC()+"e"+" §4Off")))
                     .build()
             )
         );
     }
 
-    @Inject(method = "charTyped", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/util/SelectionManager;insert(Ljava/lang/String;)V"))
+    @Inject(method = "charTyped", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/font/TextFieldHelper;insert(Ljava/lang/String;)V"))
     private void mixinCharTyped(char chr, int modifiers, CallbackInfoReturnable<Boolean> cir) {
         if (!rainbowMode || signing) return;
         didFormatPage = true;
@@ -195,7 +194,7 @@ public abstract class BookEditScreenMixin extends Screen {
         BookTools bookTools = modules.get(BookTools.class);
         if (bookTools.skipFormatting()) return;
 
-        for (ButtonWidget btn : this.buttons) {
+        for (Button btn : this.buttons) {
             btn.visible = !signing || bookTools.shouldFormatTitles();
         }
 

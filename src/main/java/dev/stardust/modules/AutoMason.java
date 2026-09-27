@@ -3,35 +3,34 @@ package dev.stardust.modules;
 import java.util.List;
 import java.util.ArrayDeque;
 import dev.stardust.Stardust;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import dev.stardust.util.MsgUtil;
-import net.minecraft.item.ItemStack;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.sounds.SoundEvents;
 import dev.stardust.util.StonecutterUtil;
-import org.jetbrains.annotations.Nullable;
-import net.minecraft.network.packet.Packet;
+import net.minecraft.network.protocol.Packet;
 import meteordevelopment.orbit.EventHandler;
 import java.util.concurrent.ThreadLocalRandom;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import net.minecraft.recipe.StonecuttingRecipe;
+import net.minecraft.world.item.crafting.StonecutterRecipe;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.world.inventory.ContainerInput;
 import meteordevelopment.meteorclient.settings.*;
-import net.minecraft.screen.StonecutterScreenHandler;
-import net.minecraft.util.context.ContextParameterMap;
+import net.minecraft.world.inventory.StonecutterMenu;
+import net.minecraft.util.context.ContextMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import net.minecraft.recipe.display.SlotDisplayContexts;
-import net.minecraft.recipe.display.CuttingRecipeDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplayContext;
+import net.minecraft.world.item.crafting.SelectableRecipe;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import dev.stardust.mixin.accessor.ClientConnectionAccessor;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
-import net.minecraft.client.gui.screen.ingame.StonecutterScreen;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
+import net.minecraft.client.gui.screens.inventory.StonecutterScreen;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
 import meteordevelopment.meteorclient.events.world.PlaySoundEvent;
 import meteordevelopment.meteorclient.events.game.OpenScreenEvent;
-import net.minecraft.network.packet.c2s.play.ButtonClickC2SPacket;
+import net.minecraft.network.protocol.game.ServerboundContainerButtonClickPacket;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
@@ -118,8 +117,8 @@ public class AutoMason extends Module {
 
     private int timer = 0;
     private boolean notified = false;
-    private @Nullable ItemStack targetStack = null;
-    private @Nullable ItemStack outputStack = null;
+    private ItemStack targetStack = null;
+    private ItemStack outputStack = null;
     private final IntArrayList projectedEmpty = new IntArrayList();
     private final IntArrayList processedSlots = new IntArrayList();
     private final ArrayDeque<Packet<?>> packetQueue = new ArrayDeque<>();
@@ -145,21 +144,21 @@ public class AutoMason extends Module {
     @EventHandler
     private void onSoundPlay(PlaySoundEvent event) {
         if (!muteCutter.get()) return;
-        if (event.sound.getId().equals(SoundEvents.UI_STONECUTTER_TAKE_RESULT.id())) {
+        if (event.sound.getIdentifier().equals(SoundEvents.UI_STONECUTTER_TAKE_RESULT.location())) {
             event.cancel();
         }
     }
 
     @EventHandler
     private void onTick(TickEvent.Pre event) {
-        if (mc.getNetworkHandler() == null) return;
-        if (mc.player == null || mc.world == null) return;
-        if (!(mc.player.currentScreenHandler instanceof StonecutterScreenHandler cutter)) return;
+        if (mc.getConnection() == null) return;
+        if (mc.player == null || mc.level == null) return;
+        if (!(mc.player.containerMenu instanceof StonecutterMenu cutter)) return;
 
         if (!packetQueue.isEmpty()) {
             if (batchDelay.get() <= 0) {
                 while (!packetQueue.isEmpty()) {
-                    ((ClientConnectionAccessor) mc.getNetworkHandler().getConnection()).invokeSendImmediately(
+                    ((ClientConnectionAccessor) mc.getConnection().getConnection()).invokeSendImmediately(
                         packetQueue.removeFirst(), null, true
                     );
                 }
@@ -167,7 +166,7 @@ public class AutoMason extends Module {
                 ++timer;
                 if (timer >= batchDelay.get()) {
                     timer = 0;
-                    ((ClientConnectionAccessor) mc.getNetworkHandler().getConnection()).invokeSendImmediately(
+                    ((ClientConnectionAccessor) mc.getConnection().getConnection()).invokeSendImmediately(
                         packetQueue.removeFirst(), null, true
                     );
                 }
@@ -210,7 +209,7 @@ public class AutoMason extends Module {
                         MsgUtil.sendModuleMsg("No target items selected§c..!", this.name);
                         if (pingOnDone.get()) {
                             mc.player.playSound(
-                                SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
+                                SoundEvents.EXPERIENCE_ORB_PICKUP,
                                 pingVolume.get().floatValue(),
                                 ThreadLocalRandom.current().nextFloat(0.69f, 1.337f)
                             );
@@ -222,33 +221,33 @@ public class AutoMason extends Module {
                     return;
                 }
 
-                ItemStack input = cutter.getSlot(StonecutterScreenHandler.INPUT_ID).getStack();
-                ItemStack output = cutter.getSlot(StonecutterScreenHandler.OUTPUT_ID).getStack();
+                ItemStack input = cutter.getSlot(StonecutterMenu.INPUT_SLOT).getItem();
+                ItemStack output = cutter.getSlot(StonecutterMenu.RESULT_SLOT).getItem();
 
                 if (!hasValidItems(cutter)) finished();
                 else if (input.isEmpty() && output.isEmpty()) {
-                    for (int n = 2; n < mc.player.getInventory().main.size() + 2; n++) {
-                        ItemStack stack = cutter.getSlot(n).getStack();
+                    for (int n = 2; n < mc.player.getInventory().getNonEquipmentItems().size() + 2; n++) {
+                        ItemStack stack = cutter.getSlot(n).getItem();
 
                         if (!isValidItem(stack)) continue;
                         InvUtils.shiftClick().slotId(n);
                     }
                 } else if (output.isEmpty()) {
-                    CuttingRecipeDisplay.Grouping<StonecuttingRecipe> available = mc.world
-                        .getRecipeManager().getStonecutterRecipes().filter(input);
-                    ContextParameterMap contextParameterMap = SlotDisplayContexts.createParameters(mc.world);
+                    SelectableRecipe.SingleInputSet<StonecutterRecipe> available = mc.level
+                        .recipeAccess().stonecutterRecipes().filter(input);
+                    ContextMap contextParameterMap = SlotDisplayContext.fromLevel(mc.level);
 
                     boolean found = false;
                     for (int n = 0; n < available.entries().size(); n++) {
-                        CuttingRecipeDisplay.GroupEntry<StonecuttingRecipe> entry = available.entries().get(n);
+                        SelectableRecipe.EntryGroup<StonecutterRecipe> entry = available.entries().get(n);
                         ItemStack recipeStack = entry.recipe().optionDisplay().getFirst(contextParameterMap);
 
                         if (recipeStack.isEmpty()) continue;
                         if (itemList.get().contains(recipeStack.getItem())) {
                             found = true;
-                            cutter.onButtonClick(mc.player, n);
-                            ((ClientConnectionAccessor) mc.getNetworkHandler().getConnection()).invokeSendImmediately(
-                                new ButtonClickC2SPacket(cutter.syncId, n), null, true
+                            cutter.clickMenuButton(mc.player, n);
+                            ((ClientConnectionAccessor) mc.getConnection().getConnection()).invokeSendImmediately(
+                                new ServerboundContainerButtonClickPacket(cutter.containerId, n), null, true
                             );
                             break;
                         }
@@ -258,12 +257,12 @@ public class AutoMason extends Module {
                         if (!notified) {
                             notified = true;
                             MsgUtil.sendModuleMsg("Desired recipe not found§c..!", this.name);
-                            if (pingOnDone.get()) mc.player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, pingVolume.get().floatValue(), ThreadLocalRandom.current().nextFloat(0.69f, 1.337f));
+                            if (pingOnDone.get()) mc.player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, pingVolume.get().floatValue(), ThreadLocalRandom.current().nextFloat(0.69f, 1.337f));
                         }
                         finished();
                     }
                 } else {
-                    InvUtils.shiftClick().slotId(StonecutterScreenHandler.OUTPUT_ID);
+                    InvUtils.shiftClick().slotId(StonecutterMenu.RESULT_SLOT);
                 }
             }
         }
@@ -273,17 +272,17 @@ public class AutoMason extends Module {
         if (mc.player == null) return;
         if (!notified) {
             if (chatFeedback) MsgUtil.sendModuleMsg("No more items to craft§a..!", this.name);
-            if (pingOnDone.get()) mc.player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, pingVolume.get().floatValue(), ThreadLocalRandom.current().nextFloat(0.69f, 1.337f));
+            if (pingOnDone.get()) mc.player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, pingVolume.get().floatValue(), ThreadLocalRandom.current().nextFloat(0.69f, 1.337f));
         }
         notified = true;
         processedSlots.clear();
         projectedEmpty.clear();
-        if (closeOnDone.get()) mc.player.closeHandledScreen();
+        if (closeOnDone.get()) mc.player.closeContainer();
         if (disableOnDone.get()) toggle();
     }
 
-    private @Nullable Packet<?> generatePacket(StonecutterScreenHandler handler) {
-        if (mc.player == null || mc.world == null) return null;
+    private Packet<?> generatePacket(StonecutterMenu handler) {
+        if (mc.player == null || mc.level == null) return null;
         Int2ObjectMap<ItemStack> changedSlots = new Int2ObjectOpenHashMap<>();
 
         if (targetStack != null && outputStack != null) {
@@ -300,15 +299,15 @@ public class AutoMason extends Module {
 
             targetStack = null;
             outputStack = null;
-            return new ClickSlotC2SPacket(
-                handler.syncId, handler.getRevision(), 1, 0,
-                SlotActionType.QUICK_MOVE, ItemStack.EMPTY, changedSlots
+            return new ServerboundContainerClickPacket(
+                handler.containerId, handler.getStateId(), 1, 0,
+                ContainerInput.QUICK_MOVE, ItemStack.EMPTY, changedSlots
             );
         } else if (targetStack != null) {
             // pick recipe
-            CuttingRecipeDisplay.Grouping<StonecuttingRecipe> available = mc.world
-                .getRecipeManager().getStonecutterRecipes().filter(targetStack);
-            ContextParameterMap contextParameterMap = SlotDisplayContexts.createParameters(mc.world);
+            SelectableRecipe.SingleInputSet<StonecutterRecipe> available = mc.level
+                .recipeAccess().stonecutterRecipes().filter(targetStack);
+            ContextMap contextParameterMap = SlotDisplayContext.fromLevel(mc.level);
 
             for (int n = 0; n < available.entries().size(); n++) {
                 var entry = available.entries().get(n);
@@ -317,14 +316,14 @@ public class AutoMason extends Module {
                 if (recipeStack.isEmpty()) continue;
                 if (itemList.get().contains(recipeStack.getItem())) {
                     outputStack = recipeStack;
-                    return new ButtonClickC2SPacket(handler.syncId, n);
+                    return new ServerboundContainerButtonClickPacket(handler.containerId, n);
                 }
             }
         } else {
             // fill input slot
-            for (int n = 2; n < mc.player.getInventory().main.size() + 2; n++) {
+            for (int n = 2; n < mc.player.getInventory().getNonEquipmentItems().size() + 2; n++) {
                 if (processedSlots.contains(n)) continue;
-                ItemStack stack = handler.getSlot(n).getStack();
+                ItemStack stack = handler.getSlot(n).getItem();
                 if (!isValidItem(stack)) continue;
 
                 targetStack = stack;
@@ -334,9 +333,9 @@ public class AutoMason extends Module {
                 changedSlots.put(0, stack);
                 changedSlots.put(n, ItemStack.EMPTY);
 
-                return new ClickSlotC2SPacket(
-                    handler.syncId, handler.getRevision(), n, 0,
-                    SlotActionType.QUICK_MOVE, ItemStack.EMPTY, changedSlots
+                return new ServerboundContainerClickPacket(
+                    handler.containerId, handler.getStateId(), n, 0,
+                    ContainerInput.QUICK_MOVE, ItemStack.EMPTY, changedSlots
                 );
             }
         }
@@ -344,14 +343,14 @@ public class AutoMason extends Module {
         return null;
     }
 
-    private int predictEmptySlot(StonecutterScreenHandler handler) {
+    private int predictEmptySlot(StonecutterMenu handler) {
         if (mc.player == null) return -1;
-        for (int n = mc.player.getInventory().main.size() + 1; n >= 2; n--) {
+        for (int n = mc.player.getInventory().getNonEquipmentItems().size() + 1; n >= 2; n--) {
             if (processedSlots.contains(n) && !projectedEmpty.contains(n)) continue;
             if (projectedEmpty.contains(n)) {
                 projectedEmpty.rem(n);
                 return n;
-            } else if (handler.getSlot(n).getStack().isEmpty()) {
+            } else if (handler.getSlot(n).getItem().isEmpty()) {
                 processedSlots.add(n);
                 return n;
             }
@@ -359,18 +358,18 @@ public class AutoMason extends Module {
         return -1;
     }
 
-    private boolean hasValidItems(StonecutterScreenHandler handler) {
+    private boolean hasValidItems(StonecutterMenu handler) {
         if (mc.player == null) return false;
-        for (int n = 0; n < mc.player.getInventory().main.size() + 2; n++) {
+        for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size() + 2; n++) {
             if (n == 1) continue; // skip output slot
-            if (isValidItem(handler.getSlot(n).getStack())) return true;
+            if (isValidItem(handler.getSlot(n).getItem())) return true;
         }
         return false;
     }
 
     private boolean isValidItem(ItemStack stack) {
         if (itemList.get().isEmpty()) return false;
-        if (stack.isEmpty() || stack.isOf(Items.AIR)) return false;
+        if (stack.isEmpty() || stack.is(Items.AIR)) return false;
         if (!StonecutterUtil.STONECUTTER_BLOCKS.containsKey(stack.getItem())) return false;
 
         return StonecutterUtil

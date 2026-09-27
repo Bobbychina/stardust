@@ -4,7 +4,7 @@ import java.text.DecimalFormat;
 import dev.stardust.util.MsgUtil;
 import dev.stardust.hud.ConwayHud;
 import dev.stardust.util.StardustUtil;
-import net.minecraft.command.CommandSource;
+import net.minecraft.commands.SharedSuggestionProvider;
 import meteordevelopment.orbit.EventHandler;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.MeteorClient;
@@ -62,7 +62,7 @@ public class Life extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<CommandSource> builder) {
+    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
         builder.then(literal("new").executes(ctx -> {
             Hud.get().forEach(element -> {
                 if (element instanceof ConwayHud hud) {

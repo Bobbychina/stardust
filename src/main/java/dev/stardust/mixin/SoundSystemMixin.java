@@ -1,12 +1,11 @@
 package dev.stardust.mixin;
 
 import java.util.Map;
-import net.minecraft.text.Text;
-import javax.annotation.Nullable;
-import net.minecraft.client.sound.*;
+import net.minecraft.network.chat.Component;
+import net.minecraft.client.resources.sounds.*;
 import org.spongepowered.asm.mixin.*;
 import dev.stardust.modules.MusicTweaks;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.Mth;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import dev.stardust.mixin.accessor.SourceManagerAccessor;
@@ -16,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
-@Mixin(SoundSystem.class)
+@Mixin(SoundEngine.class)
 public class SoundSystemMixin {
     @Shadow
     @Final
@@ -39,38 +38,38 @@ public class SoundSystemMixin {
         MusicTweaks tweaks = modules.get(MusicTweaks.class);
 
         boolean playing = false;
-        @Nullable String songID = null;
+        String songID = null;
         for (SoundInstance instance : sources.keySet()) {
             Sound sound = instance.getSound();
             if (sound == null) continue;
 
-            String location = sound.getLocation().toString();
+            String location = sound.getIdentifier().toString();
             if (!location.startsWith("minecraft:sounds/music/") && !sound.toString().contains("minecraft:records/")) continue;
             Channel.SourceManager sourceManager = this.sources.get(instance);
             songID = location.substring(location.lastIndexOf('/') + 1);
 
             if (sourceManager == null) continue;
-            Source source = ((SourceManagerAccessor) sourceManager).getSource();
+            Channel source = ((SourceManagerAccessor) sourceManager).getSource();
             if (source == null) continue;
 
             playing = true;
             tweaks.setCurrentSong(sound.toString());
             if (tweaks.isActive() && !tweaks.randomPitch()) {
                 this.dirtyPitch = true;
-                source.setPitch(1.0f + tweaks.getPitchAdjustment());
+                source.setXRot(1.0f + tweaks.getPitchAdjustment());
             } else if (tweaks.isActive() && tweaks.randomPitch() && tweaks.trippyPitch()) {
                 this.dirtyPitch = true;
-                source.setPitch(tweaks.getNextPitchStep(instance.getPitch())); // !!
+                source.setXRot(tweaks.getNextPitchStep(instance.getXRot())); // !!
             } else if (!tweaks.isActive() && this.dirtyPitch) {
-                source.setPitch(1f);
+                source.setXRot(1f);
                 this.dirtyPitch = false;
             }
             if (tweaks.isActive()) {
                 this.dirtyVolume = true;
-                source.setVolume(MathHelper.clamp(tweaks.getClient().options.getSoundVolume(instance.getCategory()) + tweaks.getVolumeAdjustment(), 0.0f, 4.0f));
+                source.setVolume(Mth.clamp(tweaks.getClient().options.getSoundSourceVolume(instance.getSource()) + tweaks.getVolumeAdjustment(), 0.0f, 4.0f));
             } else if (this.dirtyVolume) {
                 this.dirtyVolume = false;
-                source.setVolume(tweaks.getClient().options.getSoundVolume(instance.getCategory()));
+                source.setVolume(tweaks.getClient().options.getSoundSourceVolume(instance.getSource()));
             }
         }
         if (playing) {
@@ -86,7 +85,7 @@ public class SoundSystemMixin {
                 // See NarratorManagerMixin.java lol
                 switch (tweaks.getDisplayMode()) {
                     case Chat -> tweaks.sendNowPlayingMessage(songName);
-                    case Record -> tweaks.getClient().inGameHud.setRecordPlayingOverlay(Text.of(songName));
+                    case Record -> tweaks.getClient().gui.setNowPlaying(Component.literal(songName));
                 }
             }
         }

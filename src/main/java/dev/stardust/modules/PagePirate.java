@@ -3,41 +3,40 @@ package dev.stardust.modules;
 import java.util.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import net.minecraft.item.*;
-import net.minecraft.text.*;
+import net.minecraft.world.item.*;
+import net.minecraft.network.chat.*;
 import dev.stardust.Stardust;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import net.minecraft.util.Hand;
+import net.minecraft.world.InteractionHand;
 import dev.stardust.util.MsgUtil;
-import net.minecraft.util.math.Box;
+import net.minecraft.world.phys.AABB;
 import java.util.stream.Collectors;
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 import dev.stardust.util.StardustUtil;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.util.math.MathHelper;
-import org.jetbrains.annotations.Nullable;
-import net.minecraft.registry.tag.ItemTags;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.util.Mth;
+import net.minecraft.tags.ItemTags;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.world.entity.player.Player;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.utils.Utils;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.util.collection.ArrayListDeque;
-import net.minecraft.entity.decoration.ItemFrameEntity;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.util.ArrayListDeque;
+import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.client.player.LocalPlayer;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.RenderUtils;
-import net.minecraft.component.type.WrittenBookContentComponent;
-import net.minecraft.component.type.WritableBookContentComponent;
-import net.minecraft.network.packet.c2s.play.BookUpdateC2SPacket;
+import net.minecraft.world.item.component.WrittenBookContent;
+import net.minecraft.world.item.component.WritableBookContent;
+import net.minecraft.network.protocol.game.ServerboundEditBookPacket;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
-import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
+import net.minecraft.network.protocol.game.ClientboundRespawnPacket;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.meteorclient.systems.modules.render.blockesp.ESPBlockData;
 
@@ -173,7 +172,7 @@ public class PagePirate extends Module {
     private int timer = 0;
     private final HashSet<String> seenPages = new HashSet<>();
     private final HashSet<ItemEntity> booksOnGround = new HashSet<>();
-    private final HashSet<ItemFrameEntity> booksInItemFrames = new HashSet<>();
+    private final HashSet<ItemFrame> booksInItemFrames = new HashSet<>();
     private final ArrayListDeque<PirateTask> jobQueue = new ArrayListDeque<>();
     private final HashMap<String, ArrayList<String>> seenBooks = new HashMap<>();
 
@@ -218,7 +217,7 @@ public class PagePirate extends Module {
 
     private boolean bookAndQuillHasContent(ItemStack book) {
         if (book.getItem() != Items.WRITABLE_BOOK) return false;
-        WritableBookContentComponent content = book.get(DataComponentTypes.WRITABLE_BOOK_CONTENT);
+        WritableBookContent content = book.get(DataComponents.WRITABLE_BOOK_CONTENT);
         List<String> pages = content.pages().stream().map(page -> page.raw().trim()).toList();
 
         return pages.stream().anyMatch(page -> !page.isBlank());
@@ -227,7 +226,7 @@ public class PagePirate extends Module {
     private boolean equipBookAndQuill() {
         FindItemResult result = InvUtils.find(stack -> {
             if (stack.getItem() instanceof WritableBookItem) {
-                WritableBookContentComponent data = stack.get(DataComponentTypes.WRITABLE_BOOK_CONTENT);
+                WritableBookContent data = stack.get(DataComponents.WRITABLE_BOOK_CONTENT);
                 List<String> pageList = data.pages().stream().map(RawFilteredPair::raw).toList();
                 return overwrite.get()
                     || pageList.stream()
@@ -247,12 +246,12 @@ public class PagePirate extends Module {
                     InvUtils.move().from(result.slot()).to(emptySlot.slot());
                     InvUtils.swap(emptySlot.slot(), true);
                 } else {
-                    FindItemResult nonCriticalSlot = InvUtils.find(stack -> !(stack.getItem() instanceof MiningToolItem) && !(stack.isIn(ItemTags.WEAPON_ENCHANTABLE)) && !stack.contains(DataComponentTypes.FOOD));
+                    FindItemResult nonCriticalSlot = InvUtils.find(stack -> !(stack.getItem() instanceof DiggerItem) && !(stack.is(ItemTags.WEAPON_ENCHANTABLE)) && !stack.has(DataComponents.FOOD));
                     if (nonCriticalSlot.found() && nonCriticalSlot.slot() < 9) {
                         InvUtils.move().from(result.slot()).to(nonCriticalSlot.slot());
                         InvUtils.swap(nonCriticalSlot.slot(), true);
                     } else {
-                        InvUtils.move().from(result.slot()).to(mc.player.getInventory().selectedSlot);
+                        InvUtils.move().from(result.slot()).to(mc.player.getInventory().getSelectedSlot());
                     }
                 }
             }
@@ -261,14 +260,14 @@ public class PagePirate extends Module {
         return false;
     }
 
-    private boolean itemFrameHasBook(ItemFrameEntity itemFrame) {
-        ItemStack stack = itemFrame.getHeldItemStack();
+    private boolean itemFrameHasBook(ItemFrame itemFrame) {
+        ItemStack stack = itemFrame.getItem();
         return stack.getItem() == Items.WRITTEN_BOOK || bookAndQuillHasContent(stack);
     }
 
     private void handleWrittenBook(ItemStack book, String piratedFrom) {
-        if (book.contains(DataComponentTypes.WRITTEN_BOOK_CONTENT)) {
-            WrittenBookContentComponent metadata = book.get(DataComponentTypes.WRITTEN_BOOK_CONTENT);
+        if (book.has(DataComponents.WRITTEN_BOOK_CONTENT)) {
+            WrittenBookContent metadata = book.get(DataComponents.WRITTEN_BOOK_CONTENT);
 
             String author = metadata.author();
             String title = metadata.title().raw();
@@ -341,8 +340,8 @@ public class PagePirate extends Module {
     }
 
     private void handleBookAndQuill(ItemStack book, String piratedFrom) {
-        if (!book.contains(DataComponentTypes.WRITABLE_BOOK_CONTENT)) return;
-        WritableBookContentComponent metadata = book.get(DataComponentTypes.WRITABLE_BOOK_CONTENT);
+        if (!book.has(DataComponents.WRITABLE_BOOK_CONTENT)) return;
+        WritableBookContent metadata = book.get(DataComponents.WRITABLE_BOOK_CONTENT);
         List<String> pages = metadata.pages().stream().map(p -> p.get(false)).toList();
 
         String pageText = pages.stream()
@@ -390,7 +389,7 @@ public class PagePirate extends Module {
         }
     }
 
-    private void makeLocalCopy(@Nullable WrittenBookContentComponent metadata, List<String> pages, String piratedFrom) {
+    private void makeLocalCopy(WrittenBookContent metadata, List<String> pages, String piratedFrom) {
         ArrayList<String> filtered = new ArrayList<>(pages.stream()
             .map(this::formatPageText)
             .map(this::decodeUnicodeChars)
@@ -430,11 +429,11 @@ public class PagePirate extends Module {
             piratedPages.add(coverPage);
         }
 
-        int slot = mc.player.getInventory().selectedSlot;
+        int slot = mc.player.getInventory().getSelectedSlot();
         boolean shouldSign = finalizeCopy.get() && metadata != null;
         MsgUtil.sendModuleMsg("Successfully copied nearby book§a..!", this.name);
         piratedPages.addAll(filtered.stream().map(page -> page.replace("~pgprte~newline~", "\n")).toList());
-        mc.getNetworkHandler().sendPacket(new BookUpdateC2SPacket(slot, piratedPages, shouldSign ? Optional.of(metadata.title().raw()) : Optional.empty()));
+        mc.getConnection().send(new ServerboundEditBookPacket(slot, piratedPages, shouldSign ? Optional.of(metadata.title().raw()) : Optional.empty()));
     }
 
     @Override
@@ -451,33 +450,33 @@ public class PagePirate extends Module {
     private void onTick(TickEvent.Post event) {
         if (!Utils.canUpdate()) return;
         booksInItemFrames.removeIf(frame -> !itemFrameHasBook(frame));
-        booksOnGround.removeIf(book -> book.isRemoved() || book.isRegionUnloaded());
-        booksInItemFrames.removeIf(frame -> frame.isRemoved() || frame.isRegionUnloaded());
+        booksOnGround.removeIf(book -> book.isRemoved() || book.touchingUnloadedChunk());
+        booksInItemFrames.removeIf(frame -> frame.isRemoved() || frame.touchingUnloadedChunk());
 
-        for (Entity entity : mc.world.getEntities()) {
-            if (entity instanceof PlayerEntity player && !(entity instanceof ClientPlayerEntity)) {
-                String name = player.getGameProfile().getName();
-                ItemStack mainHand = player.getStackInHand(Hand.MAIN_HAND);
+        for (Entity entity : mc.level.entitiesForRendering()) {
+            if (entity instanceof Player player && !(entity instanceof LocalPlayer)) {
+                String name = player.getGameProfile().name();
+                ItemStack mainHand = player.getItemInHand(InteractionHand.MAIN_HAND);
                 if (mainHand.getItem() == Items.WRITTEN_BOOK) handleWrittenBook(mainHand, name);
                 else if (mainHand.getItem() == Items.WRITABLE_BOOK) handleBookAndQuill(mainHand, name);
 
-                ItemStack offHand = player.getStackInHand(Hand.OFF_HAND);
+                ItemStack offHand = player.getItemInHand(InteractionHand.OFF_HAND);
                 if (offHand.getItem() == Items.WRITTEN_BOOK) handleWrittenBook(offHand, name);
                 else if (mainHand.getItem() == Items.WRITABLE_BOOK) handleBookAndQuill(offHand, name);
             } else if (entity instanceof ItemEntity item) {
                 if (booksOnGround.contains(item)) continue;
                 String piratedFrom = "on ground";
-                if (item.getStack().getItem() == Items.WRITTEN_BOOK) {
+                if (item.getItem().getItem() == Items.WRITTEN_BOOK) {
                     booksOnGround.add(item);
-                    handleWrittenBook(item.getStack(), piratedFrom);
+                    handleWrittenBook(item.getItem(), piratedFrom);
                 }
-                else if (bookAndQuillHasContent(item.getStack())) {
+                else if (bookAndQuillHasContent(item.getItem())) {
                     booksOnGround.add(item);
-                    handleBookAndQuill(item.getStack(), piratedFrom);
+                    handleBookAndQuill(item.getItem(), piratedFrom);
                 }
-            } else if (entity instanceof ItemFrameEntity itemFrame) {
+            } else if (entity instanceof ItemFrame itemFrame) {
                 if (booksInItemFrames.contains(itemFrame)) continue;
-                ItemStack stack = itemFrame.getHeldItemStack();
+                ItemStack stack = itemFrame.getItem();
                 if (stack.getItem() == Items.WRITTEN_BOOK) {
                     booksInItemFrames.add(itemFrame);
                     handleWrittenBook(stack, "item frame");
@@ -502,11 +501,11 @@ public class PagePirate extends Module {
         if (!Utils.canUpdate()) return;
         ESPBlockData esp = bookESP.get();
         if (espItemFrames.get()) {
-            for (ItemFrameEntity frame : booksInItemFrames) {
-                Box box = frame.getBoundingBox();
-                double x = MathHelper.lerp(event.tickDelta, frame.lastRenderX, frame.getX()) - frame.getX();
-                double y = MathHelper.lerp(event.tickDelta, frame.lastRenderY, frame.getY()) - frame.getY();
-                double z = MathHelper.lerp(event.tickDelta, frame.lastRenderZ, frame.getZ()) - frame.getZ();
+            for (ItemFrame frame : booksInItemFrames) {
+                AABB box = frame.getBoundingBox();
+                double x = Mth.lerp(event.tickDelta, frame.xOld, frame.getX()) - frame.getX();
+                double y = Mth.lerp(event.tickDelta, frame.yOld, frame.getY()) - frame.getY();
+                double z = Mth.lerp(event.tickDelta, frame.zOld, frame.getZ()) - frame.getZ();
 
                 double x1 = x + box.minX;
                 double y1 = y + box.minY;
@@ -531,10 +530,10 @@ public class PagePirate extends Module {
 
         if (espBooksOnGround.get()) {
             for (ItemEntity book : booksOnGround) {
-                Box box = book.getBoundingBox();
-                double x = MathHelper.lerp(event.tickDelta, book.lastRenderX, book.getX()) - book.getX();
-                double y = MathHelper.lerp(event.tickDelta, book.lastRenderY, book.getY()) - book.getY();
-                double z = MathHelper.lerp(event.tickDelta, book.lastRenderZ, book.getZ()) - book.getZ();
+                AABB box = book.getBoundingBox();
+                double x = Mth.lerp(event.tickDelta, book.xOld, book.getX()) - book.getX();
+                double y = Mth.lerp(event.tickDelta, book.yOld, book.getY()) - book.getY();
+                double z = Mth.lerp(event.tickDelta, book.zOld, book.getZ()) - book.getZ();
 
                 double x1 = x + box.minX;
                 double y1 = y + box.minY;
@@ -561,14 +560,14 @@ public class PagePirate extends Module {
 
     @EventHandler
     private void onRespawnOrDimensionChange(PacketEvent.Receive event) {
-        if (!(event.packet instanceof PlayerRespawnS2CPacket)) return;
+        if (!(event.packet instanceof ClientboundRespawnPacket)) return;
         booksOnGround.clear();
         booksInItemFrames.clear();
     }
 
-    private record PirateTask(@Nullable WrittenBookContentComponent metadata, String piratedFrom, List<String> pages) {
+    private record PirateTask(WrittenBookContent metadata, String piratedFrom, List<String> pages) {
         public List<String> getPages() { return this.pages; }
         public String getPiratedFrom() { return this.piratedFrom; }
-        public WrittenBookContentComponent getData() { return this.metadata; }
+        public WrittenBookContent getData() { return this.metadata; }
     }
 }

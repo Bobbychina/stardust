@@ -1,10 +1,10 @@
 package dev.stardust.modules;
 
 import dev.stardust.Stardust;
-import net.minecraft.text.Text;
-import net.minecraft.text.Style;
-import net.minecraft.text.TextColor;
-import net.minecraft.util.Formatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
+import net.minecraft.ChatFormatting;
 import dev.stardust.util.StardustUtil;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.settings.Setting;
@@ -74,102 +74,102 @@ public class ChatPrefix extends Module {
     @Override
     public void onDeactivate() {
         ChatUtilsAccessor.setPrefix(
-            Text.empty()
-                .setStyle(Style.EMPTY.withFormatting(Formatting.GRAY))
+            Component.empty()
+                .setStyle(Style.EMPTY.applyFormat(ChatFormatting.GRAY))
                 .append("[")
-                .append(Text.literal("Meteor").setStyle(Style.EMPTY.withColor(TextColor.fromRgb(MeteorClient.ADDON.color.getPacked()))))
+                .append(Component.literal("Meteor").setStyle(Style.EMPTY.withColor(TextColor.fromRgb(MeteorClient.ADDON.color.getPacked()))))
                 .append("] ")
         );
     }
 
     private void applyPrefix() {
-        if (toFormatting(this.format.get()) == Formatting.RESET) {
+        if (toFormatting(this.format.get()) == ChatFormatting.RESET) {
             ChatUtilsAccessor.setPrefix(
-                Text.empty()
-                    .setStyle(Style.EMPTY.withFormatting(Formatting.GRAY))
+                Component.empty()
+                    .setStyle(Style.EMPTY.applyFormat(ChatFormatting.GRAY))
                     .append(this.delim1.get())
-                    .append(Text.literal(this.prefix.get()).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(this.color.get().getPacked()))))
+                    .append(Component.literal(this.prefix.get()).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(this.color.get().getPacked()))))
                     .append(this.delim2.get())
             );
         } else {
             ChatUtilsAccessor.setPrefix(
-                Text.empty()
-                    .setStyle(Style.EMPTY.withFormatting(Formatting.GRAY))
+                Component.empty()
+                    .setStyle(Style.EMPTY.applyFormat(ChatFormatting.GRAY))
                     .append(this.delim1.get())
-                    .append(Text.literal(this.prefix.get()).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(this.color.get().getPacked())).withFormatting(toFormatting(this.format.get()))))
+                    .append(Component.literal(this.prefix.get()).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(this.color.get().getPacked())).applyFormat(toFormatting(this.format.get()))))
                     .append(this.delim2.get())
             );
         }
     }
 
     private void applyPrefix(String delim1, String prefix, String delim2) {
-        if (toFormatting(this.format.get()) == Formatting.RESET) {
+        if (toFormatting(this.format.get()) == ChatFormatting.RESET) {
             ChatUtilsAccessor.setPrefix(
-                Text.empty()
-                    .setStyle(Style.EMPTY.withFormatting(Formatting.GRAY))
+                Component.empty()
+                    .setStyle(Style.EMPTY.applyFormat(ChatFormatting.GRAY))
                     .append(delim1)
-                    .append(Text.literal(prefix).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(this.color.get().getPacked()))))
+                    .append(Component.literal(prefix).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(this.color.get().getPacked()))))
                     .append(delim2)
             );
         } else {
             ChatUtilsAccessor.setPrefix(
-                Text.empty()
-                    .setStyle(Style.EMPTY.withFormatting(Formatting.GRAY))
+                Component.empty()
+                    .setStyle(Style.EMPTY.applyFormat(ChatFormatting.GRAY))
                     .append(delim1)
-                    .append(Text.literal(prefix).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(this.color.get().getPacked())).withFormatting(toFormatting(this.format.get()))))
+                    .append(Component.literal(prefix).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(this.color.get().getPacked())).applyFormat(toFormatting(this.format.get()))))
                     .append(delim2)
             );
         }
     }
 
     private void applyPrefix(SettingColor color) {
-        if (toFormatting(this.format.get()) == Formatting.RESET) {
+        if (toFormatting(this.format.get()) == ChatFormatting.RESET) {
             ChatUtilsAccessor.setPrefix(
-                Text.empty()
-                    .setStyle(Style.EMPTY.withFormatting(Formatting.GRAY))
+                Component.empty()
+                    .setStyle(Style.EMPTY.applyFormat(ChatFormatting.GRAY))
                     .append(this.delim1.get())
-                    .append(Text.literal(this.prefix.get()).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(color.getPacked()))))
+                    .append(Component.literal(this.prefix.get()).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(color.getPacked()))))
                     .append(this.delim2.get())
             );
         } else {
             ChatUtilsAccessor.setPrefix(
-                Text.empty()
-                    .setStyle(Style.EMPTY.withFormatting(Formatting.GRAY))
+                Component.empty()
+                    .setStyle(Style.EMPTY.applyFormat(ChatFormatting.GRAY))
                     .append(this.delim1.get())
-                    .append(Text.literal(this.prefix.get()).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(color.getPacked())).withFormatting(toFormatting(this.format.get()))))
+                    .append(Component.literal(this.prefix.get()).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(color.getPacked())).applyFormat(toFormatting(this.format.get()))))
                     .append(this.delim2.get())
             );
         }
     }
 
     private void applyPrefix(StardustUtil.TextFormat format) {
-        if (toFormatting(format) == Formatting.RESET) {
+        if (toFormatting(format) == ChatFormatting.RESET) {
             ChatUtilsAccessor.setPrefix(
-                Text.empty()
-                    .setStyle(Style.EMPTY.withFormatting(Formatting.GRAY))
+                Component.empty()
+                    .setStyle(Style.EMPTY.applyFormat(ChatFormatting.GRAY))
                     .append(this.delim1.get())
-                    .append(Text.literal(this.prefix.get()).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(this.color.get().getPacked()))))
+                    .append(Component.literal(this.prefix.get()).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(this.color.get().getPacked()))))
                     .append(this.delim2.get())
             );
         } else {
             ChatUtilsAccessor.setPrefix(
-                Text.empty()
-                    .setStyle(Style.EMPTY.withFormatting(Formatting.GRAY))
+                Component.empty()
+                    .setStyle(Style.EMPTY.applyFormat(ChatFormatting.GRAY))
                     .append(this.delim1.get())
-                    .append(Text.literal(this.prefix.get()).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(this.color.get().getPacked())).withFormatting(toFormatting(format))))
+                    .append(Component.literal(this.prefix.get()).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(this.color.get().getPacked())).applyFormat(toFormatting(format))))
                     .append(this.delim2.get())
             );
         }
     }
 
-    private Formatting toFormatting(StardustUtil.TextFormat format) {
+    private ChatFormatting toFormatting(StardustUtil.TextFormat format) {
         return switch (format) {
-            case Italic -> Formatting.ITALIC;
-            case Bold -> Formatting.BOLD;
-            case Underline -> Formatting.UNDERLINE;
-            case Strikethrough -> Formatting.STRIKETHROUGH;
-            case Obfuscated -> Formatting.OBFUSCATED;
-            default -> Formatting.RESET;
+            case Italic -> ChatFormatting.ITALIC;
+            case Bold -> ChatFormatting.BOLD;
+            case Underline -> ChatFormatting.UNDERLINE;
+            case Strikethrough -> ChatFormatting.STRIKETHROUGH;
+            case Obfuscated -> ChatFormatting.OBFUSCATED;
+            default -> ChatFormatting.RESET;
         };
     }
 }

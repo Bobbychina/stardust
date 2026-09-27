@@ -1,29 +1,29 @@
 package dev.stardust.mixin;
 
 import dev.stardust.modules.RocketMan;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
 import org.spongepowered.asm.mixin.Mixin;
-import net.minecraft.sound.SoundCategory;
+import net.minecraft.sounds.SoundSource;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.player.LocalPlayer;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
-@Mixin(ClientPlayerEntity.class)
+@Mixin(LocalPlayer.class)
 public class ClientPlayerEntityMixin {
 
     // See RocketMan.java
     @Inject(method = "playSoundToPlayer", at = @At("HEAD"), cancellable = true)
-    private void mixinPlaySound(SoundEvent sound, SoundCategory category, float volume, float pitch, CallbackInfo ci) {
+    private void mixinPlaySound(SoundEvent sound, SoundSource category, float volume, float pitch, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;
         RocketMan rocketMan = modules.get(RocketMan.class);
-        if (rocketMan.isActive() && sound == SoundEvents.ITEM_ELYTRA_FLYING) {
+        if (rocketMan.isActive() && sound == SoundEvents.ELYTRA_FLYING) {
             if (rocketMan.shouldMuteElytra()) ci.cancel();
         }
     }

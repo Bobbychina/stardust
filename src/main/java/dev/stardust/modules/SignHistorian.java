@@ -4,51 +4,49 @@ import java.util.*;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Files;
-import net.minecraft.item.*;
+import net.minecraft.world.item.*;
 import dev.stardust.Stardust;
-import net.minecraft.block.*;
-import net.minecraft.text.Text;
+import net.minecraft.world.level.block.*;
+import net.minecraft.network.chat.Component;
 import java.util.stream.Stream;
-import net.minecraft.util.Hand;
-import net.minecraft.util.Pair;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.util.Tuple;
 import net.minecraft.nbt.NbtOps;
 import dev.stardust.util.MsgUtil;
 import dev.stardust.util.LogUtil;
-import javax.annotation.Nullable;
-import net.minecraft.world.World;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.DyeColor;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.DyeColor;
 import java.util.stream.Collectors;
-import net.minecraft.nbt.NbtHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.nbt.CompoundTag;
 import dev.stardust.util.StardustUtil;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.core.BlockPos;
 import java.nio.file.StandardOpenOption;
-import org.jetbrains.annotations.NotNull;
-import net.minecraft.util.math.Direction;
-import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.world.RaycastContext;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.core.Direction;
+import net.minecraft.nbt.TagParser;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.util.Mth;
 import com.mojang.serialization.DataResult;
-import net.minecraft.block.entity.SignText;
-import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.level.block.entity.SignText;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.fabricmc.loader.api.FabricLoader;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.world.phys.BlockHitResult;
 import meteordevelopment.orbit.EventPriority;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.mob.CreeperEntity;
-import net.minecraft.entity.boss.WitherEntity;
-import net.minecraft.entity.mob.HostileEntity;
-import net.minecraft.client.network.ServerInfo;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.world.entity.boss.wither.WitherBoss;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.client.multiplayer.ServerData;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.utils.Utils;
-import net.minecraft.block.entity.SignBlockEntity;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.world.level.block.entity.SignBlockEntity;
+import net.minecraft.client.player.LocalPlayer;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import dev.stardust.mixin.accessor.ClientConnectionAccessor;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
@@ -57,19 +55,21 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.utils.render.RenderUtils;
-import net.minecraft.network.packet.c2s.play.UpdateSignC2SPacket;
+import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import dev.stardust.mixin.accessor.AbstractSignEditScreenAccessor;
 import meteordevelopment.meteorclient.events.game.OpenScreenEvent;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import meteordevelopment.meteorclient.events.world.BlockUpdateEvent;
-import net.minecraft.client.gui.screen.ingame.AbstractSignEditScreen;
+import net.minecraft.client.gui.screens.inventory.AbstractSignEditScreen;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.meteorclient.utils.render.WireframeEntityRenderer;
 import meteordevelopment.meteorclient.events.entity.player.InteractBlockEvent;
 import meteordevelopment.meteorclient.systems.modules.render.blockesp.ESPBlockData;
 
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.WoodType;
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
@@ -161,7 +161,7 @@ public class SignHistorian extends Module {
                     if (this.serverSigns.isEmpty()) {
                         initOrLoadFromSignFile();
                     } else {
-                        for (Pair<SignBlockEntity, BlockState> entry : this.serverSigns.values()) {
+                        for (Tuple<SignBlockEntity, BlockState> entry : this.serverSigns.values()) {
                             this.saveSignToFile(entry.getLeft(), entry.getRight());
                         }
                         initOrLoadFromSignFile();
@@ -275,21 +275,21 @@ public class SignHistorian extends Module {
     private int packetTimer = 0;
     private int rotationPriority = 69420;
     private boolean didDisableWaxAura = false;
-    private @Nullable BlockPos lastTargetedSign = null;
-    private @Nullable RegistryKey<World> currentDim = null;
+    private BlockPos lastTargetedSign = null;
+    private ResourceKey<Level> currentDim = null;
     private final HashSet<String> blacklisted = new HashSet<>();
     private final Set<BlockPos> signsBrokenByPlayer = new HashSet<>();
     private final Set<SignBlockEntity> modifiedSigns = new HashSet<>();
     private final Set<SignBlockEntity> destroyedSigns = new HashSet<>();
     private final HashSet<SignBlockEntity> signsToWax = new HashSet<>();
     private final HashSet<SignBlockEntity> signsToGlowInk = new HashSet<>();
-    private final HashMap<Integer, Vec3d> trackedGriefers = new HashMap<>();
-    private final HashSet<HostileEntity> approachingGriefers = new HashSet<>();
-    private final ArrayDeque<UpdateSignC2SPacket> packetQueue = new ArrayDeque<>();
+    private final HashMap<Integer, Vec3> trackedGriefers = new HashMap<>();
+    private final HashSet<Monster> approachingGriefers = new HashSet<>();
+    private final ArrayDeque<ServerboundSignUpdatePacket> packetQueue = new ArrayDeque<>();
     private final HashMap<SignBlockEntity, WoodType> woodTypeMap = new HashMap<>();
     private final HashMap<SignBlockEntity, DyeColor> signsToColor = new HashMap<>();
-    private final HashMap<Integer, Pair<Boolean, Long>> grieferHadLineOfSight = new HashMap<>();
-    private final Map<BlockPos, Pair<SignBlockEntity, BlockState>> serverSigns = new HashMap<>();
+    private final HashMap<Integer, Tuple<Boolean, Long>> grieferHadLineOfSight = new HashMap<>();
+    private final Map<BlockPos, Tuple<SignBlockEntity, BlockState>> serverSigns = new HashMap<>();
 
     private void initBlacklistText() {
         File blackListFile = FabricLoader.getInstance().getGameDir().resolve(BLACKLIST_FILE).toFile();
@@ -304,19 +304,19 @@ public class SignHistorian extends Module {
     private void resetBlacklistFileSetting() { openBlacklistFile.set(false); }
 
     private void initOrLoadFromSignFile() {
-        if (mc.world == null || mc.getNetworkHandler() == null) return;
+        if (mc.level == null || mc.getConnection() == null) return;
         Path historianFolder = FabricLoader.getInstance().getGameDir().resolve("meteor-client/sign-historian");
 
         try {
             //noinspection ResultOfMethodCallIgnored
             historianFolder.toFile().mkdirs();
-            ServerInfo server = mc.getNetworkHandler().getServerInfo();
+            ServerData server = mc.getConnection().getServerData();
             if (server == null) return;
 
-            String address = server.address.replace(":", "_");
+            String address = server.ip.replace(":", "_");
             String dimKey;
-            if (currentDim != null) dimKey = currentDim.getValue().toString().replace("minecraft:", "");
-            else dimKey = mc.world.getRegistryKey().getValue().toString().replace("minecraft:", "");
+            if (currentDim != null) dimKey = currentDim.location().toString().replace("minecraft:", "");
+            else dimKey = mc.level.dimension().identifier().toString().replace("minecraft:", "");
             Path signsFile = historianFolder.resolve( dimKey+"."+address+".signs");
             if (signsFile.toFile().exists()) {
                 readSignsFromFile(signsFile);
@@ -336,22 +336,22 @@ public class SignHistorian extends Module {
                 try {
                     String[] parts = sign.split(" -\\|- ");
                     if (parts.length != 2) continue;
-                    NbtCompound reconstructed = StringNbtReader.parse(parts[0].trim());
-                    NbtCompound stateReconstructed = StringNbtReader.parse(parts[1].trim());
-                    BlockPos bPos = BlockEntity.posFromNbt(reconstructed);
+                    CompoundTag reconstructed = TagParser.parseTag(parts[0].trim());
+                    CompoundTag stateReconstructed = TagParser.parseTag(parts[1].trim());
+                    BlockPos bPos = BlockEntity.getPosFromTag(reconstructed);
 
                     DataResult<BlockState> result = BlockState.CODEC.parse(NbtOps.INSTANCE, stateReconstructed);
                     BlockState state = result.result().orElse(null);
 
                     if (state == null) continue;
-                    BlockEntity be = BlockEntity.createFromNbt(bPos, state, reconstructed, mc.world.getRegistryManager());
+                    BlockEntity be = BlockEntity.createFromNbt(bPos, state, reconstructed, mc.level.registryAccess());
 
                     if (be instanceof SignBlockEntity sbeReconstructed) {
                         if (!serverSigns.containsKey(bPos)) {
-                            if (state.getBlock() instanceof AbstractSignBlock signBlock) {
+                            if (state.getBlock() instanceof SignBlock signBlock) {
                                 woodTypeMap.put(sbeReconstructed, signBlock.getWoodType());
                             }
-                            serverSigns.put(bPos, new Pair<>(sbeReconstructed, sbeReconstructed.getCachedState()));
+                            serverSigns.put(bPos, new Tuple<>(sbeReconstructed, sbeReconstructed.getBlockState()));
                         }
                     }
                 } catch (Exception err) {
@@ -363,7 +363,7 @@ public class SignHistorian extends Module {
         }
     }
 
-    private void writeSignToFile(NbtCompound metadata, NbtCompound cachedState, Path signsFile) {
+    private void writeSignToFile(CompoundTag metadata, CompoundTag cachedState, Path signsFile) {
         try {
             Files.writeString(signsFile, metadata+" -|- "+cachedState+"\n", StandardOpenOption.APPEND);
         } catch (Exception err) {
@@ -372,22 +372,22 @@ public class SignHistorian extends Module {
     }
 
     private void saveSignToFile(SignBlockEntity sign, BlockState state) {
-        if (mc.world == null || mc.getNetworkHandler() == null) return;
+        if (mc.level == null || mc.getConnection() == null) return;
         Path historianFolder = FabricLoader.getInstance().getGameDir().resolve("meteor-client/sign-historian");
 
         try {
-            NbtCompound stateNbt = NbtHelper.fromBlockState(state);
-            NbtCompound metadata = sign.createNbtWithIdentifyingData(mc.world.getRegistryManager());
+            CompoundTag stateNbt = NbtUtils.fromBlockState(state);
+            CompoundTag metadata = sign.saveWithFullMetadata(mc.level.registryAccess());
 
             //noinspection ResultOfMethodCallIgnored
             historianFolder.toFile().mkdirs();
-            ServerInfo server = mc.getNetworkHandler().getServerInfo();
+            ServerData server = mc.getConnection().getServerData();
             if (server == null) return;
 
-            String address = server.address.replace(":", "_");
+            String address = server.ip.replace(":", "_");
             String dimKey;
-            if (currentDim != null) dimKey = currentDim.getValue().toString().replace("minecraft:", "");
-            else dimKey = mc.world.getRegistryKey().getValue().toString().replace("minecraft:", "");
+            if (currentDim != null) dimKey = currentDim.location().toString().replace("minecraft:", "");
+            else dimKey = mc.level.dimension().identifier().toString().replace("minecraft:", "");
             Path signsFile = historianFolder.resolve(dimKey+"."+address+".signs");
             if (signsFile.toFile().exists()) {
                 writeSignToFile(metadata, stateNbt, signsFile);
@@ -399,7 +399,7 @@ public class SignHistorian extends Module {
         }
     }
 
-    private Vec3d getTracerOffset(BlockPos pos, BlockState state) {
+    private Vec3 getTracerOffset(BlockPos pos, BlockState state) {
         double offsetX;
         double offsetY;
         double offsetZ;
@@ -409,7 +409,7 @@ public class SignHistorian extends Module {
                 offsetY = pos.getY() + .5;
                 offsetZ = pos.getZ() + .5;
             } else if (state.getBlock() instanceof WallSignBlock || state.getBlock() instanceof WallHangingSignBlock) {
-                Direction facing = state.get(WallSignBlock.FACING);
+                Direction facing = state.getValue(WallSignBlock.FACING);
                 switch (facing) {
                     case NORTH -> {
                         offsetX = pos.getX() + .5;
@@ -448,10 +448,10 @@ public class SignHistorian extends Module {
             offsetZ = pos.getZ() + .5;
         }
 
-        return new Vec3d(offsetX, offsetY, offsetZ);
+        return new Vec3(offsetX, offsetY, offsetZ);
     }
 
-    private SettingColor colorFromWoodType(@Nullable WoodType type) {
+    private SettingColor colorFromWoodType(WoodType type) {
         if (type == null || !dynamicColor.get()) {
             return dangerESP.get().sideColor;
         } else if (type == WoodType.OAK) {
@@ -479,53 +479,52 @@ public class SignHistorian extends Module {
         } else return dangerESP.get().sideColor;
     }
 
-    @Nullable
     private BlockPos getTargetedSign() {
-        ClientPlayerEntity player = mc.player;
-        if (player == null || mc.world == null) return null;
-        HitResult trace = player.raycast(7,0, false);
+        LocalPlayer player = mc.player;
+        if (player == null || mc.level == null) return null;
+        HitResult trace = player.pick(7,0, false);
         if (trace != null) {
             BlockPos pos = ((BlockHitResult) trace).getBlockPos();
-            if (mc.world.getBlockEntity(pos) instanceof SignBlockEntity) return pos;
+            if (mc.level.getBlockEntity(pos) instanceof SignBlockEntity) return pos;
         }
 
         return null;
     }
 
     // See AbstractSignEditScreenMixin.java
-    public @Nullable SignText getRestoration(SignBlockEntity sign) {
-        if (!serverSigns.containsKey(sign.getPos())) return null;
-        Pair<SignBlockEntity, BlockState> data = serverSigns.get(sign.getPos());
+    public SignText getRestoration(SignBlockEntity sign) {
+        if (!serverSigns.containsKey(sign.getBlockPos())) return null;
+        Tuple<SignBlockEntity, BlockState> data = serverSigns.get(sign.getBlockPos());
 
         if (!destroyedSigns.contains(data.getLeft())) return null;
         if (contentBlacklist.get() && containsBlacklistedText(data.getLeft())) return null;
-        if (ignoreBrokenSetting.get() && signsBrokenByPlayer.contains(sign.getPos())) return null;
+        if (ignoreBrokenSetting.get() && signsBrokenByPlayer.contains(sign.getBlockPos())) return null;
 
         SignBlockEntity sbe = data.getLeft();
-        Text[] restoration = new Text[4];
+        Component[] restoration = new Component[4];
         for (int n = 0; n < data.getLeft().getFrontText().getMessages(false).length; n++) {
             // Signs placed in 1.8 - 1.12 (the majority of them) are "technically" irreplaceable due to metadata differences.
             // You might say that they're the *new* old signs. Either way you can tell that they've been (re)placed after 1.19.
             // To compensate for this, I'll hide a SignHistorian watermark in the NBT data which should clear up any confusion :]
-            if (sbe.createNbt(mc.world.getRegistryManager()).toString().contains("{\"extra\":[") && n == 3) {
+            if (sbe.saveWithoutMetadata(mc.level.registryAccess()).toString().contains("{\"extra\":[") && n == 3) {
                 StringBuilder sb = new StringBuilder();
-                int lineLen = mc.textRenderer.getWidth(sbe.getFrontText().getMessage(n, false).getString());
+                int lineLen = mc.font.width(sbe.getFrontText().getMessage(n, false).getString());
                 int spaceLeftHalved = (90 - lineLen) / 2; // center original text
 
-                while (mc.textRenderer.getWidth(sb.toString()) < spaceLeftHalved) sb.append(" ");
+                while (mc.font.width(sb.toString()) < spaceLeftHalved) sb.append(" ");
                 sb.append(sbe.getFrontText().getMessage(n, false).getString());
-                while (mc.textRenderer.getWidth(sb.toString()) < 91) sb.append(" ");
+                while (mc.font.width(sb.toString()) < 91) sb.append(" ");
                 sb.append("**Pre-1.19 sign restored by 0xTas' SignHistorian**");
-                restoration[n] = Text.of(sb.toString());
+                restoration[n] = Component.literal(sb.toString());
             } else {
-                restoration[n] = Text.of(sbe.getFrontText().getMessage(n, false).getString());
+                restoration[n] = Component.literal(sbe.getFrontText().getMessage(n, false).getString());
             }
         }
 
         if (sbe.getFrontText().getColor() != DyeColor.BLACK) {
             signsToColor.put(sign, sbe.getFrontText().getColor());
         }
-        if (sbe.getFrontText().isGlowing()) {
+        if (sbe.getFrontText().hasGlowingText()) {
             signsToGlowInk.add(sign);
         }
         if (waxRestoration.get()) {
@@ -541,7 +540,7 @@ public class SignHistorian extends Module {
         SignText front2 = sbe2.getFrontText();
 
         int n = 0;
-        for (Text line : front1.getMessages(false)) {
+        for (Component line : front1.getMessages(false)) {
             String compensatedLine = line
                 .getString()
                 .replace("**Pre-1.19 sign restored by 0xTas' SignHistorian**", "")
@@ -553,20 +552,20 @@ public class SignHistorian extends Module {
 
         if (strictSetting.get()) {
             if (sbe1.getFrontText().getColor() != sbe2.getFrontText().getColor()) return false;
-            if (sbe1.getFrontText().isGlowing() != sbe2.getFrontText().isGlowing()) return false;
+            if (sbe1.getFrontText().hasGlowingText() != sbe2.getFrontText().hasGlowingText()) return false;
         }
 
-        return ((AbstractSignBlock) sbe1.getCachedState().getBlock()).getWoodType() == ((AbstractSignBlock) sbe2.getCachedState().getBlock()).getWoodType();
+        return ((SignBlock) sbe1.getBlockState().getBlock()).getWoodType() == ((SignBlock) sbe2.getBlockState().getBlock()).getWoodType();
     }
 
     private boolean containsBlacklistedText(SignBlockEntity sbe) {
         String front = Arrays.stream(sbe.getFrontText().getMessages(false))
-            .map(Text::getString)
+            .map(Component::getString)
             .collect(Collectors.joining(" "))
             .trim();
 
         String back = Arrays.stream(sbe.getBackText().getMessages(false))
-            .map(Text::getString)
+            .map(Component::getString)
             .collect(Collectors.joining(" "))
             .trim();
 
@@ -577,62 +576,62 @@ public class SignHistorian extends Module {
 
     private boolean hasNearbySigns() {
         if (!Utils.canUpdate()) return false;
-        for (BlockPos pos : BlockPos.iterateOutwards(mc.player.getBlockPos(), 6, 6, 6)) {
-            if (mc.world.getBlockEntity(pos) instanceof SignBlockEntity sbe) {
-                if (sbe.getFrontText().hasText(mc.player) || sbe.getBackText().hasText(mc.player)) return true;
+        for (BlockPos pos : BlockPos.withinManhattan(mc.player.blockPosition(), 6, 6, 6)) {
+            if (mc.level.getBlockEntity(pos) instanceof SignBlockEntity sbe) {
+                if (sbe.getFrontText().hasMessage(mc.player) || sbe.getBackText().hasMessage(mc.player)) return true;
             }
         }
         return false;
     }
 
-    private boolean mobHasLineOfSight(HostileEntity mob) {
-        Vec3d mobEyePos = mob.getEyePos();
-        Vec3d eyePos = mc.player.getEyePos();
-        HitResult lineOfSightCheck = mc.world.raycast(
-            new RaycastContext(
+    private boolean mobHasLineOfSight(Monster mob) {
+        Vec3 mobEyePos = mob.getEyePosition();
+        Vec3 eyePos = mc.player.getEyePosition();
+        HitResult lineOfSightCheck = mc.level.raycast(
+            new ClipContext(
                 mobEyePos, eyePos,
-                RaycastContext.ShapeType.COLLIDER,
-                RaycastContext.FluidHandling.WATER, mob
+                ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.WATER, mob
             )
         );
 
         return lineOfSightCheck.getType() != HitResult.Type.BLOCK;
     }
 
-    private boolean isMobAThreat(HostileEntity mob) {
+    private boolean isMobAThreat(Monster mob) {
         if (!Utils.canUpdate()) return false;
 
-        Vec3d newPos = mob.getPos();
-        Vec3d playerPos = mc.player.getPos();
-        Vec3d lastPos = trackedGriefers.get(mob.getId());
+        Vec3 newPos = mob.position();
+        Vec3 playerPos = mc.player.position();
+        Vec3 lastPos = trackedGriefers.get(mob.getId());
 
         if (lastPos == null) return false;
-        double newDistance = playerPos.squaredDistanceTo(newPos);
-        double oldDistance = playerPos.squaredDistanceTo(lastPos);
+        double newDistance = playerPos.distanceToSqr(newPos);
+        double oldDistance = playerPos.distanceToSqr(lastPos);
 
         long now = System.currentTimeMillis();
         boolean mobHasLoS = mobHasLineOfSight(mob);
         if (grieferHadLineOfSight.get(mob.getId()) == null) {
-            grieferHadLineOfSight.put(mob.getId(), new Pair<>(mobHasLoS, now));
+            grieferHadLineOfSight.put(mob.getId(), new Tuple<>(mobHasLoS, now));
         } else {
-            Pair<Boolean, Long> prevLoSCheck = grieferHadLineOfSight.get(mob.getId());
-            if (mobHasLoS || now - prevLoSCheck.getRight() >= 7000) {
-                grieferHadLineOfSight.put(mob.getId(), new Pair<>(mobHasLoS, now));
+            Tuple<Boolean, Long> prevLoSCheck = grieferHadLineOfSight.get(mob.getId());
+            if (mobHasLoS || now - prevLoSCheck.getB() >= 7000) {
+                grieferHadLineOfSight.put(mob.getId(), new Tuple<>(mobHasLoS, now));
             }
         }
 
-        if (mob instanceof CreeperEntity creeper) {
-            if (newDistance <= MathHelper.square(10)) {
-                return mobHasLoS || (newDistance < oldDistance && grieferHadLineOfSight.get(creeper.getId()).getLeft());
-            } else if (newDistance <= MathHelper.square(20)) {
+        if (mob instanceof Creeper creeper) {
+            if (newDistance <= Mth.square(10)) {
+                return mobHasLoS || (newDistance < oldDistance && grieferHadLineOfSight.get(creeper.getId()).getA());
+            } else if (newDistance <= Mth.square(20)) {
                 return  (newDistance < oldDistance && mobHasLoS);
             }
-        } else if (mob instanceof WitherEntity wither) {
-            if (newDistance <= MathHelper.square(16)) {
+        } else if (mob instanceof WitherBoss wither) {
+            if (newDistance <= Mth.square(16)) {
                 return true;
-            } else if (newDistance <= MathHelper.square(32)) {
-                return mobHasLoS || (newDistance < oldDistance && grieferHadLineOfSight.get(wither.getId()).getLeft());
-            } else if (newDistance <= MathHelper.square(48)) {
+            } else if (newDistance <= Mth.square(32)) {
+                return mobHasLoS || (newDistance < oldDistance && grieferHadLineOfSight.get(wither.getId()).getA());
+            } else if (newDistance <= Mth.square(48)) {
                 return (newDistance < oldDistance && mobHasLoS);
             }
         }
@@ -640,11 +639,11 @@ public class SignHistorian extends Module {
         return false;
     }
 
-    private void processSign(@NotNull SignBlockEntity sbe) {
-        if (!sbe.getFrontText().hasText(mc.player) && !sbe.getBackText().hasText(mc.player)) return;
+    private void processSign(SignBlockEntity sbe) {
+        if (!sbe.getFrontText().hasMessage(mc.player) && !sbe.getBackText().hasMessage(mc.player)) return;
         else if (contentBlacklist.get() &&  containsBlacklistedText(sbe)) return;
 
-        BlockPos pos = sbe.getPos();
+        BlockPos pos = sbe.getBlockPos();
         if (serverSigns.containsKey(pos)) {
             if (isSameSign(sbe, serverSigns.get(pos).getLeft())) {
                 modifiedSigns.remove(serverSigns.get(pos).getLeft());
@@ -653,31 +652,31 @@ public class SignHistorian extends Module {
             }
             destroyedSigns.remove(serverSigns.get(pos).getLeft());
         } else {
-            if (sbe.getCachedState().getBlock() instanceof AbstractSignBlock signBlock) {
+            if (sbe.getBlockState().getBlock() instanceof SignBlock signBlock) {
                 woodTypeMap.put(sbe, signBlock.getWoodType());
             }
-            serverSigns.put(pos, new Pair<>(sbe, sbe.getCachedState()));
+            serverSigns.put(pos, new Tuple<>(sbe, sbe.getBlockState()));
             if (persistenceSetting.get()) {
-                saveSignToFile(sbe, sbe.getCachedState());
+                saveSignToFile(sbe, sbe.getBlockState());
             }
         }
     }
 
     private void interactSign(SignBlockEntity sbe, Item dye) {
-        if (!Utils.canUpdate() || mc.interactionManager == null) return;
+        if (!Utils.canUpdate() || mc.gameMode == null) return;
 
-        BlockPos pos = sbe.getPos();
-        Vec3d hitVec = Vec3d.ofCenter(pos);
-        BlockHitResult hit = new BlockHitResult(hitVec, mc.player.getHorizontalFacing().getOpposite(), pos, false);
+        BlockPos pos = sbe.getBlockPos();
+        Vec3 hitVec = Vec3.atCenterOf(pos);
+        BlockHitResult hit = new BlockHitResult(hitVec, mc.player.getDirection().getOpposite(), pos, false);
 
-        ItemStack current = mc.player.getInventory().getMainHandStack();
+        ItemStack current = mc.player.getInventory().getSelectedItem();
         if (current.getItem() != dye) {
-            for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
-                ItemStack stack = mc.player.getInventory().getStack(n);
+            for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
+                ItemStack stack = mc.player.getInventory().getItem(n);
                 if (stack.getItem() == dye) {
                     if (current.getItem() instanceof SignItem && current.getCount() > 1) dyeSlot = n;
                     if (n < 9) InvUtils.swap(n, true);
-                    else InvUtils.move().from(n).to(mc.player.getInventory().selectedSlot);
+                    else InvUtils.move().from(n).to(mc.player.getInventory().getSelectedSlot());
 
                     timer = 3;
                     return;
@@ -687,7 +686,7 @@ public class SignHistorian extends Module {
             Rotations.rotate(
                 Rotations.getYaw(pos),
                 Rotations.getPitch(pos), rotationPriority,
-                () -> mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hit)
+                () -> mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, hit)
             );
             ++rotationPriority;
         }
@@ -741,12 +740,12 @@ public class SignHistorian extends Module {
     private void onBlockInteract(InteractBlockEvent event) {
         if (!Utils.canUpdate()) return;
         for (SignBlockEntity sbe : modifiedSigns) {
-            if (event.result.getBlockPos().isWithinDistance(sbe.getPos(), 1)) {
-                MsgUtil.sendModuleMsg("§e§lOriginal§7§l: §7§o" + Arrays.stream(sbe.getFrontText().getMessages(false)).map(Text::getString).collect(Collectors.joining(" ")), this.name);
+            if (event.result.getBlockPos().closerThan(sbe.getBlockPos(), 1)) {
+                MsgUtil.sendModuleMsg("§e§lOriginal§7§l: §7§o" + Arrays.stream(sbe.getFrontText().getMessages(false)).map(Component::getString).collect(Collectors.joining(" ")), this.name);
                 MsgUtil.sendModuleMsg(
-                    "§6§lWoodType§7§l: " + ((AbstractSignBlock) sbe.getCachedState().getBlock()).getWoodType().name()
+                    "§6§lWoodType§7§l: " + ((SignBlock) sbe.getBlockState().getBlock()).getWoodType().name()
                     + " | §3§lColor§7§l: " + sbe.getText(true).getColor().name()
-                    + " | §f§lGlow Ink§7§l: " + sbe.getText(true).isGlowing(), this.name
+                    + " | §f§lGlow Ink§7§l: " + sbe.getText(true).hasGlowingText(), this.name
                 );
                 return;
             }
@@ -756,16 +755,16 @@ public class SignHistorian extends Module {
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onBlockAttack(PacketEvent.Send event) {
         if (!Utils.canUpdate()) return;
-        if (!(event.packet instanceof PlayerActionC2SPacket packet)) return;
-        if (packet.getAction() != PlayerActionC2SPacket.Action.START_DESTROY_BLOCK) return;
+        if (!(event.packet instanceof ServerboundPlayerActionPacket packet)) return;
+        if (packet.getAction() != ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK) return;
 
         for (SignBlockEntity ghost : destroyedSigns) {
-            if (packet.getPos().isWithinDistance(ghost.getPos(), 1.5)) {
-                MsgUtil.sendModuleMsg("§e§lOriginal§7§l: §7§o" + Arrays.stream(ghost.getFrontText().getMessages(false)).map(Text::getString).collect(Collectors.joining(" ")), this.name);
+            if (packet.getPos().closerThan(ghost.getBlockPos(), 1.5)) {
+                MsgUtil.sendModuleMsg("§e§lOriginal§7§l: §7§o" + Arrays.stream(ghost.getFrontText().getMessages(false)).map(Component::getString).collect(Collectors.joining(" ")), this.name);
                 MsgUtil.sendModuleMsg(
-                    "§6§lWoodType§7§l: " + ((AbstractSignBlock) ghost.getCachedState().getBlock()).getWoodType().name()
+                    "§6§lWoodType§7§l: " + ((SignBlock) ghost.getBlockState().getBlock()).getWoodType().name()
                         + " | §3§lColor§7§l: " + ghost.getText(true).getColor().name()
-                        + " | §f§lGlow Ink§7§l: " + ghost.getText(true).isGlowing(), this.name
+                        + " | §f§lGlow Ink§7§l: " + ghost.getText(true).hasGlowingText(), this.name
                 );
             }
         }
@@ -773,7 +772,7 @@ public class SignHistorian extends Module {
 
     @EventHandler
     private void onBlockUpdate(BlockUpdateEvent event) {
-        if (mc.world == null) return;
+        if (mc.level == null) return;
         if ((event.oldState.getBlock() instanceof SignBlock
             && !(event.newState.getBlock() instanceof SignBlock))
             || (event.oldState.getBlock() instanceof HangingSignBlock
@@ -800,32 +799,32 @@ public class SignHistorian extends Module {
 
         if (restoration != null) {
             event.cancel();
-            List<String> msgs = Arrays.stream(restoration.getMessages(false)).map(Text::getString).toList();
+            List<String> msgs = Arrays.stream(restoration.getMessages(false)).map(Component::getString).toList();
             String[] messages = new String[msgs.size()];
             messages = msgs.toArray(messages);
 
             if (packetQueue.isEmpty()) packetTimer = 0;
-            packetQueue.addLast(new UpdateSignC2SPacket(
-                sign.getPos(), true, messages[0], messages[1], messages[2], messages[3]
+            packetQueue.addLast(new ServerboundSignUpdatePacket(
+                sign.getBlockPos(), true, messages[0], messages[1], messages[2], messages[3]
             ));
         }
     }
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.world == null) return;
-        if (currentDim == null) currentDim = mc.world.getRegistryKey();
-        else if (currentDim != mc.world.getRegistryKey()) {
+        if (mc.level == null) return;
+        if (currentDim == null) currentDim = mc.level.dimension();
+        else if (currentDim != mc.level.dimension()) {
             serverSigns.clear();
-            currentDim = mc.world.getRegistryKey();
+            currentDim = mc.level.dimension();
             if (persistenceSetting.get()) initOrLoadFromSignFile();
         }
 
-        if (!packetQueue.isEmpty() && mc.getNetworkHandler() != null) {
+        if (!packetQueue.isEmpty() && mc.getConnection() != null) {
             ++packetTimer;
             if (packetTimer >= packetDelay.get()) {
                 packetTimer = 0;
-                ((ClientConnectionAccessor) mc.getNetworkHandler().getConnection()).invokeSendImmediately(
+                ((ClientConnectionAccessor) mc.getConnection().getConnection()).invokeSendImmediately(
                     packetQueue.removeFirst(), null, true
                 );
             }
@@ -840,11 +839,11 @@ public class SignHistorian extends Module {
                 lastTargetedSign = null;
             }
         } else lastTargetedSign = targeted;
-        if (mc.currentScreen instanceof AbstractSignEditScreen) return;
+        if (mc.screen instanceof AbstractSignEditScreen) return;
 
         if (timer == -1 && dyeSlot != -1) {
             if (dyeSlot < 9) InvUtils.swapBack();
-            else InvUtils.move().from(mc.player.getInventory().selectedSlot).to(dyeSlot);
+            else InvUtils.move().from(mc.player.getInventory().getSelectedSlot()).to(dyeSlot);
             dyeSlot = -1;
             timer = 3;
         }
@@ -860,11 +859,11 @@ public class SignHistorian extends Module {
         if (timer % 2 == 0) {
             List<BlockPos> inRange = serverSigns.keySet()
                 .stream()
-                .filter(pos -> pos.isWithinDistance(mc.player.getBlockPos(), espRange.get()))
+                .filter(pos -> pos.closerThan(mc.player.blockPosition(), espRange.get()))
                 .toList();
 
             for (BlockPos pos : inRange) {
-                if (!(mc.world.getBlockEntity(pos) instanceof SignBlockEntity sbe)) {
+                if (!(mc.level.getBlockEntity(pos) instanceof SignBlockEntity sbe)) {
                     destroyedSigns.add(serverSigns.get(pos).getLeft());
                     modifiedSigns.remove(serverSigns.get(pos).getLeft());
                 } else processSign(sbe);
@@ -874,14 +873,14 @@ public class SignHistorian extends Module {
                 if (be instanceof SignBlockEntity sbe) processSign(sbe);
             }
         } else if (griefPrevention.get()) {
-            for (Entity entity : mc.world.getEntities()) {
-                HostileEntity griefingMob;
-                if (entity instanceof CreeperEntity creeper) {
+            for (Entity entity : mc.level.entitiesForRendering()) {
+                Monster griefingMob;
+                if (entity instanceof Creeper creeper) {
                     griefingMob = creeper;
-                } else if (entity instanceof WitherEntity wither) {
+                } else if (entity instanceof WitherBoss wither) {
                     griefingMob = wither;
                 } else continue;
-                if (!trackedGriefers.containsKey(griefingMob.getId())) trackedGriefers.put(griefingMob.getId(), griefingMob.getPos());
+                if (!trackedGriefers.containsKey(griefingMob.getId())) trackedGriefers.put(griefingMob.getId(), griefingMob.position());
             }
 
             if (!hasNearbySigns()) {
@@ -894,7 +893,7 @@ public class SignHistorian extends Module {
                 if (!approachingGriefers.isEmpty()) {
                     if (pingTicks >= 60) {
                         pingTicks = 0;
-                        mc.player.playSound(SoundEvents.ENTITY_PHANTOM_HURT, alarmVolume.get().floatValue(), 1f);
+                        mc.player.playSound(SoundEvents.PHANTOM_HURT, alarmVolume.get().floatValue(), 1f);
                         if (chatNotification.get()) {
                             MsgUtil.updateModuleMsg("§c§lNEARBY SIGNS IN DANGER OF MOB GRIEFING§8§L.", this.name, "MobGriefAlarm".hashCode());
                         }
@@ -903,18 +902,18 @@ public class SignHistorian extends Module {
 
                 List<Integer> toRemove = new ArrayList<>();
                 for (int id : trackedGriefers.keySet()) {
-                    Entity griefingEntity = mc.world.getEntityById(id);
-                    if (griefingEntity == null || griefingEntity.isRemoved() || (!(griefingEntity instanceof CreeperEntity) && !(griefingEntity instanceof WitherEntity))) {
+                    Entity griefingEntity = mc.level.getEntity(id);
+                    if (griefingEntity == null || griefingEntity.isRemoved() || (!(griefingEntity instanceof Creeper) && !(griefingEntity instanceof WitherBoss))) {
                         if (griefingEntity != null) grieferHadLineOfSight.remove(griefingEntity.getId());
                         toRemove.add(id);
                         continue;
                     }
-                    HostileEntity griefer = (HostileEntity) griefingEntity;
+                    Monster griefer = (Monster) griefingEntity;
 
                     if (isMobAThreat(griefer)) {
                         approachingGriefers.add(griefer);
                     }
-                    trackedGriefers.put(id, griefer.getPos());
+                    trackedGriefers.put(id, griefer.position());
                 }
                 for (int id : toRemove) {
                     trackedGriefers.remove(id);
@@ -925,11 +924,11 @@ public class SignHistorian extends Module {
         ++timer;
         if (timer > 4) {
             timer = 0;
-            signsToWax.removeIf(sbe -> !sbe.getPos().isWithinDistance(mc.player.getBlockPos(), 6));
-            signsToGlowInk.removeIf(sbe -> !sbe.getPos().isWithinDistance(mc.player.getBlockPos(), 6));
+            signsToWax.removeIf(sbe -> !sbe.getBlockPos().closerThan(mc.player.blockPosition(), 6));
+            signsToGlowInk.removeIf(sbe -> !sbe.getBlockPos().closerThan(mc.player.blockPosition(), 6));
             List<SignBlockEntity> toColor = signsToColor.keySet()
                 .stream()
-                .filter(sbe -> sbe.getPos().isWithinDistance(mc.player.getBlockPos(), 6))
+                .filter(sbe -> sbe.getBlockPos().closerThan(mc.player.blockPosition(), 6))
                 .toList();
 
             if (!toColor.isEmpty()) {
@@ -968,24 +967,24 @@ public class SignHistorian extends Module {
     @EventHandler
     private void onRender3D(Render3DEvent event) {
         if (!Utils.canUpdate()) return;
-        if (mc.getNetworkHandler().getPlayerList().size() <= 1) return; // ignore queue
+        if (mc.getConnection().getOnlinePlayers().size() <= 1) return; // ignore queue
 
         if (espSigns.get()) {
             ESPBlockData mESP = modifiedSettings.get();
             ESPBlockData dESP = destroyedSettings.get();
             for (SignBlockEntity sign : destroyedSigns) {
-                if (sign.getCachedState() == null) return;
+                if (sign.getBlockState() == null) return;
                 if (contentBlacklist.get() && containsBlacklistedText(sign)) continue;
-                if (ignoreBrokenSetting.get() && signsBrokenByPlayer.contains(sign.getPos())) continue;
-                if (!sign.getPos().isWithinDistance(mc.player.getBlockPos(), espRange.get())) continue;
+                if (ignoreBrokenSetting.get() && signsBrokenByPlayer.contains(sign.getBlockPos())) continue;
+                if (!sign.getBlockPos().closerThan(mc.player.blockPosition(), espRange.get())) continue;
 
-                VoxelShape shape = sign.getCachedState().getOutlineShape(mc.world, sign.getPos());
-                double x1 = sign.getPos().getX() + shape.getMin(Direction.Axis.X);
-                double y1 = sign.getPos().getY() + shape.getMin(Direction.Axis.Y);
-                double z1 = sign.getPos().getZ() + shape.getMin(Direction.Axis.Z);
-                double x2 = sign.getPos().getX() + shape.getMax(Direction.Axis.X);
-                double y2 = sign.getPos().getY() + shape.getMax(Direction.Axis.Y);
-                double z2 = sign.getPos().getZ() + shape.getMax(Direction.Axis.Z);
+                VoxelShape shape = sign.getBlockState().getShape(mc.level, sign.getBlockPos());
+                double x1 = sign.getBlockPos().getX() + shape.min(Direction.Axis.X);
+                double y1 = sign.getBlockPos().getY() + shape.min(Direction.Axis.Y);
+                double z1 = sign.getBlockPos().getZ() + shape.min(Direction.Axis.Z);
+                double x2 = sign.getBlockPos().getX() + shape.max(Direction.Axis.X);
+                double y2 = sign.getBlockPos().getY() + shape.max(Direction.Axis.Y);
+                double z2 = sign.getBlockPos().getZ() + shape.max(Direction.Axis.Z);
 
                 if (dESP.sideColor.a > 0 || dESP.lineColor.a > 0) {
                     WoodType woodType = woodTypeMap.get(sign);
@@ -997,7 +996,7 @@ public class SignHistorian extends Module {
                 }
 
                 if (dESP.tracer && dESP.tracerColor.a > 0) {
-                    Vec3d offsetVec = getTracerOffset(sign.getPos(), sign.getCachedState());
+                    Vec3 offsetVec = getTracerOffset(sign.getBlockPos(), sign.getBlockState());
                     event.renderer.line(
                         RenderUtils.center.x, RenderUtils.center.y, RenderUtils.center.z,
                         offsetVec.x, offsetVec.y, offsetVec.z, dESP.tracerColor
@@ -1005,18 +1004,18 @@ public class SignHistorian extends Module {
                 }
             }
             for (SignBlockEntity sign : modifiedSigns) {
-                if (sign.getCachedState() == null) continue;
+                if (sign.getBlockState() == null) continue;
                 if (contentBlacklist.get() && containsBlacklistedText(sign)) continue;
-                if (ignoreBrokenSetting.get() && signsBrokenByPlayer.contains(sign.getPos())) continue;
-                if (!sign.getPos().isWithinDistance(mc.player.getBlockPos(), espRange.get())) continue;
+                if (ignoreBrokenSetting.get() && signsBrokenByPlayer.contains(sign.getBlockPos())) continue;
+                if (!sign.getBlockPos().closerThan(mc.player.blockPosition(), espRange.get())) continue;
 
-                VoxelShape shape = sign.getCachedState().getOutlineShape(mc.world, sign.getPos());
-                double x1 = sign.getPos().getX() + shape.getMin(Direction.Axis.X);
-                double y1 = sign.getPos().getY() + shape.getMin(Direction.Axis.Y);
-                double z1 = sign.getPos().getZ() + shape.getMin(Direction.Axis.Z);
-                double x2 = sign.getPos().getX() + shape.getMax(Direction.Axis.X);
-                double y2 = sign.getPos().getY() + shape.getMax(Direction.Axis.Y);
-                double z2 = sign.getPos().getZ() + shape.getMax(Direction.Axis.Z);
+                VoxelShape shape = sign.getBlockState().getShape(mc.level, sign.getBlockPos());
+                double x1 = sign.getBlockPos().getX() + shape.min(Direction.Axis.X);
+                double y1 = sign.getBlockPos().getY() + shape.min(Direction.Axis.Y);
+                double z1 = sign.getBlockPos().getZ() + shape.min(Direction.Axis.Z);
+                double x2 = sign.getBlockPos().getX() + shape.max(Direction.Axis.X);
+                double y2 = sign.getBlockPos().getY() + shape.max(Direction.Axis.Y);
+                double z2 = sign.getBlockPos().getZ() + shape.max(Direction.Axis.Z);
 
                 if (mESP.sideColor.a > 0 || mESP.lineColor.a > 0) {
                     WoodType woodType = woodTypeMap.get(sign);
@@ -1028,7 +1027,7 @@ public class SignHistorian extends Module {
                 }
 
                 if (mESP.tracer && mESP.tracerColor.a > 0) {
-                    Vec3d offsetVec = getTracerOffset(sign.getPos(), sign.getCachedState());
+                    Vec3 offsetVec = getTracerOffset(sign.getBlockPos(), sign.getBlockState());
                     event.renderer.line(
                         RenderUtils.center.x, RenderUtils.center.y, RenderUtils.center.z,
                         offsetVec.x, offsetVec.y, offsetVec.z, mESP.tracerColor
@@ -1040,7 +1039,7 @@ public class SignHistorian extends Module {
         if (griefPrevention.get() && !approachingGriefers.isEmpty()) {
             approachingGriefers.removeIf(Entity::isRemoved);
             ESPBlockData dangerColor = dangerESP.get();
-            for (HostileEntity griefingMob : approachingGriefers) {
+            for (Monster griefingMob : approachingGriefers) {
                 WireframeEntityRenderer.render(
                     event, griefingMob, 1,
                     dangerColor.sideColor, dangerColor.lineColor, ShapeMode.Both
