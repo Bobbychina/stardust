@@ -191,3 +191,9 @@ python E:\Files\tools\portkit\compile.py            # javac 校验 → errors=0
 python E:\Files\tools\portkit\verify_mixins2.py E:\Files\stardust-26.1.2\build\mixin-verify.txt
 & E:\Files\tools\portkit\mc-smoke.ps1 -Label stardust -Jar .\build\libs\stardust-1.14.0-26.1.2.jar -WaitSec 180
 ```
+
+## 联合实机验收（2026-09-28 04:44，main agent 复核）
+- milky / stardust / bephax 三者同时装载启动 MC 26.1.2（79 mod）→ `logs\smoke-final.txt`：**`new crash reports (0)` + `errors (0)` + `game alive = True` + `verdict: PASS`**；
+  截图 `shots\mc-final.png`、`shots\mc-joint3e-menu.png`（sha256 `1E741074…`）肉眼确认主菜单（`Minecraft* 26.1.2`，右上角 Meteor Client / Bep Hax 品牌行）。
+- 更新 R0：**主菜单级联合验收已通过**；剩余仅为「进世界逐界面点击」这一人工项（本机 GLFW 不响应脚本注入键鼠）。
+- 已知脚本坑（已修）：PCL 以 `java.exe` 启动，`mc-smoke.ps1` 早期只查 `javaw` 会误报；现改为 `java|javaw` + 窗口标题过滤。
