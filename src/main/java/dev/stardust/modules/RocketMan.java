@@ -527,7 +527,13 @@ public class RocketMan extends Module {
     public boolean wasHovering = false;
     private boolean firstRocket = false;
     public boolean durationBoosted = false;
-    private String rcc = StardustUtil.rCC();
+    // 26.1: 构造期不能碰 StardustUtil（其类初始化会建 ItemStack，组件系统此时未 bind）→ 惰性求值
+    private String rcc = null;
+
+    private String rcc() {
+        if (rcc == null) rcc = StardustUtil.rCC();
+        return rcc;
+    }
     private long assistTimer = assistCooldown.get();
     public Long extensionStartTime = null;
     public BlockPos extensionStartPos = null;
@@ -975,7 +981,7 @@ public class RocketMan extends Module {
         ++setbackTimer;
         if (needReset) {
             if (antiLagBackFeedback.get() || debug.get() && chatFeedback) ((IChatHud) mc.gui.getChat()).meteor$add(
-                Component.literal("§8§o["+rcc+"§oAntiLagBack...§8§o]"),
+                Component.literal("§8§o["+rcc()+"§oAntiLagBack...§8§o]"),
                 "LagBackReset".hashCode()
             );
 

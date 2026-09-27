@@ -101,6 +101,8 @@ public abstract class BookEditScreenMixin extends Screen {
         Modules modules = Modules.get();
         if (modules == null) return;
         BookTools bookTools = modules.get(BookTools.class);
+        // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+        if (bookTools == null) return;
 
         if (bookTools.skipFormatting()) return;
 
@@ -169,7 +171,7 @@ public abstract class BookEditScreenMixin extends Screen {
         );
     }
 
-    @Inject(method = "charTyped", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/font/TextFieldHelper;insert(Ljava/lang/String;)V"), require = 0)
+    @Inject(method = "charTyped", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/font/TextFieldHelper;insertText(Ljava/lang/String;)V"), require = 0)
     private void mixinCharTyped(char chr, int modifiers, CallbackInfoReturnable<Boolean> cir) {
         if (!rainbowMode || signing) return;
         didFormatPage = true;
@@ -198,6 +200,8 @@ public abstract class BookEditScreenMixin extends Screen {
         Modules modules = Modules.get();
         if (modules == null) return;
         BookTools bookTools = modules.get(BookTools.class);
+        // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+        if (bookTools == null) return;
         if (bookTools.skipFormatting()) return;
 
         for (Button btn : this.buttons) {

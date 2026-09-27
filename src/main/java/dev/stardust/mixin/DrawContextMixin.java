@@ -27,6 +27,8 @@ public abstract class DrawContextMixin {
         Modules modules = Modules.get();
         if (modules == null) return;
         LoreLocator ll = modules.get(LoreLocator.class);
+        // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+        if (ll == null) return;
         if (!ll.isActive() || !ll.shouldHighlightSlot(stack)) return;
         this.fill(x, y, x + 16, y + 16, ll.color.get().getPacked());
     }
@@ -36,6 +38,8 @@ public abstract class DrawContextMixin {
         Modules modules = Modules.get();
         if (modules == null) return;
         LoreLocator ll = modules.get(LoreLocator.class);
+        // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+        if (ll == null) return;
         if (!ll.isActive() || !ll.shouldHighlightSlot(stack)) return;
         this.fill(x, y, x + 16, y + 16, ll.color.get().getPacked());
     }

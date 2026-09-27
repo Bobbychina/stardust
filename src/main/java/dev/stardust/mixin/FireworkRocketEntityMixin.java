@@ -42,6 +42,8 @@ public abstract class FireworkRocketEntityMixin implements ItemSupplier {
             Modules modules = Modules.get();
             if (modules == null) return;
             rm = modules.get(RocketMan.class);
+            // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+            if (rm == null) return;
         }
 
         if (!rm.getClientInstance().player.isFallFlying()) return;
@@ -62,7 +64,9 @@ public abstract class FireworkRocketEntityMixin implements ItemSupplier {
         }
     }
 
-    @ModifyConstant(method = "tick", constant = @Constant(doubleValue = 1.5))
+    // 26.1: 该常量注入点在新版 tick 里定位失败（Mixin 扫描 0 目标，启动期硬崩），require=0 兜底；
+    // 代价是 RocketMan 的 boostSpeed 失效（见 docs/PORT-NOTES.md R9）
+    @ModifyConstant(method = "tick", constant = @Constant(doubleValue = 1.5), require = 0)
     private double boostFireworkRocketSpeed(double multiplier) {
         if (this.rm == null) {
             Modules modules = Modules.get();
@@ -80,6 +84,8 @@ public abstract class FireworkRocketEntityMixin implements ItemSupplier {
             Modules modules = Modules.get();
             if (modules == null) return;
             rm = modules.get(RocketMan.class);
+            // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+            if (rm == null) return;
         }
         if (!rm.isActive() || !rm.shouldLockYLevel()) return;
         if (!rm.getClientInstance().player.isFallFlying() || !rm.hasActiveRocket()) return;
@@ -97,6 +103,8 @@ public abstract class FireworkRocketEntityMixin implements ItemSupplier {
             Modules modules = Modules.get();
             if (modules == null) return;
             rm = modules.get(RocketMan.class);
+            // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+            if (rm == null) return;
         }
         if (rm.currentRocket == null) return;
         if (!rm.isActive() || !rm.extendRockets.get()) return;

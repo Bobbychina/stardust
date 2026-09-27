@@ -112,12 +112,17 @@ public class StardustUtil {
     }
 
     public static ItemStack chooseMenuIcon() {
-        int luckyIndex = ThreadLocalRandom.current().nextInt(menuIcons.length);
+        int luckyIndex = ThreadLocalRandom.current().nextInt(menuIcons().length);
 
-        return menuIcons[luckyIndex];
+        return menuIcons()[luckyIndex];
     }
 
-    private static final ItemStack[] discIcons = {
+    private static ItemStack[] discIcons = null;
+    // 26.1: 原为 static final 立即初始化。模块构造期（Stardust.onInitialize）组件系统尚未 bind，
+    // Items.X.getDefaultInstance() 会抛 "Components not bound yet" 直接崩在 Bootstrap/Initializing game →
+    // 改为首次调用时才建表。
+    private static ItemStack[] discIcons() {
+        if (discIcons == null) discIcons = new ItemStack[] {
         Items.MUSIC_DISC_5.getDefaultInstance(),
         Items.MUSIC_DISC_11.getDefaultInstance(),
         Items.MUSIC_DISC_13.getDefaultInstance(),
@@ -137,8 +142,15 @@ public class StardustUtil {
         Items.MUSIC_DISC_PRECIPICE.getDefaultInstance(),
         Items.MUSIC_DISC_OTHERSIDE.getDefaultInstance(),
         Items.MUSIC_DISC_CREATOR_MUSIC_BOX.getDefaultInstance(),
-    };
-    private static final ItemStack[] doorIcons = {
+        };
+        return discIcons;
+    }
+    private static ItemStack[] doorIcons = null;
+    // 26.1: 原为 static final 立即初始化。模块构造期（Stardust.onInitialize）组件系统尚未 bind，
+    // Items.X.getDefaultInstance() 会抛 "Components not bound yet" 直接崩在 Bootstrap/Initializing game →
+    // 改为首次调用时才建表。
+    private static ItemStack[] doorIcons() {
+        if (doorIcons == null) doorIcons = new ItemStack[] {
         Items.OAK_DOOR.getDefaultInstance(),
         Items.IRON_DOOR.getDefaultInstance(),
         Items.BIRCH_DOOR.getDefaultInstance(),
@@ -155,8 +167,15 @@ public class StardustUtil {
         Items.EXPOSED_COPPER_DOOR.getDefaultInstance(),
         Items.OXIDIZED_COPPER_DOOR.getDefaultInstance(),
         Items.WEATHERED_COPPER_DOOR.getDefaultInstance()
-    };
-    private static final ItemStack[] menuIcons = {
+        };
+        return doorIcons;
+    }
+    private static ItemStack[] menuIcons = null;
+    // 26.1: 原为 static final 立即初始化。模块构造期（Stardust.onInitialize）组件系统尚未 bind，
+    // Items.X.getDefaultInstance() 会抛 "Components not bound yet" 直接崩在 Bootstrap/Initializing game →
+    // 改为首次调用时才建表。
+    private static ItemStack[] menuIcons() {
+        if (menuIcons == null) menuIcons = new ItemStack[] {
         Items.CAKE.getDefaultInstance(),
         Items.SPAWNER.getDefaultInstance(),
         Items.BEDROCK.getDefaultInstance(),
@@ -191,10 +210,12 @@ public class StardustUtil {
         Items.ENCHANTED_GOLDEN_APPLE.getDefaultInstance(),
         Items.HEARTBREAK_POTTERY_SHERD.getDefaultInstance(),
         Items.EYE_ARMOR_TRIM_SMITHING_TEMPLATE.getDefaultInstance(),
-        discIcons[ThreadLocalRandom.current().nextInt(discIcons.length)],
-        doorIcons[ThreadLocalRandom.current().nextInt(doorIcons.length)],
+        discIcons()[ThreadLocalRandom.current().nextInt(discIcons().length)],
+        doorIcons()[ThreadLocalRandom.current().nextInt(doorIcons().length)],
         getCustomIcons()[ThreadLocalRandom.current().nextInt(getCustomIcons().length)]
-    };
+        };
+        return menuIcons;
+    }
 
     private static ItemStack[] getCustomIcons() {
         // Encoded profile textures taken from illegal player head items on 2b2t.org (except for mine.)
@@ -362,6 +383,8 @@ public class StardustUtil {
         Modules mods = Modules.get();
         if (mods == null) return;
         AutoReconnect atrc = mods.get(AutoReconnect.class);
+        // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+        if (atrc == null) return;
         if (atrc.isActive()) atrc.toggle();
     }
 }

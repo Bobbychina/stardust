@@ -32,6 +32,7 @@ public abstract class AbstractSignBlockEntityRendererMixin implements BlockEntit
         Modules modules = Modules.get();
         if (modules == null ) return signText;
         AntiToS antiToS = modules.get(AntiToS.class);
+        if (antiToS == null) return signText;
         if (!antiToS.isActive()) return signText;
 
         String testText = Arrays.stream(signText.getMessages(false))
@@ -47,7 +48,11 @@ public abstract class AbstractSignBlockEntityRendererMixin implements BlockEntit
         Modules mods = Modules.get();
         if (mods == null) return;
         AntiToS antiToS = mods.get(AntiToS.class);
+        // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+        if (antiToS == null) return;
         NoRender noRender = mods.get(NoRender.class);
+        // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+        if (noRender == null) return;
         var signSetting = noRender.settings.get("cody-signs");
         if (signSetting == null) return;
         if (noRender.isActive() && (boolean) signSetting.get() && isCodySign(signBlockEntity)) {

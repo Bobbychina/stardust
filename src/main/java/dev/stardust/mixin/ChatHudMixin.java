@@ -27,6 +27,7 @@ public class ChatHudMixin {
         Modules modules = Modules.get();
         if (modules == null) return message;
         AntiToS antiToS = modules.get(AntiToS.class);
+        if (antiToS == null) return message;
         if (!antiToS.isActive() || antiToS.chatMode.get() == AntiToS.ChatMode.Remove) return message;
 
         if (antiToS.containsBlacklistedText(message.getString())) {
@@ -44,6 +45,8 @@ public class ChatHudMixin {
         Modules modules = Modules.get();
         if (modules == null) return;
         AntiToS antiToS = modules.get(AntiToS.class);
+        // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+        if (antiToS == null) return;
         if (!antiToS.isActive()) return;
         if (antiToS.chatMode.get() == AntiToS.ChatMode.Remove && antiToS.containsBlacklistedText(message.getString())) ci.cancel();
     }

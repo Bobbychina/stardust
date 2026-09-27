@@ -851,6 +851,7 @@ public class SignHistorian extends Module {
         }
 
         WaxAura waxAura = Modules.get().get(WaxAura.class);
+        if (waxAura == null) return;  // 启动期模块可能未注册
         if (!signsToColor.isEmpty() || !signsToGlowInk.isEmpty() || !signsToWax.isEmpty()) {
             if (waxAura.isActive()) {
                 waxAura.toggle();

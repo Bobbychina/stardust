@@ -96,7 +96,8 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
         if (loadLoadoutButton != null) loadLoadoutButton.visible = loadouts.isActive();
     }
 
-    @Inject(method = "extractRenderState", at = @At("TAIL"))
+    // 26.1: extractRenderState 有 2 个重载，写全描述符避免歧义
+    @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V", at = @At("TAIL"))
     private void mixinRender(CallbackInfo ci) {
         if (loadouts == null) {
             Modules modules = Modules.get();

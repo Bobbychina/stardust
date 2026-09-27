@@ -26,6 +26,8 @@ public abstract class EntityMixin
         Modules modules = Modules.get();
         if (modules == null) return velocity;
         RocketMan rm = modules.get(RocketMan.class);
+        // 启动期模块可能未注册（get() 返回 null）→ 空守卫
+        if (rm == null) return velocity;
         if (!rm.isActive() || !rm.shouldLockYLevel()) return velocity;
         if (!this.getUUID().equals(rm.getClientInstance().player.getUUID())) return velocity;
         if (!rm.getClientInstance().player.isFallFlying() || !rm.hasActiveRocket()) return velocity;

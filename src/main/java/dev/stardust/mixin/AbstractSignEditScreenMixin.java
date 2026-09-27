@@ -49,7 +49,11 @@ public abstract class AbstractSignEditScreenMixin extends Screen {
 
         if (modules == null) return;
         SignHistorian signHistorian = modules.get(SignHistorian.class);
+        // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+        if (signHistorian == null) return;
         SignatureSign signatureSign = modules.get(SignatureSign.class);
+        // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+        if (signatureSign == null) return;
         if (!signatureSign.isActive() && !signHistorian.isActive()) return;
 
         if (signatureSign.getAutoConfirm()) return;

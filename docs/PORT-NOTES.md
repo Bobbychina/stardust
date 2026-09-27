@@ -104,22 +104,63 @@
 - `access widener`：Yarn 残留（`EntryListWidget$Entry`、`ResourceLocation` 描述符）已修，否则 `:validateAccessWidener` 让 gradle 构建失败。
 - 元数据：`fabric.mod.json` 的 `depends.minecraft` 由 `["${mc_version}"]` 改为 `"~26.1"`。
 
+### H. 联合冒烟暴露的运行期问题（04:11–04:29 修复）
+- **`NullPointerException: Components not bound yet`（Bootstrap 崩整局）**：`StardustUtil` 的
+  `discIcons/doorIcons/menuIcons` 是 `static final` 立即初始化、内含 `Items.X.getDefaultInstance()`；
+  任何一次 `StardustUtil.<clinit>`（首个触发者是 `RocketMan` 的字段 `private String rcc = StardustUtil.rCC();`）
+  都会在 Meteor 建模块阶段（组件系统尚未 bind）炸。→ 三个表改**惰性方法**（`discIcons()/doorIcons()/menuIcons()`，首次调用才 `new ItemStack[]`）；
+  `RocketMan`/`MusicTweaks` 的 `rcc` 字段同样改惰性 `rcc()`。
+- **模块查找空指针（渲染/音效高频路径）**：`X x = modules.get(Y.class);` 在启动期可能返回 null，
+  直接 `.isActive()` 会在 `Minecraft.renderFrame` / `SoundEngine.tick` 里炸。→ 全项目统一补空守卫
+  **41 处自动插入 + 6 处人工**（含 `SoundSystemMixin`、`MinecraftClientMixin`、`EntityRendererMixin`、
+  `ChatHudMixin`、`ItemStackMixin`、`AbstractSignBlockEntityRendererMixin`、`EntityMixin`、
+  `FireworkRocketEntityMixin`、`SignHistorian`、`SignatureSign` 等；非 void 方法用 `return <原值>`）。
+- **`@ModifyVariable` 隐式变量修饰失败 → `EntityRendererMixin` 改挂 `getNameTag`**：
+  26.1 名字显示改为 `EntityRenderer.getNameTag(T)` 产出 `Component`，原来的
+  `@ModifyVariable(method="submitNameDisplay", argsOnly=true)` 既命中重载歧义、又根本没有 Component 参数
+  （26.1 的参数是 `RenderState/PoseStack/SubmitNodeCollector/CameraRenderState`）→ 改在 `getNameTag` 的 `RETURN` 上 `cir.setReturnValue(...)`。
+- **`CategoryAccessor` 类型错**：Meteor 26.1 的 `Category.icon` 是 `Supplier<ItemStack>`（不是 `ItemStack`）→
+  `@Accessor("icon") void setIcon(Supplier<ItemStack>)`，调用点改 `setIcon(StardustUtil::chooseMenuIcon)`。
+- **`PeekScreenMixin` 描述符过期**：26.1 鼠标回调是 `mouseClicked(MouseButtonEvent, boolean)` →
+  全描述符 `mouseClicked(Lnet/minecraft/client/input/MouseButtonEvent;Z)Z`，按钮号走 `event.button()`。
+- **`SplashTextRendererMixin` 颜色 arg 已不存在**：26.1 splash 文本改走
+  `ActiveTextCollector.accept(TextAlignment,int,int,Parameters,Component)`，没有颜色 int 参数 →
+  改成 `@ModifyArg(index=4)` 改写传入的 `Component` 样式（`withColor(0x54FB54)`）；
+  代价：`Style` 颜色不含 alpha，原实现叠加的淡出 alpha 丢失（TODO 已注明）。
+- **三处「裸方法名 + 目标类有重载」的歧义注入**（新写的 `ambig_audit.py` 抓到，静态核对盲区）：
+  `BossHealthOverlay.extractBar`（2 重载）、`InventoryScreen.extractRenderState`（2）、`Level.playLocalSound`（3）
+  → 全部改成完整描述符。
+- `BookEditScreenMixin` 的失效锚点 `TextFieldHelper.insert` → `insertText`（该注入本身仍 `require = 0`，见 R1）。
+- 新增核对器（`E:\Files\archive\sessions\2026-09\scripts\`）：`ambig_audit.py`（重载歧义 + 隐式 `@Accessor` 推导字段）、
+  `shadow_field_audit.py`、`accessor_audit.py`、`at_audit.py`、`desc_audit.py` —— 五个维度把
+  `@Shadow` / `@Accessor`+`@Invoker` / `@At(target=)` / 完整描述符 / 重载歧义全部静态核一遍（stardust 侧现均 0 MISS）。
+
 ## 实机核对
-- **mixin 应用**：最终 jar 启动到客户端初始化（Render thread / Registering protocols）阶段 **0 条 stardust mixin 报错**。
-  此前 11 轮逐条修掉了 Bootstrap / Initializing game 阶段的 stardust mixin 崩溃（`@Shadow` 名、`@Accessor`/`@Invoker` 目标、
-  `@At(target=)` 调用点、注入描述符四类），详细过程见 `logs\stardust-smoke-isolated*.log`。
-- 证据：`E:\Files\archive\sessions\2026-09\logs\smoke-stardust.txt`（`mc-smoke.ps1` 输出，含 `new crash reports` / `game process` / `errors` 三段），
-  截图 `E:\Files\archive\sessions\2026-09\shots\mc-stardust.png`。
-- **注意（证据限制）**：
-  1. 当前 MAIN 实例里还有另一条线在写的 BepHax，最后一次冒烟（03:30:55）的 crash report 归属 **`bep.mixins.json:FireworkRocketEntityMixin from mod bephax`**
-     （同样的 `getVelocity` 旧锚点问题，stardust 侧已修）——**不是 stardust 的**；stardust 自己的 mixin 在该次启动里 0 报错。
-  2. PCL 会弹「mod 可能与当前 Minecraft 版本不兼容」的告警对话框，干扰自动启动，截图里目前是桌面+PCL 弹窗，
-     **尚不是**「进主菜单 → 逐界面点开」的完整验收证据。已用 `smoke_stardust_isolated.ps1` 临时移出 BepHax/milky 单独冒烟，但进程在窗口出现前退出（无 stardust crash report）。
-     **完整 UI 验收未完成**，见 R0。
+### 联合冒烟（stardust + BepHax + 全部其它 mod，同一 MAIN 实例）
+- 轮次：`joint3`（04:11，撞 BepHax 的 SoundEngine NPE）→ `joint3b`（04:15，撞 BepHax 的 Minecraft.renderFrame NPE）
+  → `joint3c`（04:20，BepHax 修复版尚未安装）→ `joint3d`（04:24，修掉 stardust 自己的 `SplashTextRendererMixin`）
+  → **`joint3e`（04:29）结果：`new crash reports (0)` + `errors (0)`，stardust 侧 0 条 mixin 报错**。
+- 证据：`E:\Files\archive\sessions\2026-09\logs\smoke-joint3e.txt`；
+  **主菜单截图 `E:\Files\archive\sessions\2026-09\shots\mc-joint3e-menu.png`
+  （sha256 `1E741074418B9FC5812BCE4BD737A01EF23C6AD37651D56F6FBFF2698D481BE9`，肉眼可见 Minecraft Java Edition 主菜单：单人/多人/Realms/模组）**。
+  取图脚本 `scripts\shot_mc_printwindow.ps1`（`PrintWindow(PW_RENDERFULLCONTENT)` 离屏抓窗口，绕开前台锁）。
+- ⚠️ `mc-smoke.ps1` 的 `javaw alive` 判据对本机会误报 `False`：PCL 用 `java.exe` 启动，
+  实际进程是 `java`（PID 2716，`MainWindowTitle = 'Minecraft* 26.1.2'`），游戏当时**确实在运行**。
+- ⚠️ **进世界 + 逐界面截图未完成**：本机 MC/GLFW 不处理脚本注入的鼠标/键盘事件（`mouse_event`/`keybd_event`，
+  即使已用 `AttachThreadInput` 拿到前台 `forceForeground=True`），7 张 `mc-joint3e-*.png` 里点击后仍停在主菜单 —— 见 R0。
+- 本轮之前共 12 轮 stardust 单独冒烟，逐条修掉了 Bootstrap / Initializing game 阶段的 mixin 崩溃
+  （`@Shadow`/`@Accessor`/`@Invoker` 名、`@At(target=)` 调用点、注入描述符、歧义重载、静态初始化触组件 六类），
+  过程见 `logs\stardust-smoke-isolated*.log`。
 
 ## 遗留风险 / TODO
-- **R0（验收缺口）**：未取得「主菜单可见 + 进世界后逐界面（物品栏/聊天/Tab/暂停菜单/告示牌/书/容器/Xaero/Meteor GUI）无异常」的截图证据。
-  stardust 自身 mixin 已 0 报错，但 PCL 版本告警弹窗会干扰自动启动；需要手动点「继续」或在无其它在写 mod 的实例里复测。
+- **R0（验收缺口，已部分补上）**：**主菜单截图已拿到**（joint 环境，见「实机核对」一节，含 sha256）；
+  「进世界 + 逐界面（暂停/物品栏/聊天/Tab/告示牌/书/容器/Xaero/Meteor GUI）」**仍未完成** ——
+  本机 MC/GLFW 不响应脚本注入的鼠标/键盘（`mouse_event`/`keybd_event` 无效，即使窗口已拿到前台），需要人工点几下。
+- **R9（中，主 agent 加）**：`mixin/FireworkRocketEntityMixin.java` 的
+  `@ModifyConstant(method = "tick", constant = @Constant(doubleValue = 1.5))` 在 26.1 里 `Scanned 0 target(s)`
+  （`tick()` 内的 1.5 常量已被改写/消除），Bootstrap 期直接崩整局 → 加 `require = 0` 兜底。
+  **代价：RocketMan 的 `boostSpeed`（烟花火箭加速倍率）失效**。要恢复需按 26.1 `tick()` 的
+  实际常量/调用序列重新定位锚点。
 - **R1（中）**：以下注入在 26.1 目标被删除/重做，目前 `require = 0` 或已停用（游戏能启动，对应功能降级失效）：
   - `AbstractSignBlockEntityRendererMixin` / `BannerBlockEntityRendererMixin` 的 `render(...)`：26.1 渲染改 `submit(...)` + `BlockEntityRenderState` 两段式，需按新签名重写；
   - `BookEditScreenMixin` 的 `charTyped/finalizeBook/changePage`：26.1 `BookEditScreen` 无此三方法（对应 `updatePageContent/appendPageToBook/pageBack/pageForward`），

@@ -37,14 +37,14 @@ public abstract class ModulesScreenMixin extends TabScreen {
     private void cycleCategoryIcons(WContainer c, Category category, List<Module> moduleList, CallbackInfoReturnable<WWindow> cir) {
         if (category.name.equals("Stardust")) {
             if (!theme.categoryIcons()) {
-                ((CategoryAccessor) category).setIcon(StardustUtil.chooseMenuIcon());
+                ((CategoryAccessor) category).setIcon(StardustUtil::chooseMenuIcon);
             } else if (createdAt == null) {
                 createdAt = Instant.now();
             } else {
                 Instant now = Instant.now();
                 if (Duration.between(createdAt, now).toSeconds() > 1800) {
                     createdAt = now;
-                    ((CategoryAccessor) category).setIcon(StardustUtil.chooseMenuIcon());
+                    ((CategoryAccessor) category).setIcon(StardustUtil::chooseMenuIcon);
                 }
             }
         }

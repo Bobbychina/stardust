@@ -24,6 +24,8 @@ public class GoatHornItemMixin extends Item {
         Modules modules = Modules.get();
         if (modules == null) return;
         Honker honker = modules.get(Honker.class);
+        // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+        if (honker == null) return;
         if (honker.shouldMuteHorns()) ci.cancel();
     }
 }

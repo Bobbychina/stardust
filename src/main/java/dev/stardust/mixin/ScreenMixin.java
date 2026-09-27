@@ -37,6 +37,8 @@ public abstract class ScreenMixin extends AbstractContainerEventHandler implemen
         Modules mods = Modules.get();
         if (mods == null) return;
         AntiToS tos = mods.get(AntiToS.class);
+        // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+        if (tos == null) return;
         if (!tos.isActive() || !tos.containsBlacklistedText(this.title.getString())) return;
         MutableComponent txt = Component.literal(tos.censorText(this.title.getString()));
         this.title = txt.setStyle(this.title.getStyle());
@@ -74,6 +76,8 @@ public abstract class ScreenMixin extends AbstractContainerEventHandler implemen
                     Modules mods = Modules.get();
                     if (mods == null) return;
                     ChatSigns chatSigns = mods.get(ChatSigns.class);
+                    // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+                    if (chatSigns == null) return;
                     if (chatSigns.toggleClickESP(pos, now)) {
                         ((StyleAccessor) (Object) style).setHoverEvent(
                             new HoverEvent.ShowText(

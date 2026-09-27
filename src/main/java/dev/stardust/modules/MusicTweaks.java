@@ -1012,7 +1012,7 @@ public class MusicTweaks extends Module {
         if (mc.player == null) return;
         String[] pieces = songName.split(" - ");
         ((IChatHud) mc.gui.getChat()).meteor$add(
-            Component.literal("§8<"+rcc+"§o✨§r§8> §2§oNow Playing§r§8: §7§o"+pieces[0]+" §8- "+rcc+"§o"+pieces[1]+"§r§8."),
+            Component.literal("§8<"+rcc()+"§o✨§r§8> §2§oNow Playing§r§8: §7§o"+pieces[0]+" §8- "+rcc()+"§o"+pieces[1]+"§r§8."),
             songName.hashCode()
         );
     }
@@ -1046,7 +1046,13 @@ public class MusicTweaks extends Module {
     private Music currentType = null;
     private PitchDirection lastDirection = null;
 
-    private String rcc = StardustUtil.rCC();
+    // 26.1: 构造期不能碰 StardustUtil（其类初始化会建 ItemStack，组件系统此时未 bind）→ 惰性求值
+    private String rcc = null;
+
+    private String rcc() {
+        if (rcc == null) rcc = StardustUtil.rCC();
+        return rcc;
+    }
 
     @Override
     public void onActivate() {

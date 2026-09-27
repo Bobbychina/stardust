@@ -39,6 +39,8 @@ public class SoundSystemMixin {
         Modules modules = Modules.get();
         if (modules == null ) return;
         MusicTweaks tweaks = modules.get(MusicTweaks.class);
+        // 启动期模块可能还没注册完 → get() 返回 null，直接解引用会在 SoundEngine.tick 里炸整局
+        if (tweaks == null) return;
 
         boolean playing = false;
         String songID = null;

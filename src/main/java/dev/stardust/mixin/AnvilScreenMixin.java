@@ -39,6 +39,8 @@ public abstract class AnvilScreenMixin extends ItemCombinerScreen<AnvilMenu> {
         Modules mods = Modules.get();
         if (mods == null) return;
         StashBrander sb = mods.get(StashBrander.class);
+        // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+        if (sb == null) return;
 
         if (slotId == 0 && sb.isActive()) {
             ci.cancel();

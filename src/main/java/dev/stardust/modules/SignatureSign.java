@@ -939,6 +939,8 @@ public class SignatureSign extends Module {
         Modules mods = Modules.get();
         if (mods == null) return;
         SignHistorian sh = mods.get(SignHistorian.class);
+        // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+        if (sh == null) return;
         if (sh.isActive() && sh.getRestoration(sign) != null) return;
 
         if (autoConfirm.get()) {
@@ -990,6 +992,9 @@ public class SignatureSign extends Module {
         }
 
         WaxAura waxAura = Modules.get().get(WaxAura.class);
+        if (waxAura == null) return;  // 启动期模块可能未注册
+        // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+        if (waxAura == null) return;
         if (!signsToColor.isEmpty() || !signsToGlowInk.isEmpty() || !signsToWax.isEmpty()) {
             if (waxAura.isActive()) {
                 waxAura.toggle();

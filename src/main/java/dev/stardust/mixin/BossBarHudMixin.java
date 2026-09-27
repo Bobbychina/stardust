@@ -18,11 +18,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class BossBarHudMixin {
 
     // See AntiToS.java
-    @Inject(method = "extractBar", at = @At("HEAD"))
+    // 26.1: extractBar 有 2 个重载，裸名会歧义 -> 写全描述符
+    @Inject(method = "extractBar(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IILnet/minecraft/world/BossEvent;)V", at = @At("HEAD"))
     private void censorBossBar(GuiGraphicsExtractor context, int x, int y, BossEvent bossBar, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;
         AntiToS antiToS = modules.get(AntiToS.class);
+        // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+        if (antiToS == null) return;
         if (!antiToS.isActive()) return;
 
         if (antiToS.containsBlacklistedText(bossBar.getName().getString())) {

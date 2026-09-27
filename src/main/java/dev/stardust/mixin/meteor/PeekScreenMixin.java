@@ -38,8 +38,9 @@ public abstract class PeekScreenMixin extends ShulkerBoxScreen {
     private BetterTooltips btt = null;
 
     // See BetterTooltipsMixin.java
-    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true, remap = true)
-    private void hijackMouseClicked(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
+    // 26.1: 鼠标回调改为 mouseClicked(MouseButtonEvent, boolean)，按钮号走 event.button()
+    @Inject(method = "mouseClicked(Lnet/minecraft/client/input/MouseButtonEvent;Z)Z", at = @At("HEAD"), cancellable = true, remap = true)
+    private void hijackMouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick, CallbackInfoReturnable<Boolean> cir) {
         if (mc.player == null) return;
         if (btt == null) {
             Modules mods = Modules.get();
@@ -53,7 +54,7 @@ public abstract class PeekScreenMixin extends ShulkerBoxScreen {
         if (setting == null) return;
         try {
             // 26.1: AbstractContainerScreen 的 Yarn focusedSlot -> 官方 hoveredSlot
-            if ((boolean) setting.get() && button == GLFW.GLFW_MOUSE_BUTTON_LEFT && hoveredSlot != null && !hoveredSlot.getItem().isEmpty()) {
+            if ((boolean) setting.get() && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT && hoveredSlot != null && !hoveredSlot.getItem().isEmpty()) {
                 FindItemResult empty;
                 if (InvUtils.testInMainHand(ItemStack::isEmpty)) {
                     empty = new FindItemResult(mc.player.getInventory().getSelectedSlot(), mc.player.getMainHandItem().getCount());

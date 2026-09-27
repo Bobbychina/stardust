@@ -25,6 +25,8 @@ public class BannerBlockEntityRendererMixin {
             Modules mods = Modules.get();
             if (mods == null) return;
             NoRender noRender = mods.get(NoRender.class);
+            // 启动期模块可能未注册（get() 返回 null）→ 空守卫，避免在渲染/音效高频路径 NPE
+            if (noRender == null) return;
             if (!noRender.isActive()) return;
 
             Component bannerName = bannerBlockEntity.getCustomName();
