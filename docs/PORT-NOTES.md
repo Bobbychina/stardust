@@ -197,3 +197,24 @@ python E:\Files\tools\portkit\verify_mixins2.py E:\Files\stardust-26.1.2\build\m
   截图 `shots\mc-final.png`、`shots\mc-joint3e-menu.png`（sha256 `1E741074…`）肉眼确认主菜单（`Minecraft* 26.1.2`，右上角 Meteor Client / Bep Hax 品牌行）。
 - 更新 R0：**主菜单级联合验收已通过**；剩余仅为「进世界逐界面点击」这一人工项（本机 GLFW 不响应脚本注入键鼠）。
 - 已知脚本坑（已修）：PCL 以 `java.exe` 启动，`mc-smoke.ps1` 早期只查 `javaw` 会误报；现改为 `java|javaw` + 窗口标题过滤。
+
+## 与另一 mod 共存（BepHax × stardust 同装方案，2026-09-28 08:50）
+两个 mod 同源（BepHax 是 stardust 的分支加强版），同装时原始状态会互相顶掉，落地了三件事：
+
+1. **同名模块/命令去重**：重名共 33 个（模块+命令）。规则=设置项数量多者胜、平局保留 bephax（其 mixin 当前优先应用）。
+   - stardust 侧停用 31 条注册（`Stardust.java` 中带 `// [共存去重]` 注释的行），bephax 侧停用 2 条（`AdBlocker`、`AutoSmith` —— 这两项 stardust 版设置项更多：4>2、23>11）。
+   - 结果：功能取**并集**，两边独有模块都保留（bephax 90 + stardust 独有的 9 个左右）。
+   - 需要恢复某一项时：把对应注释行还原、并停用另一侧同名注册即可。
+2. **混入同名方法重命名**：13 个非覆盖方法在 stardust 侧加 `stardust$` 前缀（消除 `Method overwrite conflict ... Skipping method`），声明与调用点同步改。
+   - 唯一保留的冲突：`AutoLogMixin.onDeactivate`（`@Override` 目标类既有方法，无法双份）→ **bephax 侧生效**，stardust 侧同名功能已在上一步去重中由 bephax 提供。
+3. **争抢同一注入点的处理**：`FireworkRocketEntity` 的 `@ModifyConstant(tick, 1.5)` 两边都改 → 移除 stardust 侧实现（`require=0` 已无意义），加速由 bephax 的 RocketMan 提供（R9 相应更新）。
+
+**验证（同装、MC 26.1.2、79 mod）**：
+- `logs\smoke-coexist.txt` → `new crash reports (0)` + `errors (0)` + `game alive = True` + `verdict: PASS`
+- 本次实机（用户操作）：`latest.log` 里 `Mixin apply for mod stardust/bephax failed` **0 条**，`BEPHAX LOADED.` 与 `Stardust initialized.` 都在；多人游戏界面（`Minecraft* 26.1.2 - 多人游戏（第三方服务器）`）正常。
+- 仅剩 1 条已知 WARN：`Method overwrite conflict for onDeactivate`（见上，功能已由 bephax 提供）。
+
+### 懒加载 mixin 修复（本次实机暴露，同上述共存改动一起提交）
+- stardust `ServerEntryMixin`：26.1 的 `ServerSelectionList$OnlineServerEntry` 无 `list` 字段 → 改 `@Shadow @Final ServerSelectionList this$0`；其 `swap(int,int)` 为 private（Java 不允许 `private abstract` 影子）→ 新增 `accessor/ServerEntrySwapInvoker`（`@Invoker("swap")`）调用。
+- stardust `meteor/WHeaderMixin`：26.1 Meteor `WWindow$WHeader.onMouseClicked(MouseButtonEvent, boolean)` → 处理函数签名同步改。
+- 教训：**主菜单只覆盖启动路径**，GUI/界面的 mixin 要开对应界面才应用；验收必须逐个界面点开。
