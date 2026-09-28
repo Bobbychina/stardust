@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(targets = "meteordevelopment.meteorclient.gui.widgets.containers.WWindow$WHeader", remap = false)
 public abstract class WHeaderMixin extends WContainer {
     @Inject(method = "onMouseClicked", at = @At("HEAD"), cancellable = true)
-    private void maybeCancelHeaderClick(double mouseX, double mouseY, int button, boolean used, CallbackInfoReturnable<Boolean> cir) {
+    private void maybeCancelHeaderClick(net.minecraft.client.input.MouseButtonEvent event, boolean used, CallbackInfoReturnable<Boolean> cir) {   // 26.1: onMouseClicked(MouseButtonEvent, boolean)
         if (mc.screen instanceof MeteoritesScreen meteorites) {
             Cell<? extends WWidget> widget = meteorites.getWidget();
             if (widget != null && widget.widget() instanceof WMeteorites mw) {

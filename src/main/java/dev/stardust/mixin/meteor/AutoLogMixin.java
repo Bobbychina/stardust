@@ -98,7 +98,7 @@ public abstract class AutoLogMixin extends Module {
 
     @Unique
     @EventHandler
-    private void onPacketReceive(PacketEvent.Receive event) {
+    private void stardust$onPacketReceive(PacketEvent.Receive event) {
         if (disconnectReason == null || !(event.packet instanceof ClientboundDisconnectPacket packet))  return;
         if (didLog) {
             ((DisconnectS2CPacketAccessor)(Object) packet).setReason(disconnectReason);

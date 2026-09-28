@@ -5,6 +5,7 @@ import net.minecraft.world.item.Items;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import dev.stardust.config.StardustConfig;
+import dev.stardust.mixin.accessor.ServerEntrySwapInvoker;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import net.minecraft.client.Minecraft;
@@ -49,9 +50,10 @@ public abstract class ServerEntryMixin extends ServerSelectionList.Entry {
     @Final
     private Minecraft minecraft;
 
+    // 26.1: OnlineServerEntry 不再持有父列表字段，父列表由内部类的合成字段 this$0 指向
     @Shadow
     @Final
-    private AbstractSelectionList<ServerSelectionList.Entry> list;
+    private ServerSelectionList this$0;
 
     // TODO(26.1): 26.1 的 OnlineServerEntry 已无 canConnect()，这里保留同名 shadow 以免误删逻辑，
     // 但注入目标需人工核对（verify_mixins 已列为待查项）；语义近似于“该条目当前可连接”。
@@ -61,8 +63,6 @@ public abstract class ServerEntryMixin extends ServerSelectionList.Entry {
     }
 
     // 26.1 方法名 swapEntries → swap（private，AA 里仍是 abstract shadow，运行期需核对可见性）
-    @Shadow
-    protected abstract void swap(int i, int j);
 
     // 26.1 的 OnlineServerEntry 不再持有双击计时字段，改为在 mixin 本地保留（等价实现）
     @Unique
@@ -73,10 +73,10 @@ public abstract class ServerEntryMixin extends ServerSelectionList.Entry {
     @Inject(method = "extractContent", at = @At("HEAD"), cancellable = true)
     private void render2b2tClock(GuiGraphicsExtractor context, int mouseX, int mouseY, boolean hovered, float tickDelta, CallbackInfo ci) {
         if (!StardustConfig.serverListWorldTimeClockSetting.get()) return;
-        int index = this.list.children().indexOf(this);
-        int x = this.list.getRowLeft();
+        int index = this.this$0.children().indexOf(this);
+        int x = this.this$0.getRowLeft();
         int y = this.getY();
-        int entryWidth = this.list.getRowWidth();
+        int entryWidth = this.this$0.getRowWidth();
         int entryHeight = this.getHeight();
 
         String name = this.serverData.name;
@@ -135,29 +135,29 @@ public abstract class ServerEntryMixin extends ServerSelectionList.Entry {
         String address = this.serverData.ip;
         if (name.toLowerCase().contains("2b2t") || address.equalsIgnoreCase("2b2t.org") || address.equalsIgnoreCase("connect.2b2t.org")) {
             cir.cancel();
-            double d = mouseX - (double) this.list.getRowLeft();
-            double e = mouseY - (double) this.list.getRowTop(this.list.children().indexOf(this));
+            double d = mouseX - (double) this.this$0.getRowLeft();
+            double e = mouseY - (double) this.this$0.getRowTop(this.this$0.children().indexOf(this));
 
             if (d <= 32.0) {
                 if (d < 32.0 && d > 16.0 && this.canConnect()) {
-                    this.list.setSelected(this);
+                    this.this$0.setSelected(this);
                     this.join();
                     cir.setReturnValue(true);
                 }
 
-                int i = this.list.children().indexOf(this);
+                int i = this.this$0.children().indexOf(this);
                 if (d < 16.0 && d > 0.0 && e < 16.0 && i > 0) {
-                    this.swap(i, i - 1);
+                    ((ServerEntrySwapInvoker)(Object)this).stardust$swap(i, i - 1);
                     cir.setReturnValue(true);
                 }
 
                 if (d < 16.0 && d > 0.0 && e > 16.0 && i < this.screen.getServers().size() - 1) {
-                    this.swap(i, i + 1);
+                    ((ServerEntrySwapInvoker)(Object)this).stardust$swap(i, i + 1);
                     cir.setReturnValue(true);
                 }
             }
 
-            this.list.setSelected(this);
+            this.this$0.setSelected(this);
             if (Util.getMillis() - this.time < 250L) {
                 this.join();
             }

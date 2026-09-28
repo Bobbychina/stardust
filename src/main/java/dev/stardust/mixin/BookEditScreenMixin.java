@@ -42,7 +42,7 @@ public abstract class BookEditScreenMixin extends Screen {
     private final ArrayList<Button> buttons = new ArrayList<>();
 
     @Unique
-    private void onClickColorButton(Button btn) {
+    private void stardust$onClickColorButton(Button btn) {
         String color = btn.getMessage().getString().substring(0, 2);
 
         if (this.signing) {
@@ -54,7 +54,7 @@ public abstract class BookEditScreenMixin extends Screen {
     }
 
     @Unique
-    private void onClickFormatButton(Button btn) {
+    private void stardust$onClickFormatButton(Button btn) {
         String format = btn.getMessage().getString().substring(0, 2);
 
         if (rainbowMode) {
@@ -68,19 +68,19 @@ public abstract class BookEditScreenMixin extends Screen {
     }
 
     @Unique
-    private void onClickRainbowButton(Button btn) {
+    private void stardust$onClickRainbowButton(Button btn) {
         rainbowMode = !rainbowMode;
         if (rainbowMode) {
-            btn.setMessage(Component.literal(uCC()+"🌈"));
-            btn.setTooltip(Tooltip.create(Component.literal(uCC()+"R"+uCC()+"a"+uCC()+"i"+uCC()+"n"+uCC()+"b"+uCC()+"o"+uCC()+"w "+uCC()+"M"+uCC()+"o"+uCC()+"d"+uCC()+"e"+" §2On")));
+            btn.setMessage(Component.literal(stardust$uCC()+"🌈"));
+            btn.setTooltip(Tooltip.create(Component.literal(stardust$uCC()+"R"+stardust$uCC()+"a"+stardust$uCC()+"i"+stardust$uCC()+"n"+stardust$uCC()+"b"+stardust$uCC()+"o"+stardust$uCC()+"w "+stardust$uCC()+"M"+stardust$uCC()+"o"+stardust$uCC()+"d"+stardust$uCC()+"e"+" §2On")));
         } else {
             btn.setMessage(Component.literal("🌈"));
-            btn.setTooltip(Tooltip.create(Component.literal(uCC()+"R"+uCC()+"a"+uCC()+"i"+uCC()+"n"+uCC()+"b"+uCC()+"o"+uCC()+"w "+uCC()+"M"+uCC()+"o"+uCC()+"d"+uCC()+"e"+" §4Off")));
+            btn.setTooltip(Tooltip.create(Component.literal(stardust$uCC()+"R"+stardust$uCC()+"a"+stardust$uCC()+"i"+stardust$uCC()+"n"+stardust$uCC()+"b"+stardust$uCC()+"o"+stardust$uCC()+"w "+stardust$uCC()+"M"+stardust$uCC()+"o"+stardust$uCC()+"d"+stardust$uCC()+"e"+" §4Off")));
         }
     }
 
     @Unique
-    private String uCC() {
+    private String stardust$uCC() {
         // Return a random color code that follows the pattern of the rainbow.
         if (lastCC == null) {
             lastCC = StardustUtil.RainbowColor.getFirst();
@@ -115,7 +115,7 @@ public abstract class BookEditScreenMixin extends Screen {
                 this.addRenderableWidget(
                     Button.builder(
                             Component.literal(color.label+"§l◼"),
-                            this::onClickColorButton
+                            this::stardust$onClickColorButton
                         )
                         .bounds(odd ? this.width / 2 - 100 : this.width / 2 - 112, 47+offset, 10, 10)
                         .tooltip(Tooltip.create(Component.literal("§7"+color.name().replace("_", " "))))
@@ -133,7 +133,7 @@ public abstract class BookEditScreenMixin extends Screen {
                 this.addRenderableWidget(
                     Button.builder(
                             Component.literal(format.label+"A"),
-                            this::onClickFormatButton
+                            this::stardust$onClickFormatButton
                         )
                         .bounds(odd ? this.width / 2 - 100 : this.width / 2 - 112, 47+offset, 10, 10)
                         .tooltip(Tooltip.create(Component.literal("§7"+format.name())))
@@ -148,7 +148,7 @@ public abstract class BookEditScreenMixin extends Screen {
             this.addRenderableWidget(
                 Button.builder(
                         Component.literal("§rA"),
-                        this::onClickFormatButton
+                        this::stardust$onClickFormatButton
                     )
                     .bounds(odd ? this.width / 2 - 100 : this.width / 2 - 112, 47+offset, 10, 10)
                     .tooltip(Tooltip.create(Component.literal("§7Reset Formatting")))
@@ -162,10 +162,10 @@ public abstract class BookEditScreenMixin extends Screen {
             this.addRenderableWidget(
                 Button.builder(
                         Component.literal("🌈"),
-                        this::onClickRainbowButton
+                        this::stardust$onClickRainbowButton
                     )
                     .bounds(odd ? this.width / 2 - 100 : this.width / 2 - 112, 47+offset, 22, 10)
-                    .tooltip(Tooltip.create(Component.literal(uCC()+"R"+uCC()+"a"+uCC()+"i"+uCC()+"n"+uCC()+"b"+uCC()+"o"+uCC()+"w "+uCC()+"M"+uCC()+"o"+uCC()+"d"+uCC()+"e"+" §4Off")))
+                    .tooltip(Tooltip.create(Component.literal(stardust$uCC()+"R"+stardust$uCC()+"a"+stardust$uCC()+"i"+stardust$uCC()+"n"+stardust$uCC()+"b"+stardust$uCC()+"o"+stardust$uCC()+"w "+stardust$uCC()+"M"+stardust$uCC()+"o"+stardust$uCC()+"d"+stardust$uCC()+"e"+" §4Off")))
                     .build()
             )
         );
@@ -177,9 +177,9 @@ public abstract class BookEditScreenMixin extends Screen {
         didFormatPage = true;
         if (activeFormatting.equals("§r")) {
             activeFormatting = "";
-            stardust$insert(false, "§r" + uCC());
+            stardust$insert(false, "§r" + stardust$uCC());
         } else {
-            stardust$insert(false, uCC() + activeFormatting);
+            stardust$insert(false, stardust$uCC() + activeFormatting);
         }
     }
 

@@ -62,7 +62,7 @@ public abstract class AutoMendMixin extends Module {
     private int timer = 0;
 
     @Unique
-    private void replaceElytra() {
+    private void stardust$replaceElytra() {
         if (mc.player == null) return;
         for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
             ItemStack stack = mc.player.getInventory().getItem(n);
@@ -78,7 +78,7 @@ public abstract class AutoMendMixin extends Module {
         if (!notified) {
             if (mendElytrasOnly != null && mendElytrasOnly.get()
                 && ignoreOffhand != null && ignoreOffhand.get() && autoDisable.get()) {
-                if (getDamagedElytraSlot() == -1) {
+                if (stardust$getDamagedElytraSlot() == -1) {
                     toggle();
                     sendToggledMsg();
                     if (didWearMending) {
@@ -93,7 +93,7 @@ public abstract class AutoMendMixin extends Module {
     }
 
     @Unique
-    private int getDamagedElytraSlot() {
+    private int stardust$getDamagedElytraSlot() {
         if (mc.player == null) return -1;
         for (int n = 0; n < mc.player.getInventory().getNonEquipmentItems().size(); n++) {
             ItemStack stack = mc.player.getInventory().getItem(n);
@@ -147,7 +147,7 @@ public abstract class AutoMendMixin extends Module {
         if (chest.isEmpty() || chest.getItem() != Items.ELYTRA || !Utils.hasEnchantment(chest, Enchantments.MENDING) || chest.getDamageValue() <= 0) {
             // momentarily pause EXPThrower to prevent inventory thrashing
             if (auto != null && auto.get() && Modules.get().isActive(EXPThrower.class)) Modules.get().get(EXPThrower.class).toggle();
-            replaceElytra();
+            stardust$replaceElytra();
         }
 
         if (auto != null && auto.get() && !Modules.get().isActive(EXPThrower.class)) {
@@ -164,7 +164,7 @@ public abstract class AutoMendMixin extends Module {
             ci.cancel();
             ItemStack offhand = mc.player.getOffhandItem();
             if (offhand.isEmpty() || !Utils.hasEnchantment(offhand, Enchantments.MENDING) || offhand.getDamageValue() <= 0) {
-                int slot = getDamagedElytraSlot();
+                int slot = stardust$getDamagedElytraSlot();
                 if (slot == -1) {
                     if (autoDisable.get()) {
                         if (didMove) {

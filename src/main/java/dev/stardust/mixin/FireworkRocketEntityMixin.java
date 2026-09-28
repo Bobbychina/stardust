@@ -64,19 +64,8 @@ public abstract class FireworkRocketEntityMixin implements ItemSupplier {
         }
     }
 
-    // 26.1: 该常量注入点在新版 tick 里定位失败（Mixin 扫描 0 目标，启动期硬崩），require=0 兜底；
-    // 代价是 RocketMan 的 boostSpeed 失效（见 docs/PORT-NOTES.md R9）
-    @ModifyConstant(method = "tick", constant = @Constant(doubleValue = 1.5), require = 0)
-    private double boostFireworkRocketSpeed(double multiplier) {
-        if (this.rm == null) {
-            Modules modules = Modules.get();
-            if (modules == null) return multiplier;
-            rm = modules.get(RocketMan.class);
-        }
-        if (!rm.isActive() || !rm.boostSpeed.get()) return multiplier;
-
-        return rm.getRocketBoostAcceleration();
-    }
+    // 26.1 共存：本侧的 @ModifyConstant 与 BepHax 争抢同一常量（mixin 报 @ModifyConstant conflict，本侧被跳过），
+    // 已移除本侧实现；火箭加速由 BepHax 的 RocketMan 提供（见 docs/PORT-NOTES.md R9）
 
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;getDeltaMovement()Lnet/minecraft/world/phys/Vec3;"))
     private void spoofRotationVector(CallbackInfo ci, @Local(ordinal = 0) LocalRef<Vec3> rotationVec) {

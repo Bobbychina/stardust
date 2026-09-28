@@ -36,7 +36,7 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
     @Unique private Button loadLoadoutButton = null;
 
     @Unique
-    private void onSaveLoadoutButtonPress(Button btn) {
+    private void stardust$onSaveLoadoutButtonPress(Button btn) {
         if (loadouts == null) {
             Modules modules = Modules.get();
             if (modules == null ) return;
@@ -49,7 +49,7 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
     }
 
     @Unique
-    private void onLoadLoadoutButtonPress(Button btn) {
+    private void stardust$onLoadLoadoutButtonPress(Button btn) {
         if (loadouts == null) {
             Modules modules = Modules.get();
             if (modules == null ) return;
@@ -75,7 +75,7 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
         saveLoadoutButton = this.addRenderableWidget(
             Button.builder(
                     Component.literal(StardustUtil.rCC()+"§o✨§fSave"),
-                    this::onSaveLoadoutButtonPress
+                    this::stardust$onSaveLoadoutButtonPress
                 )
                 .bounds(this.width / 2 - 42, this.height / 2 + 83, 42, 16)
                 .tooltip(Tooltip.create(Component.literal("§7§oSave your current inventory to Loadouts.")))
@@ -85,7 +85,7 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
         loadLoadoutButton = this.addRenderableWidget(
             Button.builder(
                     Component.literal("Load"+StardustUtil.rCC()+"§o✨"),
-                    this::onLoadLoadoutButtonPress
+                    this::stardust$onLoadLoadoutButtonPress
                 )
                 .bounds(this.width / 2, this.height / 2 + 83, 42, 16)
                 .tooltip(Tooltip.create(Component.literal("§7§oLoad your quicksave loadout.")))

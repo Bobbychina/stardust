@@ -37,46 +37,46 @@ public class Stardust extends MeteorAddon {
     @Override
     public void onInitialize() {
         Commands.add(new Life());
-        Commands.add(new Loadout());
-        Commands.add(new Panorama());
-        Commands.add(new Stats2b2t());
-        Commands.add(new Playtime2b2t());
-        Commands.add(new LastSeen2b2t());
-        Commands.add(new FirstSeen2b2t());
+        // [共存去重] Commands.add(new Loadout());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Commands.add(new Panorama());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Commands.add(new Stats2b2t());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Commands.add(new Playtime2b2t());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Commands.add(new LastSeen2b2t());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Commands.add(new FirstSeen2b2t());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
 
-        Modules.get().add(new Honker());
-        Modules.get().add(new WaxAura());
-        Modules.get().add(new AntiToS());
-        Modules.get().add(new Updraft());
-        Modules.get().add(new Grinder());
-        Modules.get().add(new RoadTrip());
-        Modules.get().add(new Loadouts());
+        // [共存去重] Modules.get().add(new Honker());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new WaxAura());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new AntiToS());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new Updraft());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new Grinder());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new RoadTrip());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new Loadouts());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
         Modules.get().add(new VaultESP());
         Modules.get().add(new AdBlocker());
-        Modules.get().add(new AutoDoors());
-        Modules.get().add(new AutoMason());
+        // [共存去重] Modules.get().add(new AutoDoors());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new AutoMason());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
         Modules.get().add(new AutoSmith());
-        Modules.get().add(new BookTools());
-        Modules.get().add(new ChatSigns());
-        Modules.get().add(new RapidFire());
+        // [共存去重] Modules.get().add(new BookTools());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new ChatSigns());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new RapidFire());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
         Modules.get().add(new Solitaire());
-        Modules.get().add(new RocketMan());
-        Modules.get().add(new RocketJump());
-        Modules.get().add(new BannerData());
+        // [共存去重] Modules.get().add(new RocketMan());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new RocketJump());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new BannerData());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
         Modules.get().add(new ChatPrefix());
-        Modules.get().add(new PagePirate());
+        // [共存去重] Modules.get().add(new PagePirate());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
         Modules.get().add(new Meteorites());
         Modules.get().add(new Minesweeper());
-        Modules.get().add(new Archaeology());
-        Modules.get().add(new MusicTweaks());
+        // [共存去重] Modules.get().add(new Archaeology());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new MusicTweaks());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
         Modules.get().add(new TreasureESP());
-        Modules.get().add(new LoreLocator());
-        Modules.get().add(new AxolotlTools());
-        Modules.get().add(new StashBrander());
-        Modules.get().add(new SignatureSign());
-        Modules.get().add(new SignHistorian());
-        Modules.get().add(new AutoDyeShulkers());
-        Modules.get().add(new AutoDrawDistance());
+        // [共存去重] Modules.get().add(new LoreLocator());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new AxolotlTools());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new StashBrander());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new SignatureSign());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new SignHistorian());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new AutoDyeShulkers());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
+        // [共存去重] Modules.get().add(new AutoDrawDistance());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
 
         Hud.get().register(ConwayHud.INFO);
 

@@ -44,9 +44,9 @@ public abstract class BookScreenMixin extends Screen {
     private List<Component> obfuscatedPages = new ArrayList<>();
 
     @Unique
-    private void deobfuscateBook(Button btn) {
+    private void stardust$deobfuscateBook(Button btn) {
         if (this.deobfuscated) {
-            reobfuscateBook(btn);
+            stardust$reobfuscateBook(btn);
             return;
         }
 
@@ -72,7 +72,7 @@ public abstract class BookScreenMixin extends Screen {
     }
 
     @Unique
-    private void reobfuscateBook(Button btn) {
+    private void stardust$reobfuscateBook(Button btn) {
         if (this.bookAccess != null) {
             btn.setAlpha(1f);
             btn.setTooltip(Tooltip.create(Component.literal("§8Reveal this tome's secrets..")));
@@ -116,7 +116,7 @@ public abstract class BookScreenMixin extends Screen {
         this.deobfuscateButton = this.addRenderableWidget(
             Button.builder(
                     Component.literal("§0<§b§o✨§r§0> "+StardustUtil.rCC()+"§oDeobfuscate "+"§0<§a§o✨§r§0> "),
-                    this::deobfuscateBook)
+                    this::stardust$deobfuscateBook)
                 .bounds(this.width / 2 - 59, 217, 120, 20)
                 .tooltip(Tooltip.create(Component.literal("§8Reveal this tome's secrets..")))
                 .build());

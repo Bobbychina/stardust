@@ -39,7 +39,7 @@ public abstract class TitleScreenMixin extends Screen {
     private Minecraft mc = null;
 
     @Unique
-    private void onClick2b2tButton(Button btn) {
+    private void stardust$onClick2b2tButton(Button btn) {
         if (mc == null) mc = Minecraft.getInstance();
         // 26.1: Yarn ConnectScreen.connect -> 官方 ConnectScreen.startConnecting(Screen, Minecraft, ServerAddress, ServerData, boolean, TransferState)
         ConnectScreen.startConnecting(mc.screen, mc,
@@ -51,7 +51,7 @@ public abstract class TitleScreenMixin extends Screen {
     private void mixinInit(CallbackInfo ci) {
         if (StardustConfig.directConnectButtonSetting.get()) {
             this.addRenderableWidget(Button.builder(
-                    Component.literal("§c§l2§a§lB"), this::onClick2b2tButton)
+                    Component.literal("§c§l2§a§lB"), this::stardust$onClick2b2tButton)
                 .bounds(this.width / 2 + 104, this.height / 4 + 72, 20, 20)
                 .build()
             );
